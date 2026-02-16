@@ -17,7 +17,7 @@ This repository provides a standardized directory structure for **George Mason U
 │   └── nginx/                # Nginx configuration file.
 ├── prefect/                  # Prefect main folder.
 │   └── flows/                # Store all the pipeline flows.
-├── backend/                  # Backend main code.
+├── src/                  # Backend main code.
 │   └── api/                  # FastAPI implementation.
 ├── shared/                   # Shared function for all the code.
 ├── secrets/                  # Store all the credentials and secrets.
