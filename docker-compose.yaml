@@ -26,7 +26,6 @@ services:
     volumes:
       - postgis_data:/var/lib/postgresql/data
       - ./docker/db-init-scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
-      # - ./docker/db-init-scripts/init.sql:/docker-entrypoint-initdb.d/01-init.sql 
     ports:
       - "5432:5432"
     healthcheck:
