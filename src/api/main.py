@@ -14,15 +14,17 @@ import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
+
     await get_pool()
     logger.info("Database connection pool initialized")
     yield
-    
+
     await close_all_connections()
     logger.info("Database connection pool closed")
+
 
 app = FastAPI(
     title="D-RAP Data API",
@@ -42,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Response Models for Flight States
 class FlightState(BaseModel):
     icao24: str
@@ -56,6 +59,7 @@ class FlightState(BaseModel):
     vert_rate: Optional[float]
     on_ground: bool
 
+
 class FlightStatesResponse(BaseModel):
     timestamp: str
     count: int
@@ -63,20 +67,24 @@ class FlightStatesResponse(BaseModel):
     query_time_ms: float  # Add query execution time
     total_time_ms: float  # Add total endpoint time
 
+
 class DRAPResponse(BaseModel):
     timestamp: datetime
     count: int
-    points: List[List[float]]   # [lat, lon, intensity]
+    points: List[List[float]]  # [lat, lon, intensity]
     query_time_ms: Optional[float] = None
     total_time_ms: Optional[float] = None
+
 
 @app.get("/")
 async def root():
     return {"message": "D-RAP Data API", "status": "running"}
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 @app.get("/api/v1/flight-states/latest", response_model=FlightStatesResponse)
 async def get_latest_flight_states():
@@ -85,13 +93,14 @@ async def get_latest_flight_states():
     Uses optimized query with subquery for better performance.
     """
     start_time = time.time()
-    
+
     async with get_connection() as conn:
         try:
             query_start = time.time()
-            
+
             # Optimized single query: get max time and filter in one go
-            rows = await conn.fetch("""
+            rows = await conn.fetch(
+                """
                 WITH latest_time AS (
                     SELECT MAX(time) as max_time FROM flight_states
                 )
@@ -102,7 +111,7 @@ async def get_latest_flight_states():
                     fs.time_pos,
                     ROUND(fs.lat::numeric, 4) AS lat,
                     ROUND(fs.lon::numeric, 4) AS lon,
-                    ROUND(fs.geo_altitude::numeric, 2) AS geo_altitude,
+                    ROUND(fs.altitude::numeric, 2) AS altitude,
                     ROUND(fs.velocity::numeric, 2) AS velocity,
                     ROUND(fs.heading::numeric, 2) AS heading,
                     ROUND(fs.vert_rate::numeric, 2) AS vert_rate,
@@ -111,35 +120,44 @@ async def get_latest_flight_states():
                 CROSS JOIN latest_time lt
                 WHERE fs.time = lt.max_time
                 ORDER BY fs.callsign NULLS LAST, fs.icao24
-            """)
-            
+            """
+            )
+
             query_time_ms = (time.time() - query_start) * 1000
-            
+
             if not rows:
                 raise HTTPException(status_code=404, detail="No flight data available")
-            
-            latest_time = rows[0]['time']
-            
+
+            latest_time = rows[0]["time"]
+
             flights = []
             for row in rows:
-                flights.append(FlightState(
-                    icao24=row['icao24'],
-                    callsign=row['callsign'],
-                    time=row['time'].isoformat() if row['time'] else None,
-                    time_pos=row['time_pos'].isoformat() if row['time_pos'] else None,
-                    lat=row['lat'],
-                    lon=row['lon'],
-                    geo_altitude=row['geo_altitude'],
-                    velocity=row['velocity'],
-                    heading=row['heading'],
-                    vert_rate=row['vert_rate'],
-                    on_ground=row['on_ground'] if row['on_ground'] is not None else False,
-                ))
-            
+                flights.append(
+                    FlightState(
+                        icao24=row["icao24"],
+                        callsign=row["callsign"],
+                        time=row["time"].isoformat() if row["time"] else None,
+                        time_pos=(
+                            row["time_pos"].isoformat() if row["time_pos"] else None
+                        ),
+                        lat=row["lat"],
+                        lon=row["lon"],
+                        altitude=row["altitude"],
+                        velocity=row["velocity"],
+                        heading=row["heading"],
+                        vert_rate=row["vert_rate"],
+                        on_ground=(
+                            row["on_ground"] if row["on_ground"] is not None else False
+                        ),
+                    )
+                )
+
             total_time_ms = (time.time() - start_time) * 1000
-            
-            logger.info(f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms")
-            
+
+            logger.info(
+                f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms"
+            )
+
             return FlightStatesResponse(
                 timestamp=latest_time.isoformat(),
                 count=len(flights),
@@ -147,17 +165,18 @@ async def get_latest_flight_states():
                 query_time_ms=round(query_time_ms, 2),
                 total_time_ms=round(total_time_ms, 2),
             )
-            
+
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"Error fetching flight states: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
+
 @app.get("/api/v1/drap/latest", response_model=DRAPResponse)
 async def latest_drap():
     start_time = time.time()
-    
+
     sql = """
     WITH latest_time AS (
       SELECT MAX(observed_at) AS max_ts
@@ -186,7 +205,7 @@ async def latest_drap():
 
     try:
         query_start = time.time()
-        
+
         async with get_connection() as conn:
             payload = await conn.fetchval(sql)
 
@@ -195,7 +214,11 @@ async def latest_drap():
         if isinstance(payload, str):
             payload = json.loads(payload)
 
-        if not payload or payload.get("count", 0) == 0 or payload.get("timestamp") is None:
+        if (
+            not payload
+            or payload.get("count", 0) == 0
+            or payload.get("timestamp") is None
+        ):
             raise HTTPException(status_code=404, detail="No D-RAP data available")
 
         total_time_ms = (time.time() - start_time) * 1000
