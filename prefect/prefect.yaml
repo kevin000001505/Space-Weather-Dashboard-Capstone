@@ -3,6 +3,11 @@ pull:
       directory: /opt/prefect-app
 
 deployments:
+  - name: db_initial
+    entrypoint: flows/db_maintain.py:initialize_db_flow
+    work_pool:
+      name: NOAA-pool
+
   - name: DRAP
     entrypoint: flows/d_rap_extract.py:rap_extract_flow
     work_pool:
