@@ -111,7 +111,7 @@ async def get_latest_flight_states():
                     fs.time_pos,
                     ROUND(fs.lat::numeric, 4) AS lat,
                     ROUND(fs.lon::numeric, 4) AS lon,
-                    ROUND(fs.altitude::numeric, 2) AS altitude,
+                    ROUND(fs.baro_altitude::numeric, 2) AS altitude,
                     ROUND(fs.velocity::numeric, 2) AS velocity,
                     ROUND(fs.heading::numeric, 2) AS heading,
                     ROUND(fs.vert_rate::numeric, 2) AS vert_rate,

@@ -119,69 +119,73 @@ async def insert_activate_flight(records):
     logger = get_run_logger()
     async with get_connection() as conn:
         query = """
-    INSERT INTO activate_flight 
-        (time, icao24, callsign, origin_country, time_pos, lat, lon,
-        geo_altitude, baro_altitude, velocity, heading, vert_rate,
-        on_ground, squawk, spi, source, sensors, geom, path_geom)
-    VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-        ST_SetSRID(ST_MakePoint($18, $19), 4326), 
-        ST_Multi(ST_SetSRID(ST_MakePoint($18, $19), 4326)))
-    ON CONFLICT (icao24) 
-    DO UPDATE SET
-        path_geom = CASE
-            -- State A: New Flight / Takeoff
-            WHEN ($1::timestamp > activate_flight.time + INTERVAL '30 minutes') AND activate_flight.on_ground = TRUE THEN
-                ST_Multi(EXCLUDED.geom)
+        INSERT INTO activate_flight 
+            (time, icao24, callsign, origin_country, time_pos, lat, lon,
+            geo_altitude, baro_altitude, velocity, heading, vert_rate,
+            on_ground, squawk, spi, source, sensors, geom, path_geom)
+        VALUES 
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+            ST_SetSRID(ST_MakePoint($18, $19), 4326), 
+            ST_Multi(ST_SetSRID(ST_MakePoint($18, $19), 4326)))
+        ON CONFLICT (icao24) 
+        DO UPDATE SET
+            path_geom = CASE
+                -- State A: New Flight / Takeoff
+                WHEN ($1::timestamp > activate_flight.time + INTERVAL '30 minutes') AND activate_flight.on_ground = TRUE THEN
+                    ST_Multi(EXCLUDED.geom)
 
-            -- State B: Landing
-            WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
-                ST_Multi(ST_CollectionExtract(
-                    ST_Collect(activate_flight.path_geom, (
-                        SELECT geom FROM airports 
-                        ORDER BY geom <-> EXCLUDED.geom LIMIT 1
-                    )), 1
-                ))
+                -- State B: Landing
+                WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
+                    ST_Multi(ST_CollectionExtract(
+                        ST_Collect(activate_flight.path_geom, (
+                            SELECT geom FROM airports 
+                            ORDER BY geom <-> EXCLUDED.geom LIMIT 1
+                        )), 1
+                    ))
 
-            -- State C: Normal flying
-            ELSE
-                ST_Multi(ST_CollectionExtract(
-                    ST_Collect(activate_flight.path_geom, EXCLUDED.geom), 1
-                ))
-        END,
+                -- State C: Normal flying
+                ELSE
+                    ST_Multi(ST_CollectionExtract(
+                        ST_Collect(activate_flight.path_geom, EXCLUDED.geom), 1
+                    ))
+            END,
 
-        geom = CASE
-            WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
-                (SELECT geom FROM airports ORDER BY geom <-> EXCLUDED.geom LIMIT 1)
-            ELSE
-                EXCLUDED.geom
-        END,
+            geom = CASE
+                WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
+                    (SELECT geom FROM airports ORDER BY geom <-> EXCLUDED.geom LIMIT 1)
+                ELSE
+                    EXCLUDED.geom
+            END,
 
-        on_ground = CASE
-            WHEN activate_flight.on_ground = TRUE AND ($1::timestamp > activate_flight.time + INTERVAL '30 minutes') THEN
-                FALSE 
-            WHEN EXCLUDED.velocity < 90 THEN
-                TRUE 
-            ELSE
-                EXCLUDED.on_ground
-        END,
+            on_ground = CASE
+                WHEN EXCLUDED.velocity < 90 THEN
+                    TRUE 
+                WHEN activate_flight.on_ground = TRUE AND ($1::timestamp > activate_flight.time_pos + INTERVAL '30 minutes') THEN
+                    FALSE 
+                ELSE
+                    EXCLUDED.on_ground
+            END,
 
-        time = EXCLUDED.time,
-        callsign = EXCLUDED.callsign,
-        origin_country = EXCLUDED.origin_country,
-        time_pos = EXCLUDED.time_pos,
-        lat = EXCLUDED.lat,
-        lon = EXCLUDED.lon,
-        geo_altitude = EXCLUDED.geo_altitude,
-        baro_altitude = EXCLUDED.baro_altitude,
-        velocity = EXCLUDED.velocity,
-        heading = EXCLUDED.heading,
-        squawk = EXCLUDED.squawk,
-        spi = EXCLUDED.spi,
-        source = EXCLUDED.source,
-        sensors = EXCLUDED.sensors,
-        vert_rate = EXCLUDED.vert_rate;
-"""
+            time_pos = CASE
+                WHEN EXCLUDED.time_pos IS NOT NULL AND EXCLUDED.velocity > 90 THEN EXCLUDED.time_pos
+                ELSE activate_flight.time_pos
+            END,
+
+            time = EXCLUDED.time,
+            callsign = EXCLUDED.callsign,
+            origin_country = EXCLUDED.origin_country,
+            lat = EXCLUDED.lat,
+            lon = EXCLUDED.lon,
+            geo_altitude = EXCLUDED.geo_altitude,
+            baro_altitude = EXCLUDED.baro_altitude,
+            velocity = EXCLUDED.velocity,
+            heading = EXCLUDED.heading,
+            squawk = EXCLUDED.squawk,
+            spi = EXCLUDED.spi,
+            source = EXCLUDED.source,
+            sensors = EXCLUDED.sensors,
+            vert_rate = EXCLUDED.vert_rate;
+        """
 
         await conn.executemany(query, records)
         logger.info(f"Inserted {len(records)} records.")
