@@ -1,4 +1,10 @@
 from db_tools import ensure_table_exists, get_connection, cleanup_old_data
+from queries import (
+    ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
+    AIRPORT_CREATE_TABLE_SQL,
+    AIRPORTS_INSERT_SQL,
+    DRAP_CREATE_TABLE_SQL,
+)
 from prefect import flow, task, get_run_logger
 from prefect.cache_policies import NO_CACHE
 import asyncpg
@@ -28,7 +34,7 @@ async def initial_drap_db(conn: asyncpg.Connection):
     logger = get_run_logger()
     try:
         logger.info("Ensuring DRAP region table exists...")
-        await ensure_table_exists(conn, "drap_region", create_sql=drap_create_table_sql)
+        await ensure_table_exists(conn, "drap_region", create_sql=DRAP_CREATE_TABLE_SQL)
         logger.info("DRAP region table is ready!")
 
     except Exception as e:
@@ -43,8 +49,18 @@ async def initial_activate_flight_db(conn: asyncpg.Connection):
     try:
         logger.info("Ensuring activate_flight table exists...")
         await ensure_table_exists(
-            conn, "activate_flight", create_sql=activate_flight_create_table_sql
+            conn, "activate_flight", create_sql=ACTIVATE_FLIGHT_CREATE_TABLE_SQL
         )
+    except Exception as e:
+        logger.error(f"Failed to initialize activate_flight table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def ingest_airports_csv(conn: asyncpg.Connection):
+    """Task to download and ingest airports CSV data."""
+    logger = get_run_logger()
+    try:
         logger.info("Downloading airports CSV data...")
 
         # Download CSV
@@ -88,29 +104,13 @@ async def initial_activate_flight_db(conn: asyncpg.Connection):
             )
 
             if len(batch) >= batch_size:
-                await conn.executemany(
-                    """INSERT INTO airports 
-                    (id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, 
-                     continent, iso_country, iso_region, municipality, scheduled_service,
-                     icao_code, iata_code, gps_code, local_code)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                    ON CONFLICT (ident) DO NOTHING""",
-                    batch,
-                )
+                await conn.executemany(AIRPORTS_INSERT_SQL, batch)
                 logger.info(f"Inserted batch of {len(batch)} airports...")
                 batch = []
 
         # Insert remaining records
         if batch:
-            await conn.executemany(
-                """INSERT INTO airports 
-                (id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, 
-                 continent, iso_country, iso_region, municipality, scheduled_service,
-                 icao_code, iata_code, gps_code, local_code)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-                ON CONFLICT (ident) DO NOTHING""",
-                batch,
-            )
+            await conn.executemany(AIRPORTS_INSERT_SQL, batch)
             logger.info(f"Inserted final batch of {len(batch)} airports...")
 
         logger.info("Airports data loaded successfully!")
@@ -126,7 +126,7 @@ async def initial_airport_db(conn: asyncpg.Connection):
     logger = get_run_logger()
     try:
         logger.info("Ensuring airports table exists...")
-        await ensure_table_exists(conn, "airports", create_sql=airport_create_table_sql)
+        await ensure_table_exists(conn, "airports", create_sql=AIRPORT_CREATE_TABLE_SQL)
         logger.info("airports table is ready!")
 
     except Exception as e:
@@ -143,86 +143,8 @@ async def initialize_db_flow():
             await initial_drap_db(conn)
             await initial_airport_db(conn)
             await initial_activate_flight_db(conn)
+            await ingest_airports_csv(conn)
             print("Database initialization completed successfully!")
 
     except Exception as e:
         print(f"Database initialization failed: {e}")
-
-
-drap_create_table_sql = """
-CREATE TABLE IF NOT EXISTS drap_region (
-    observed_at timestamptz NOT NULL,
-    location GEOGRAPHY(Point, 4326) NOT NULL,
-    absorption double precision NOT NULL,
-    PRIMARY KEY (observed_at, location)
-);
-
-CREATE INDEX IF NOT EXISTS absorption_grid_loc_gix
-ON drap_region
-USING GIST (location);
-
-CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
-ON drap_region (observed_at);
-"""
-
-activate_flight_create_table_sql = """
-CREATE TABLE IF NOT EXISTS activate_flight (
-    time        TIMESTAMPTZ NOT NULL, -- Maps to 'timestamp' (last_contact)
-    icao24      CHAR(6) NOT NULL,     -- Fixed 6-char Hex
-    callsign    VARCHAR(8),           -- Max 8 chars
-    origin_country VARCHAR(100),      -- Country of origin
-    
-    -- Position Data
-    time_pos    TIMESTAMPTZ,          -- Maps to 'last_position'
-    lat         DOUBLE PRECISION,     -- Latitude and Longitude as DOUBLE PRECISION for better accuracy
-    lon         DOUBLE PRECISION,
-    geo_altitude REAL,                -- Geometric altitude (meters)
-    baro_altitude REAL,               -- Barometric altitude (meters)
-    
-    -- Movement Data
-    velocity    REAL,                 -- Groundspeed (m/s)
-    heading     REAL,                 -- Track (degrees)
-    vert_rate   REAL,                 -- Vertical rate (m/s)
-    on_ground   BOOLEAN DEFAULT FALSE,-- True if the aircraft is on the ground
-
-    -- Metadata
-    squawk      VARCHAR(8),           -- Transponder code
-    spi         BOOLEAN DEFAULT FALSE,-- Special Purpose Indicator
-    source      SMALLINT,             -- 0=ADS-B, 1=ASTERIX, 2=MLAT, 3=FLARM
-    sensors     INTEGER[],            -- Array of sensor IDs
-    
-    -- Spatial Index Column
-    geom        GEOMETRY(POINT, 4326),-- PostGIS geometry column for spatial queries using WGS 84 coordinate system (SRID 4326)
-    
-    -- The column collect multiple points for the flight path --
-    path_geom GEOMETRY(MultiPoint, 4326),
-
-    -- Combination of time and icao24 as PRIMARY KEY for uniqueness
-    PRIMARY KEY (icao24)
-);
-"""
-
-airport_create_table_sql = """
-CREATE TABLE IF NOT EXISTS airports (
-    id INTEGER PRIMARY KEY,
-    ident VARCHAR(10) NOT NULL UNIQUE,
-    type VARCHAR(50) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    latitude_deg DOUBLE PRECISION NOT NULL,
-    longitude_deg DOUBLE PRECISION NOT NULL,
-    elevation_ft INTEGER,
-    continent VARCHAR(2),
-    iso_country VARCHAR(2),
-    iso_region VARCHAR(10),
-    municipality VARCHAR(255),
-    scheduled_service BOOLEAN DEFAULT FALSE,
-    icao_code VARCHAR(4),
-    iata_code VARCHAR(3),
-    gps_code VARCHAR(4),
-    local_code VARCHAR(10),
-    geom GEOMETRY(POINT, 4326),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX IF NOT EXISTS airports_geom_gix ON airports USING GIST (geom);
-"""
