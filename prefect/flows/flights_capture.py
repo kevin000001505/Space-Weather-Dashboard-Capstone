@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime, timedelta, timezone
-from db_tools import get_connection
+from database.db_tools import get_connection
 from prefect import flow, task, get_run_logger
 from prefect.blocks.system import Secret
 from prefect.variables import Variable
@@ -131,17 +131,12 @@ async def insert_activate_flight(records):
         DO UPDATE SET
             path_geom = CASE
                 -- State A: New Flight / Takeoff
-                WHEN ($1::timestamp > activate_flight.time + INTERVAL '30 minutes') AND activate_flight.on_ground = TRUE THEN
+                WHEN EXCLUDED.on_ground = FALSE AND activate_flight.on_ground = TRUE THEN
                     ST_Multi(EXCLUDED.geom)
 
-                -- State B: Landing
-                WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
-                    ST_Multi(ST_CollectionExtract(
-                        ST_Collect(activate_flight.path_geom, (
-                            SELECT geom FROM airports 
-                            ORDER BY geom <-> EXCLUDED.geom LIMIT 1
-                        )), 1
-                    ))
+                -- State B: Lost Position Update (e.g. due to signal loss)
+                WHEN EXCLUDED.on_ground = FALSE AND (EXCLUDED.lat IS NULL OR EXCLUDED.lon IS NULL) THEN
+                    activate_flight.path_geom
 
                 -- State C: Normal flying
                 ELSE
@@ -150,34 +145,15 @@ async def insert_activate_flight(records):
                     ))
             END,
 
-            geom = CASE
-                WHEN EXCLUDED.velocity < 90 AND activate_flight.on_ground = FALSE THEN
-                    (SELECT geom FROM airports ORDER BY geom <-> EXCLUDED.geom LIMIT 1)
-                ELSE
-                    EXCLUDED.geom
-            END,
-
-            on_ground = CASE
-                WHEN EXCLUDED.velocity < 90 THEN
-                    TRUE 
-                WHEN activate_flight.on_ground = TRUE AND ($1::timestamp > activate_flight.time_pos + INTERVAL '30 minutes') THEN
-                    FALSE 
-                ELSE
-                    EXCLUDED.on_ground
-            END,
-
-            time_pos = CASE
-                WHEN EXCLUDED.time_pos IS NOT NULL AND EXCLUDED.velocity > 90 THEN EXCLUDED.time_pos
-                ELSE activate_flight.time_pos
-            END,
-
             time = EXCLUDED.time,
+            time_pos = COALESCE(EXCLUDED.time_pos, activate_flight.time_pos),
             callsign = EXCLUDED.callsign,
             origin_country = EXCLUDED.origin_country,
-            lat = EXCLUDED.lat,
-            lon = EXCLUDED.lon,
-            geo_altitude = EXCLUDED.geo_altitude,
-            baro_altitude = EXCLUDED.baro_altitude,
+            lat = COALESCE(EXCLUDED.lat, activate_flight.lat),
+            lon = COALESCE(EXCLUDED.lon, activate_flight.lon),
+            geom = COALESCE(EXCLUDED.geom, activate_flight.geom),
+            geo_altitude = COALESCE(EXCLUDED.geo_altitude, activate_flight.geo_altitude),
+            baro_altitude = COALESCE(EXCLUDED.baro_altitude, activate_flight.baro_altitude),
             velocity = EXCLUDED.velocity,
             heading = EXCLUDED.heading,
             squawk = EXCLUDED.squawk,
