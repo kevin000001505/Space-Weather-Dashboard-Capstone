@@ -37,8 +37,13 @@ export const buildDeckLayers = ({
   return [
     // DRAP Heatmap Layer
     new HeatmapLayer({
-      id: 'drap-heatmap', data: drapPoints, getPosition: d => [d[1], d[0]], getWeight: d => d[2],
-      radiusPixels: 40, intensity: 1, threshold: 0.1,
+      id: 'drap-heatmap',
+      data: drapPoints,
+      getPosition: d => [d[1], d[0]],
+      getWeight: d => d[2],
+      radiusPixels: 40,
+      intensity: 1,
+      threshold: 0.1,
       colorRange: [
         [0, 0, 255],
         [0, 255, 255],

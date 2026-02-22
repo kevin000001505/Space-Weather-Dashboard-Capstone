@@ -48,7 +48,16 @@ const SearchBar = ({ planes, airports, onSelect }) => {
   };
 
   return (
-    <div style={{ position: 'relative', width: '250px', marginBottom: '10px' }}>
+    <div style={{
+      position: 'relative',
+      width: '250px',
+      marginBottom: '10px',
+      color: 'var(--ui-text)',
+      backgroundColor: 'var(--ui-bg)',
+      boxShadow: 'var(--ui-shadow)',
+      
+      }}
+    >
       <input
         type="text"
         placeholder="Search flight or airport..."

@@ -1,16 +1,14 @@
 const SettingsPanel = ({ darkMode, setDarkMode, useImperial, setUseImperial, showSettings, setShowSettings }) => {
   const btnStyle = {
-    width: '45px',
-    height: '45px',
-    border: '2px solid rgba(0,0,0,0.2)',
+    width: '45px', height: '45px',
+    border: '1px solid var(--ui-border)',
     borderRadius: '4px',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '20px',
-    boxShadow: '0 1px 5px rgba(0,0,0,0.4)'
+    backgroundColor: 'var(--ui-bg)',
+    color: 'var(--ui-text)',
+    cursor: 'pointer', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', fontSize: '20px',
+    boxShadow: 'var(--ui-shadow)',
+    backdropFilter: 'blur(4px)'
   };
 
   return (
@@ -31,16 +29,28 @@ const SettingsPanel = ({ darkMode, setDarkMode, useImperial, setUseImperial, sho
       </div>
       {showSettings && (
         <div style={{
-          backgroundColor: darkMode ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)', padding: '15px', borderRadius: '4px',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.3)', color: darkMode ? '#fff' : '#333', border: '1px solid #ccc', minWidth: '180px'
+          backgroundColor: 'var(--ui-bg)',
+          color: 'var(--ui-text)',
+          border: 'var(--ui-border)',
+          boxShadow: 'var(--ui-shadow)',
+          backdropFilter: 'blur(4px)',
+          padding: '15px',
+          borderRadius: '4px',
+          minWidth: '180px'
         }}>
-          <h4 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #eee', paddingBottom: '5px' }}>Settings</h4>
+          <h4 style={{ margin: '0 0 10px 0', borderBottom: '1px solid var(--ui-border)', paddingBottom: '5px' }}>Settings</h4>
           <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '14px' }}>
-            <input type="checkbox" checked={useImperial} onChange={() => setUseImperial(!useImperial)} style={{ marginRight: '8px' }} /> Use Imperial (ft, knots)
+            <input
+              type="checkbox"
+              checked={useImperial}
+              onChange={() => setUseImperial(!useImperial)}
+              style={{ marginRight: '8px' }}
+            />
+            Use Imperial
           </label>
-          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontSize: '14px', marginTop: '8px' }}>
-            <input type="checkbox" checked={!useImperial} onChange={() => setUseImperial(!useImperial)} style={{ marginRight: '8px' }} /> Use Metric (m, m/s)
-          </label>
+          <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
+            Active units: {useImperial ? '(ft, knots)' : '(m, m/s)'}
+          </div>
         </div>
       )}
     </div>

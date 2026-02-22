@@ -1,6 +1,6 @@
 import { getStops } from '../../utils/mapUtils';
 
-const AltitudeLegend = ({ darkMode, useImperial }) => {
+const AltitudeLegend = ({ useImperial }) => {
   return (
     <div style={{
       position: 'absolute',
@@ -8,16 +8,17 @@ const AltitudeLegend = ({ darkMode, useImperial }) => {
       left: '50%',
       transform: 'translateX(-50%)',
       zIndex: 1000,
-      backgroundColor: darkMode ? 'rgba(30, 30, 30, 0.6)' : 'rgba(255, 255, 255, 0.6)',
       padding: '12px 20px',
       borderRadius: '6px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.4)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      color: darkMode ? '#fff' : '#333',
       width: '500px',
-      transition: 'background-color 0.3s ease'
+      transition: 'background-color 0.3s ease',
+      backgroundColor: 'var(--ui-bg)',
+      color: 'var(--ui-text)',
+      boxShadow: 'var(--ui-shadow)',
+      backdropFilter: 'blur(4px)',
     }}>
       <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '13px', alignSelf: 'flex-start' }}>
         ALTITUDE ({useImperial ? 'ft' : 'm'})
@@ -27,7 +28,7 @@ const AltitudeLegend = ({ darkMode, useImperial }) => {
       <div style={{
         width: '100%',
         height: '14px',
-        border: darkMode ? '1px solid #555' : '1px solid #222',
+        border: 'var(--ui-border)',
         borderRadius: '2px',
         background: `linear-gradient(to right, ${
           getStops(useImperial).map((s, idx, arr) =>
