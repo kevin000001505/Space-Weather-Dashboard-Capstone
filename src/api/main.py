@@ -219,7 +219,7 @@ async def get_latest_flight_states(limit: int = Query(None, ge=1, le=1000)):
                     FlightState(
                         icao24=row["icao24"],
                         callsign=row["callsign"],
-                        time=row["time"].isoformat() if row["time"] else None,
+                        time=row["time"].isoformat(),
                         time_pos=(
                             row["time_pos"].isoformat() if row["time_pos"] else None
                         ),
