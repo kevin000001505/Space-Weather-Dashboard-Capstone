@@ -1,11 +1,24 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import ORJSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from utils.db_tools import get_connection, get_pool, close_all_connections
-from typing import List, Optional
-from pydantic import BaseModel
-from datetime import datetime
+from database.queries import (
+    ACTIVATE_FLIGHT_STATES_QUERY,
+    AIRPORTS_LATEST_QUERY,
+    FLIGHT_PATH_QUERY,
+    LATEST_DRAP_QUERY,
+    LATEST_FLIGHT_STATES_QUERY,
+)
+from config import (
+    FlightState,
+    FlightStatesResponse,
+    DRAPResponse,
+    FlightPathResponse,
+    ActivateFlightState,
+    Airport,
+    AirportsResponse,
+)
 import logging
 import json
 from contextlib import asynccontextmanager
@@ -45,37 +58,6 @@ app.add_middleware(
 )
 
 
-# Response Models for Flight States
-class FlightState(BaseModel):
-    icao24: str
-    callsign: Optional[str]
-    time: str
-    time_pos: Optional[str]
-    lat: Optional[float]
-    lon: Optional[float]
-    geo_altitude: Optional[float]
-    velocity: Optional[float]
-    heading: Optional[float]
-    vert_rate: Optional[float]
-    on_ground: bool
-
-
-class FlightStatesResponse(BaseModel):
-    timestamp: str
-    count: int
-    flights: List[FlightState]
-    query_time_ms: float  # Add query execution time
-    total_time_ms: float  # Add total endpoint time
-
-
-class DRAPResponse(BaseModel):
-    timestamp: datetime
-    count: int
-    points: List[List[float]]  # [lat, lon, intensity]
-    query_time_ms: Optional[float] = None
-    total_time_ms: Optional[float] = None
-
-
 @app.get("/")
 async def root():
     return {"message": "D-RAP Data API", "status": "running"}
@@ -86,11 +68,132 @@ async def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/api/v1/airports/latest", response_model=AirportsResponse)
+async def get_latest_airports(limit: int = Query(None, ge=1, le=5000)):
+    async with get_connection() as conn:
+        try:
+            rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
+            if not rows:
+                raise HTTPException(status_code=404, detail="No airport data available")
+
+            airports = []
+            for row in rows:
+                if limit and len(airports) >= limit:
+                    break
+                airports.append(
+                    Airport(
+                        name=row["name"],
+                        iata_code=row["iata_code"],
+                        gps_code=row["gps_code"],
+                        municipality=row["municipality"],
+                        country=row["iso_country"],
+                        elevation_ft=row["elevation_ft"],
+                        lat=round(row["latitude_deg"], 3),
+                        lon=round(row["longitude_deg"], 3),
+                    )
+                )
+
+            return AirportsResponse(airports=airports)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching latest airports: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/flight-path/{icao24}", response_model=FlightPathResponse)
+async def get_flight_path(icao24: str):
+    async with get_connection() as conn:
+        try:
+            rows = await conn.fetch(FLIGHT_PATH_QUERY, icao24)
+            if not rows:
+                raise HTTPException(status_code=404, detail="No flight data available")
+
+            row = rows[0]
+            path_geojson = row["path_geojson"]
+            if isinstance(path_geojson, str):
+                path_geojson = json.loads(path_geojson)
+
+            return FlightPathResponse(
+                icao24=row["icao24"],
+                callsign=row["callsign"],
+                path_geojson=path_geojson,
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching flight path for {icao24}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/activate-flight-states/latest", response_model=FlightStatesResponse)
+async def get_activate_flight_states(limit: int = Query(None, ge=1, le=1000)):
+    """
+    Retrieve all flight states from the most recent timestamp in activate_flight table.
+
+    - **limit**: Optional parameter to limit results (e.g., ?limit=50 returns 50 records)
+    """
+    start_time = time.time()
+
+    async with get_connection() as conn:
+        try:
+            query_start = time.time()
+
+            rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
+
+            query_time_ms = (time.time() - query_start) * 1000
+
+            if not rows:
+                raise HTTPException(status_code=404, detail="No flight data available")
+
+            flights = []
+            for row in rows:
+                if limit and len(flights) >= limit:
+                    break
+                flights.append(
+                    ActivateFlightState(
+                        icao24=row["icao24"],
+                        callsign=row["callsign"],
+                        lat=row["lat"],
+                        lon=row["lon"],
+                        geo_altitude=row.get("geo_altitude"),
+                        velocity=row.get("velocity"),
+                        heading=row.get("heading"),
+                        on_ground=(
+                            row["on_ground"] if row["on_ground"] is not None else False
+                        ),
+                    )
+                )
+
+            total_time_ms = (time.time() - start_time) * 1000
+
+            logger.info(
+                f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms"
+            )
+
+            return FlightStatesResponse(
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                count=len(flights),
+                flights=flights,
+                query_time_ms=round(query_time_ms, 2),
+                total_time_ms=round(total_time_ms, 2),
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching flight states: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
 @app.get("/api/v1/flight-states/latest", response_model=FlightStatesResponse)
-async def get_latest_flight_states():
+async def get_latest_flight_states(limit: int = Query(None, ge=1, le=1000)):
     """
     Retrieve all flight states from the most recent timestamp.
     Uses optimized query with subquery for better performance.
+
+    - **limit**: Optional parameter to limit results (e.g., ?limit=50 returns 50 records)
     """
     start_time = time.time()
 
@@ -99,29 +202,7 @@ async def get_latest_flight_states():
             query_start = time.time()
 
             # Optimized single query: get max time and filter in one go
-            rows = await conn.fetch(
-                """
-                WITH latest_time AS (
-                    SELECT MAX(time) as max_time FROM flight_states
-                )
-                SELECT 
-                    fs.icao24,
-                    fs.callsign,
-                    fs.time,
-                    fs.time_pos,
-                    ROUND(fs.lat::numeric, 4) AS lat,
-                    ROUND(fs.lon::numeric, 4) AS lon,
-                    ROUND(fs.baro_altitude::numeric, 2) AS altitude,
-                    ROUND(fs.velocity::numeric, 2) AS velocity,
-                    ROUND(fs.heading::numeric, 2) AS heading,
-                    ROUND(fs.vert_rate::numeric, 2) AS vert_rate,
-                    fs.on_ground
-                FROM flight_states fs
-                CROSS JOIN latest_time lt
-                WHERE fs.time = lt.max_time
-                ORDER BY fs.callsign NULLS LAST, fs.icao24
-            """
-            )
+            rows = await conn.fetch(LATEST_FLIGHT_STATES_QUERY)
 
             query_time_ms = (time.time() - query_start) * 1000
 
@@ -132,6 +213,8 @@ async def get_latest_flight_states():
 
             flights = []
             for row in rows:
+                if limit and len(flights) >= limit:
+                    break
                 flights.append(
                     FlightState(
                         icao24=row["icao24"],
@@ -142,7 +225,8 @@ async def get_latest_flight_states():
                         ),
                         lat=row["lat"],
                         lon=row["lon"],
-                        altitude=row["altitude"],
+                        baro_altitude=row["baro_altitude"],
+                        geo_altitude=row["geo_altitude"],
                         velocity=row["velocity"],
                         heading=row["heading"],
                         vert_rate=row["vert_rate"],
@@ -177,37 +261,11 @@ async def get_latest_flight_states():
 async def latest_drap():
     start_time = time.time()
 
-    sql = """
-    WITH latest_time AS (
-      SELECT MAX(observed_at) AS max_ts
-      FROM drap_region
-    ),
-    latest_rows AS (
-      SELECT d.observed_at, d.absorption, d.location
-      FROM drap_region d
-      JOIN latest_time lt ON d.observed_at = lt.max_ts
-    ),
-    pts AS (
-      SELECT jsonb_build_array(
-        ST_Y(location::geometry),          -- lat
-        ST_X(location::geometry),          -- lon
-        COALESCE(absorption, 0)         -- intensity (already normalized)
-      ) AS p
-      FROM latest_rows
-    )
-    SELECT jsonb_build_object(
-      'timestamp', (SELECT max_ts FROM latest_time),
-      'count', (SELECT COUNT(*) FROM latest_rows),
-      'points', COALESCE(jsonb_agg(p), '[]'::jsonb)
-    ) AS payload
-    FROM pts;
-    """
-
     try:
         query_start = time.time()
 
         async with get_connection() as conn:
-            payload = await conn.fetchval(sql)
+            payload = await conn.fetchval(LATEST_DRAP_QUERY)
 
         query_time_ms = (time.time() - query_start) * 1000
 
