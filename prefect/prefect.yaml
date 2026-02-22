@@ -4,7 +4,7 @@ pull:
 
 deployments:
   - name: db_initial
-    entrypoint: flows/database/db_maintain.py:initialize_db_flow
+    entrypoint: flows/db_maintain.py:initialize_db_flow
     work_pool:
       name: NOAA-pool
 
@@ -17,7 +17,7 @@ deployments:
         timezone: UTC
   
   - name: DRAP Cleanup
-    entrypoint: flows/database/db_maintain.py:db_maintenance_flow
+    entrypoint: flows/db_maintain.py:db_maintenance_flow
     work_pool:
       name: NOAA-pool
     schedules:
@@ -51,3 +51,15 @@ deployments:
     schedule:
       cron: "0 0 * * *"
       timezone: "UTC"
+      
+  - name: airport-data-refresh
+    version: null
+    tags: ["maintenance", "airports"]
+    description: "Refreshes airport data from CSV every day"
+    entrypoint: flows/airports_extract.py:airports_extract_flow
+    work_pool:
+      name: flight-pool
+      work_queue_name: default
+      job_variables: {}
+    schedule:
+      interval: 86400 # 1 day
