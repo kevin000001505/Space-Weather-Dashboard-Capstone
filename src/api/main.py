@@ -54,6 +54,7 @@ class FlightState(BaseModel):
     lat: Optional[float]
     lon: Optional[float]
     geo_altitude: Optional[float]
+    baro_altitude: Optional[float]
     velocity: Optional[float]
     heading: Optional[float]
     vert_rate: Optional[float]
@@ -111,7 +112,8 @@ async def get_latest_flight_states():
                     fs.time_pos,
                     ROUND(fs.lat::numeric, 4) AS lat,
                     ROUND(fs.lon::numeric, 4) AS lon,
-                    ROUND(fs.altitude::numeric, 2) AS altitude,
+                    ROUND(fs.geo_altitude::numeric, 2) AS geo_altitude,
+                    ROUND(fs.baro_altitude::numeric, 2) AS baro_altitude,
                     ROUND(fs.velocity::numeric, 2) AS velocity,
                     ROUND(fs.heading::numeric, 2) AS heading,
                     ROUND(fs.vert_rate::numeric, 2) AS vert_rate,
@@ -136,13 +138,14 @@ async def get_latest_flight_states():
                     FlightState(
                         icao24=row["icao24"],
                         callsign=row["callsign"],
-                        time=row["time"].isoformat() if row["time"] else None,
+                        time=row["time"].isoformat(),
                         time_pos=(
                             row["time_pos"].isoformat() if row["time_pos"] else None
                         ),
                         lat=row["lat"],
                         lon=row["lon"],
-                        altitude=row["altitude"],
+                        geo_altitude=row["geo_altitude"],
+                        baro_altitude=row["baro_altitude"],
                         velocity=row["velocity"],
                         heading=row["heading"],
                         vert_rate=row["vert_rate"],
