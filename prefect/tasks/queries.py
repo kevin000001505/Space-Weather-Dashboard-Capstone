@@ -134,16 +134,6 @@ CREATE TABLE IF NOT EXISTS airports (
 CREATE INDEX IF NOT EXISTS airports_geom_gix ON airports USING GIST (geom);
 """
 
-
-# AIRPORTS_INSERT_SQL = """
-# INSERT INTO airports
-# (id, ident, type, name, latitude_deg, longitude_deg, elevation_ft,
-#  continent, iso_country, iso_region, municipality, scheduled_service,
-#  icao_code, iata_code, gps_code, local_code)
-# VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-# ON CONFLICT (ident) DO NOTHING
-# """
-
 AIRPORTS_UPSERT_SQL = """
 INSERT INTO airports 
 (id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, 
@@ -171,7 +161,7 @@ ON CONFLICT (ident) DO UPDATE SET
 
 DRAP_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS drap_region (
-    observed_at timestamptz NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL,
     absorption double precision NOT NULL,
     PRIMARY KEY (observed_at, location)
@@ -194,4 +184,49 @@ VALUES (
 )
 ON CONFLICT (observed_at, location)
 DO UPDATE SET absorption = EXCLUDED.absorption
+"""
+
+LATEST_X_RAY_CREATE_TABLE_SQL = """
+CREATE TABLE solar_flare_events (
+    time_tag TIMESTAMPTZ PRIMARY KEY,  -- The snapshot time
+    satellite_id INTEGER,
+    
+    -- Current Status
+    current_class VARCHAR(10),       -- e.g., 'B3.0'
+    current_ratio DOUBLE PRECISION,   -- Short/Long ratio
+    current_int_flux DOUBLE PRECISION, -- Integrated flux (total energy)
+    
+    -- Event Lifecycle: Start
+    begin_time TIMESTAMPTZ,
+    begin_class VARCHAR(10),
+    
+    -- Event Lifecycle: Peak
+    max_time TIMESTAMPTZ,
+    max_class VARCHAR(10),
+    max_flux_long DOUBLE PRECISION,   -- max_xrlong from your data
+    
+    -- Event Lifecycle: End
+    end_time TIMESTAMPTZ,
+    end_class VARCHAR(10),
+    
+    -- Ratio Peak
+    max_ratio_time TIMESTAMPTZ,
+    max_ratio DOUBLE PRECISION
+);
+"""
+
+LATEST_X_RAY_INSERT_SQL = """
+INSERT INTO solar_flare_events (
+    time_tag, satellite_id, current_class, current_ratio,
+    current_int_flux, begin_time, begin_class, max_time,
+    max_class, max_flux_long, end_time, end_class,
+    max_ratio_time, max_ratio
+)
+VALUES (
+    $1, $2, $3, $4,
+    $5, $6, $7, $8,
+    $9, $10, $11, $12,
+    $13, $14
+)
+ON CONFLICT (time_tag) DO NOTHING;
 """

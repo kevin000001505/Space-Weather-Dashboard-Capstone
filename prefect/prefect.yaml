@@ -8,7 +8,7 @@ deployments:
     work_pool:
       name: NOAA-pool
 
-  - name: DRAP
+  - name: DRAP Extract
     entrypoint: flows/drap_extract.py:rap_extract_flow
     work_pool:
       name: NOAA-pool
@@ -22,6 +22,14 @@ deployments:
       name: NOAA-pool
     schedules:
       - interval: 86400 # 1 day
+        timezone: UTC
+
+  - name: X-ray Extract
+    entrypoint: flows/xray_extract.py:xray_extract_flow
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - interval: 60 # 1 minute
         timezone: UTC
   
   - name: opensky-ingester

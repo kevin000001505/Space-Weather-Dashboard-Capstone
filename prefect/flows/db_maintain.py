@@ -1,9 +1,10 @@
 from database.db_tools import get_connection
-from prefect.tasks.db import (
+from tasks.db import (
     initial_drap_db,
     initial_activate_flight_db,
     initial_airport_db,
     cleanup_old_drap_data,
+    initial_latest_xray_db,
 )
 from prefect import flow
 
@@ -30,6 +31,7 @@ async def initialize_db_flow():
             await initial_drap_db(conn)
             await initial_airport_db(conn)
             await initial_activate_flight_db(conn)
+            await initial_latest_xray_db(conn)
             print("Database initialization completed successfully!")
 
     except Exception as e:
