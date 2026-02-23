@@ -128,7 +128,7 @@ async def get_flight_path(icao24: str):
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/activate-flight-states/latest", response_model=FlightStatesResponse)
+@app.get("/api/v1/active-flight-states/latest", response_model=FlightStatesResponse)
 async def get_activate_flight_states(limit: int = Query(None, ge=1, le=1000)):
     """
     Retrieve all flight states from the most recent timestamp in activate_flight table.

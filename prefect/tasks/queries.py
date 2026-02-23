@@ -70,22 +70,6 @@ CREATE_PARTITION_IF_MISSING_QUERY = """
 SELECT create_partition_if_missing($1)
 """
 
-DRAP_CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS drap_region (
-    observed_at timestamptz NOT NULL,
-    location GEOGRAPHY(Point, 4326) NOT NULL,
-    absorption double precision NOT NULL,
-    PRIMARY KEY (observed_at, location)
-);
-
-CREATE INDEX IF NOT EXISTS absorption_grid_loc_gix
-ON drap_region
-USING GIST (location);
-
-CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
-ON drap_region (observed_at);
-"""
-
 
 ACTIVATE_FLIGHT_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS activate_flight (
