@@ -26,11 +26,18 @@ DO UPDATE SET
         WHEN EXCLUDED.on_ground = FALSE AND activate_flight.on_ground = TRUE THEN
             ST_Multi(EXCLUDED.geom)
 
-        -- State B: Lost Position Update (e.g. due to signal loss)
+        -- State B: Lost Position Null Update (e.g. due to signal loss)
         WHEN EXCLUDED.on_ground = FALSE AND (EXCLUDED.lat IS NULL OR EXCLUDED.lon IS NULL) THEN
             activate_flight.path_geom
+        
+        -- State C: Flight gap > 30 mins and positions within 500m - refresh path_geom
+        WHEN EXCLUDED.on_ground = FALSE 
+            AND EXCLUDED.time_pos IS NOT NULL
+            AND (EXCLUDED.time_pos - activate_flight.time_pos) > INTERVAL '30 minutes'
+            AND ST_Distance(activate_flight.geom::geography, EXCLUDED.geom::geography) <= 500 THEN
+            ST_Multi(EXCLUDED.geom)
 
-        -- State C: Normal flying
+        -- State D: Normal flying
         ELSE
             ST_Multi(ST_CollectionExtract(
                 ST_Collect(activate_flight.path_geom, EXCLUDED.geom), 1
