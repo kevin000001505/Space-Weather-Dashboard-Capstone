@@ -45,6 +45,7 @@ def parse_xray_data(xray_data, logger: get_run_logger):
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
 async def extract_xray_data():
     """Extract X-ray data from API."""
+    xray_data = None
     logger = get_run_logger()
     try:
         response = requests.get(solar_flare_url)
@@ -70,7 +71,7 @@ async def extract_xray_data():
             logger.error("Could not find valid JSON array in response.")
             print("Response text:", text)
             raise ValueError("Invalid JSON response format")
-    if not isinstance(xray_data, list):
+    if xray_data is None or not isinstance(xray_data, list):
         logger.error("Expected a list of X-ray records, got different format.")
         print("Response text:", response.text)
         raise ValueError("Invalid JSON response format")
