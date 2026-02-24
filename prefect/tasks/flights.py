@@ -6,6 +6,7 @@ from database.db_tools import get_connection
 from prefect import task, get_run_logger
 from prefect.variables import Variable
 from pyopensky.rest import REST
+from tasks.models import FlightStateRecord
 from tasks.queries import (
     FLIGHT_STATES_INSERT_QUERY,
     ACTIVATE_FLIGHT_UPSERT_QUERY,
@@ -14,7 +15,7 @@ from tasks.queries import (
 )
 
 
-def clean_row(row):
+def clean_row(row) -> FlightStateRecord:
     """
     Maps OpenSky Arrow-backed DataFrame row -> Native Python Tuple for AsyncPG.
     AsyncPG requires native Python types (datetime, float, str), not Arrow/Numpy types.
@@ -39,26 +40,30 @@ def clean_row(row):
             return None
         return val.to_pydatetime()
 
-    return (
-        get_ts("timestamp"),  # time
-        str(row.get("icao24")).strip(),  # icao24
-        get_val("callsign", str),  # callsign
-        get_val("origin_country", str),  # origin_country
-        get_ts("last_position"),  # time_pos
-        get_val("latitude", float),  # lat
-        get_val("longitude", float),  # lon
-        get_val("geoaltitude", float),  # geo_altitude
-        get_val("altitude", float),  # baro_altitude
-        get_val("groundspeed", float),  # velocity
-        get_val("track", float),  # heading
-        get_val("vertical_rate", float),  # vert_rate
-        bool(row.get("onground", False)),  # on_ground
-        get_val("squawk", str),  # squawk
-        bool(row.get("spi", False)),  # spi
-        get_val("position_source", int),  # source
-        None,  # sensors
-        get_val("longitude", float),  # geom_lon
-        get_val("latitude", float),  # geom_lat
+    time_value = get_ts("timestamp")
+    if time_value is None:
+        raise ValueError("timestamp cannot be None")
+
+    return FlightStateRecord(
+        time=time_value,
+        icao24=str(row.get("icao24")).strip(),
+        callsign=get_val("callsign", str),
+        origin_country=get_val("origin_country", str),
+        time_position=get_ts("last_position"),
+        latitude=get_val("latitude", float),
+        longitude=get_val("longitude", float),
+        geo_altitude=get_val("geoaltitude", float),
+        baro_altitude=get_val("altitude", float),
+        velocity=get_val("groundspeed", float),
+        heading=get_val("track", float),
+        vertical_rate=get_val("vertical_rate", float),
+        on_ground=bool(row.get("onground", False)),
+        squawk=get_val("squawk", str),
+        spi=bool(row.get("spi", False)),
+        position_source=get_val("position_source", int),
+        sensors=None,
+        geom_lon=get_val("longitude", float),
+        geom_lat=get_val("latitude", float),
     )
 
 
@@ -75,10 +80,14 @@ def clean_records(df):
     if df.empty:
         return []
 
-    records = [clean_row(row) for _, row in df.iterrows()]
-
-    # Filter: timestamp and icao24 must exist
-    records = [r for r in records if r[0] is not None and r[1]]
+    records = []
+    for _, row in df.iterrows():
+        try:
+            record = clean_row(row)
+            records.append(record)
+        except Exception:
+            get_run_logger().warning(f"Failed to clean row: {row}")
+            continue
 
     return records
 
@@ -105,10 +114,12 @@ async def insert_batch(records):
     logger = get_run_logger()
 
     async with get_connection() as conn:
-        first_ts = records[0][0]
+        first_ts = records[0].time
         await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, first_ts)
 
-        await conn.executemany(FLIGHT_STATES_INSERT_QUERY, records)
+        await conn.executemany(
+            FLIGHT_STATES_INSERT_QUERY, [r.to_tuple() for r in records]
+        )
         logger.info(f"Inserted {len(records)} records into flight_states.")
 
 
@@ -117,7 +128,9 @@ async def insert_activate_flight(records):
     """Insert or update flight records in activate_flight table."""
     logger = get_run_logger()
     async with get_connection() as conn:
-        await conn.executemany(ACTIVATE_FLIGHT_UPSERT_QUERY, records)
+        await conn.executemany(
+            ACTIVATE_FLIGHT_UPSERT_QUERY, [r.to_tuple() for r in records]
+        )
         logger.info(f"Inserted {len(records)} records into activate_flight.")
 
 

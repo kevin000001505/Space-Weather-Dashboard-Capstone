@@ -45,4 +45,4 @@ main.py
 uv.lock
 pyproject.toml
 .python-version
-
+*ipynb
