@@ -70,8 +70,14 @@ async def extract_xray_data():
             logger.error("Could not find valid JSON array in response.")
             print("Response text:", text)
             raise ValueError("Invalid JSON response format")
-
-    logger.info(f"✓ X-ray data request successful! Retrieved {len(xray_data)} records")
+    if not isinstance(xray_data, list):
+        logger.error("Expected a list of X-ray records, got different format.")
+        print("Response text:", response.text)
+        raise ValueError("Invalid JSON response format")
+    else:
+        logger.info(
+            f"✓ X-ray data request successful! Retrieved {len(xray_data)} records"
+        )
 
     parsed_xray_data = parse_xray_data(xray_data, logger)
 
