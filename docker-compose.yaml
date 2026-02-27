@@ -29,10 +29,10 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prefect"]
+      test: ["CMD-SHELL", "pg_isready -U prefect -d prefect -h 127.0.0.1 -p 5432"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - prefect_network
       - data_network
@@ -59,7 +59,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://prefect:prefect@postgis:5432/prefect
+      PREFECT_SERVER_DATABASE_CONNECTION_URL: ${DATABASE_URL}
       PREFECT_SERVER_API_HOST: 0.0.0.0
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
@@ -72,6 +72,7 @@ services:
       - prefect_home:/root/.prefect
     networks:
       - prefect_network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:4200/api/health', timeout=1)"]
       interval: 30s
@@ -90,7 +91,7 @@ services:
         condition: service_healthy
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
-      DATABASE_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
+      PREFECT_SERVER_DATABASE_CONNECTION_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
       DEVELOPER_USER: ${DEVELOPER_USER}
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
@@ -102,12 +103,17 @@ services:
         prefect work-pool create NOAA-pool --type process --overwrite
         prefect work-pool create flight-pool --type process --overwrite
         
-        prefect deploy --all &
+        prefect deploy --all
 
+        # Start workers FIRST
         prefect worker start --pool NOAA-pool &
         prefect worker start --pool flight-pool &
+
+        # Then run the init deployment and wait for it
+        prefect deployment run "initialize-db-flow/db_initial" --watch
+
         wait
-    restart: on-failure
+    restart: unless-stopped
     volumes:
       - ./prefect:/opt/prefect-app
       - ./shared:/opt/shared
