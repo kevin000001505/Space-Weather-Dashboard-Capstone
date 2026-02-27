@@ -1,0 +1,1557 @@
+issue_datetime,message,product_id
+2026-02-26 11:55:38.02+00,"Space Weather Message Code: WARK04
+Serial Number: 5275
+Issue Time: 2026 Feb 26 1155 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5274
+Valid From: 2026 Feb 25 2140 UTC
+Now Valid Until: 2026 Feb 26 1800 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-26 04:59:45.753+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3635
+Issue Time: 2026 Feb 26 0459 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3634
+Begin Time: 2026 Feb 23 1045 UTC
+Yesterday Maximum 2MeV Flux: 10494 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-26 01:10:04.92+00,"Space Weather Message Code: WARK05
+Serial Number: 2201
+Issue Time: 2026 Feb 26 0110 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 26 0109 UTC
+Valid To: 2026 Feb 26 0900 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-26 01:08:45.92+00,"Space Weather Message Code: WARK04
+Serial Number: 5274
+Issue Time: 2026 Feb 26 0108 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5273
+Valid From: 2026 Feb 25 2140 UTC
+Now Valid Until: 2026 Feb 26 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-25 21:47:41.97+00,"Space Weather Message Code: ALTK04
+Serial Number: 2636
+Issue Time: 2026 Feb 25 2147 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 25 2147 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-25 21:41:09.483+00,"Space Weather Message Code: WARK04
+Serial Number: 5273
+Issue Time: 2026 Feb 25 2141 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 25 2140 UTC
+Valid To: 2026 Feb 26 0300 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-25 08:55:28.907+00,"Space Weather Message Code: WARK04
+Serial Number: 5272
+Issue Time: 2026 Feb 25 0855 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5271
+Valid From: 2026 Feb 25 0134 UTC
+Now Valid Until: 2026 Feb 25 1800 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-25 07:28:41.037+00,"Space Weather Message Code: ALTTP2
+Serial Number: 1468
+Issue Time: 2026 Feb 25 0728 UTC
+
+ALERT: Type II Radio Emission
+Begin Time: 2026 Feb 25 0653 UTC
+Estimated Velocity: 595 km/s
+
+
+
+Description: Type II emissions occur in association with eruptions on the sun and typically indicate a coronal mass ejection is associated with a flare event.",TIIA
+2026-02-25 05:01:28.493+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3634
+Issue Time: 2026 Feb 25 0501 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3633
+Begin Time: 2026 Feb 23 1045 UTC
+Yesterday Maximum 2MeV Flux: 13748 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-25 03:01:35.333+00,"Space Weather Message Code: ALTK04
+Serial Number: 2635
+Issue Time: 2026 Feb 25 0301 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 25 0259 UTC
+Synoptic Period: 0000-0300 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-25 01:35:08.567+00,"Space Weather Message Code: WARK04
+Serial Number: 5271
+Issue Time: 2026 Feb 25 0135 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 25 0134 UTC
+Valid To: 2026 Feb 25 0900 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-24 11:55:03.9+00,"Space Weather Message Code: WARK04
+Serial Number: 5270
+Issue Time: 2026 Feb 24 1155 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5269
+Valid From: 2026 Feb 21 2230 UTC
+Now Valid Until: 2026 Feb 24 2100 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-24 05:02:02.687+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3633
+Issue Time: 2026 Feb 24 0502 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3632
+Begin Time: 2026 Feb 23 1045 UTC
+Yesterday Maximum 2MeV Flux: 4958 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-23 22:05:19.38+00,"Space Weather Message Code: WARK04
+Serial Number: 5269
+Issue Time: 2026 Feb 23 2205 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5268
+Valid From: 2026 Feb 21 2230 UTC
+Now Valid Until: 2026 Feb 24 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-23 21:39:45.773+00,"Space Weather Message Code: WARK05
+Serial Number: 2200
+Issue Time: 2026 Feb 23 2139 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 23 2140 UTC
+Valid To: 2026 Feb 24 0600 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-23 11:34:57.033+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3632
+Issue Time: 2026 Feb 23 1134 UTC
+
+ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Threshold Reached: 2026 Feb 23 1045 UTC
+Station: GOES19
+ 
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-23 05:56:31.393+00,"Space Weather Message Code: WARK05
+Serial Number: 2199
+Issue Time: 2026 Feb 23 0556 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2198
+Valid From: 2026 Feb 22 2154 UTC
+Now Valid Until: 2026 Feb 23 1500 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-23 05:56:31.393+00,"Space Weather Message Code: WARK04
+Serial Number: 5268
+Issue Time: 2026 Feb 23 0556 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5267
+Valid From: 2026 Feb 21 2230 UTC
+Now Valid Until: 2026 Feb 23 2359 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-23 04:45:12.537+00,"Space Weather Message Code: ALTK05
+Serial Number: 1970
+Issue Time: 2026 Feb 23 0445 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 23 0437 UTC
+Synoptic Period: 0300-0600 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-22 22:02:32.507+00,"Space Weather Message Code: ALTK05
+Serial Number: 1969
+Issue Time: 2026 Feb 22 2202 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 22 2202 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-22 22:00:00.483+00,"Space Weather Message Code: WARK04
+Serial Number: 5267
+Issue Time: 2026 Feb 22 2200 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5266
+Valid From: 2026 Feb 21 2230 UTC
+Now Valid Until: 2026 Feb 23 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-22 21:54:57.153+00,"Space Weather Message Code: WARK05
+Serial Number: 2198
+Issue Time: 2026 Feb 22 2154 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 22 2154 UTC
+Valid To: 2026 Feb 23 0600 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-22 08:00:36.323+00,"Space Weather Message Code: WARK05
+Serial Number: 2197
+Issue Time: 2026 Feb 22 0800 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2196
+Valid From: 2026 Feb 22 0425 UTC
+Now Valid Until: 2026 Feb 22 1800 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-22 08:00:36.31+00,"Space Weather Message Code: WARK06
+Serial Number: 642
+Issue Time: 2026 Feb 22 0800 UTC
+
+WARNING: Geomagnetic K-Index of 6 expected
+Valid From: 2026 Feb 22 0800 UTC
+Valid To: 2026 Feb 22 1500 UTC
+Warning Condition: Onset
+NOAA Scale: G2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.
+Induced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.
+Spacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.
+Radio - HF (high frequency) radio propagation can fade at higher latitudes.
+Aurora - Aurora may be seen as low as New York to Wisconsin to Washington state.",K06W
+2026-02-22 08:00:36.31+00,"Space Weather Message Code: WARK04
+Serial Number: 5266
+Issue Time: 2026 Feb 22 0800 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5265
+Valid From: 2026 Feb 21 2230 UTC
+Now Valid Until: 2026 Feb 22 2359 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-22 07:40:56.85+00,"Space Weather Message Code: ALTK05
+Serial Number: 1968
+Issue Time: 2026 Feb 22 0740 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 22 0740 UTC
+Synoptic Period: 0600-0900 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-22 05:03:07.68+00,"Space Weather Message Code: ALTK05
+Serial Number: 1967
+Issue Time: 2026 Feb 22 0503 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 22 0502 UTC
+Synoptic Period: 0300-0600 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-22 04:25:33.363+00,"Space Weather Message Code: WARK05
+Serial Number: 2196
+Issue Time: 2026 Feb 22 0425 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 22 0425 UTC
+Valid To: 2026 Feb 22 1200 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-21 22:43:31.82+00,"Space Weather Message Code: ALTK04
+Serial Number: 2634
+Issue Time: 2026 Feb 21 2243 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 21 2242 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-21 22:30:13.473+00,"Space Weather Message Code: WARK04
+Serial Number: 5265
+Issue Time: 2026 Feb 21 2230 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 21 2230 UTC
+Valid To: 2026 Feb 22 1200 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-21 09:53:58.233+00,"Space Weather Message Code: WATA20
+Serial Number: 1097
+Issue Time: 2026 Feb 21 0953 UTC
+
+WATCH: Geomagnetic Storm Category G1 Predicted
+
+Highest Storm Level Predicted by Day:
+Feb 21:  None (Below G1)   Feb 22:  None (Below G1)   Feb 23:  G1 (Minor)
+
+THIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",A20F
+2026-02-20 23:40:47.42+00,"Space Weather Message Code: ALTK04
+Serial Number: 2633
+Issue Time: 2026 Feb 20 2340 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 20 2340 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-20 23:27:17.327+00,"Space Weather Message Code: WARK04
+Serial Number: 5264
+Issue Time: 2026 Feb 20 2327 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 20 2327 UTC
+Valid To: 2026 Feb 21 1200 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-20 07:16:23.497+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3631
+Issue Time: 2026 Feb 20 0716 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3630
+Begin Time: 2026 Feb 16 1635 UTC
+Yesterday Maximum 2MeV Flux: 3261 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-19 12:06:19.15+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3630
+Issue Time: 2026 Feb 19 1206 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3629
+Begin Time: 2026 Feb 16 1635 UTC
+Yesterday Maximum 2MeV Flux: 3801 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-19 08:55:46.793+00,"Space Weather Message Code: WARK04
+Serial Number: 5263
+Issue Time: 2026 Feb 19 0855 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5262
+Valid From: 2026 Feb 19 0205 UTC
+Now Valid Until: 2026 Feb 19 1800 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-19 02:05:50.6+00,"Space Weather Message Code: WARK04
+Serial Number: 5262
+Issue Time: 2026 Feb 19 0205 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 19 0205 UTC
+Valid To: 2026 Feb 19 0900 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-18 05:27:13.94+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3629
+Issue Time: 2026 Feb 18 0527 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3628
+Begin Time: 2026 Feb 16 1635 UTC
+Yesterday Maximum 2MeV Flux: 2215 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-18 04:52:27.733+00,"Space Weather Message Code: ALTTP2
+Serial Number: 1467
+Issue Time: 2026 Feb 18 0452 UTC
+
+ALERT: Type II Radio Emission
+Begin Time: 2026 Feb 18 0431 UTC
+Estimated Velocity: 310 km/s
+
+
+
+Description: Type II emissions occur in association with eruptions on the sun and typically indicate a coronal mass ejection is associated with a flare event.",TIIA
+2026-02-17 13:18:38.287+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3628
+Issue Time: 2026 Feb 17 1318 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3627
+Begin Time: 2026 Feb 16 1635 UTC
+Yesterday Maximum 2MeV Flux: 1518 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-16 20:52:06.583+00,"Space Weather Message Code: WARK05
+Serial Number: 2195
+Issue Time: 2026 Feb 16 2052 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2194
+Valid From: 2026 Feb 16 1700 UTC
+Now Valid Until: 2026 Feb 17 0900 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-16 20:52:06.57+00,"Space Weather Message Code: WARK06
+Serial Number: 641
+Issue Time: 2026 Feb 16 2052 UTC
+
+EXTENDED WARNING: Geomagnetic K-Index of 6 expected
+Extension to Serial Number: 640
+Valid From: 2026 Feb 16 1840 UTC
+Now Valid Until: 2026 Feb 17 0300 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.
+Induced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.
+Spacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.
+Radio - HF (high frequency) radio propagation can fade at higher latitudes.
+Aurora - Aurora may be seen as low as New York to Wisconsin to Washington state.",K06W
+2026-02-16 20:52:06.553+00,"Space Weather Message Code: WARK04
+Serial Number: 5261
+Issue Time: 2026 Feb 16 2052 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5260
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 17 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-16 20:00:51.963+00,"Space Weather Message Code: ALTK06
+Serial Number: 696
+Issue Time: 2026 Feb 16 2000 UTC
+
+ALERT: Geomagnetic K-index of 6
+ Threshold Reached: 2026 Feb 16 2000 UTC
+Synoptic Period: 1800-2100 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.
+Induced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.
+Spacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.
+Radio - HF (high frequency) radio propagation can fade at higher latitudes.
+Aurora - Aurora may be seen as low as New York to Wisconsin to Washington state.",K06A
+2026-02-16 18:39:04.367+00,"Space Weather Message Code: WARK06
+Serial Number: 640
+Issue Time: 2026 Feb 16 1839 UTC
+
+WARNING: Geomagnetic K-Index of 6 expected
+Valid From: 2026 Feb 16 1840 UTC
+Valid To: 2026 Feb 16 2100 UTC
+Warning Condition: Onset
+NOAA Scale: G2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.
+Induced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.
+Spacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.
+Radio - HF (high frequency) radio propagation can fade at higher latitudes.
+Aurora - Aurora may be seen as low as New York to Wisconsin to Washington state.",K06W
+2026-02-16 18:36:26.503+00,"Space Weather Message Code: ALTK05
+Serial Number: 1966
+Issue Time: 2026 Feb 16 1836 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 16 1836 UTC
+Synoptic Period: 1800-2100 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-16 17:01:41.677+00,"Space Weather Message Code: WARK04
+Serial Number: 5260
+Issue Time: 2026 Feb 16 1701 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5259
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 17 0300 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-16 17:01:41.66+00,"Space Weather Message Code: WARK05
+Serial Number: 2194
+Issue Time: 2026 Feb 16 1701 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 16 1700 UTC
+Valid To: 2026 Feb 16 2359 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-16 16:51:27.39+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3627
+Issue Time: 2026 Feb 16 1651 UTC
+
+ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Threshold Reached: 2026 Feb 16 1635 UTC
+Station: GOES19
+ 
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-16 05:57:00.17+00,"Space Weather Message Code: WARK04
+Serial Number: 5259
+Issue Time: 2026 Feb 16 0557 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5258
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 16 2100 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-16 05:56:27.313+00,"Space Weather Message Code: WARK05
+Serial Number: 2193
+Issue Time: 2026 Feb 16 0556 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2192
+Valid From: 2026 Feb 16 0140 UTC
+Now Valid Until: 2026 Feb 16 1500 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-16 01:42:32.007+00,"Space Weather Message Code: WARK05
+Serial Number: 2192
+Issue Time: 2026 Feb 16 0142 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 16 0140 UTC
+Valid To: 2026 Feb 16 0600 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-15 23:38:11.26+00,"Space Weather Message Code: WARK04
+Serial Number: 5258
+Issue Time: 2026 Feb 15 2338 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5257
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 16 0900 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-15 05:14:51.503+00,"Space Weather Message Code: WARK06
+Serial Number: 639
+Issue Time: 2026 Feb 15 0514 UTC
+
+WARNING: Geomagnetic K-Index of 6 expected
+Valid From: 2026 Feb 15 0515 UTC
+Valid To: 2026 Feb 15 1500 UTC
+Warning Condition: Onset
+NOAA Scale: G2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 55 degrees Geomagnetic Latitude.
+Induced Currents - Power grid fluctuations can occur. High-latitude power systems may experience voltage alarms.
+Spacecraft - Satellite orientation irregularities may occur; increased drag on low Earth-orbit satellites is possible.
+Radio - HF (high frequency) radio propagation can fade at higher latitudes.
+Aurora - Aurora may be seen as low as New York to Wisconsin to Washington state.",K06W
+2026-02-15 05:14:51.487+00,"Space Weather Message Code: WARK04
+Serial Number: 5257
+Issue Time: 2026 Feb 15 0514 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5256
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 15 2359 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-15 05:14:51.47+00,"Space Weather Message Code: WARK05
+Serial Number: 2191
+Issue Time: 2026 Feb 15 0514 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2190
+Valid From: 2026 Feb 14 2135 UTC
+Now Valid Until: 2026 Feb 15 2100 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-15 04:35:16.17+00,"Space Weather Message Code: ALTK05
+Serial Number: 1965
+Issue Time: 2026 Feb 15 0435 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 15 0429 UTC
+Synoptic Period: 0300-0600 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-15 02:13:13.917+00,"Space Weather Message Code: ALTK05
+Serial Number: 1964
+Issue Time: 2026 Feb 15 0213 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 15 0204 UTC
+Synoptic Period: 0000-0300 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-14 21:35:19.573+00,"Space Weather Message Code: WARK05
+Serial Number: 2190
+Issue Time: 2026 Feb 14 2135 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 14 2135 UTC
+Valid To: 2026 Feb 15 0600 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-14 21:35:19.48+00,"Space Weather Message Code: WARK04
+Serial Number: 5256
+Issue Time: 2026 Feb 14 2135 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5255
+Valid From: 2026 Feb 14 2000 UTC
+Now Valid Until: 2026 Feb 15 0900 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-14 21:33:48.823+00,"Space Weather Message Code: ALTK04
+Serial Number: 2632
+Issue Time: 2026 Feb 14 2133 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 14 2133 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-14 19:59:05.74+00,"Space Weather Message Code: WARK04
+Serial Number: 5255
+Issue Time: 2026 Feb 14 1959 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 14 2000 UTC
+Valid To: 2026 Feb 15 0300 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-13 18:22:02.05+00,"Space Weather Message Code: WATA20
+Serial Number: 1096
+Issue Time: 2026 Feb 13 1822 UTC
+
+WATCH: Geomagnetic Storm Category G1 Predicted
+
+Highest Storm Level Predicted by Day:
+Feb 14:  None (Below G1)   Feb 15:  G1 (Minor)   Feb 16:  G1 (Minor)
+
+THIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",A20F
+2026-02-13 17:07:18.96+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3626
+Issue Time: 2026 Feb 13 1707 UTC
+
+ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Threshold Reached: 2026 Feb 13 1650 UTC
+Station: GOES19
+ 
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-13 16:29:29.04+00,"Space Weather Message Code: WARK04
+Serial Number: 5254
+Issue Time: 2026 Feb 13 1629 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5253
+Valid From: 2026 Feb 13 0210 UTC
+Now Valid Until: 2026 Feb 13 2359 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-13 02:13:21.563+00,"Space Weather Message Code: ALTK04
+Serial Number: 2631
+Issue Time: 2026 Feb 13 0213 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 13 0213 UTC
+Synoptic Period: 0000-0300 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-13 02:11:53.853+00,"Space Weather Message Code: WARK04
+Serial Number: 5253
+Issue Time: 2026 Feb 13 0211 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 13 0210 UTC
+Valid To: 2026 Feb 13 1800 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-12 15:27:19.71+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3625
+Issue Time: 2026 Feb 12 1527 UTC
+
+ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Threshold Reached: 2026 Feb 12 1510 UTC
+Station: GOES19
+ 
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-12 14:55:04+00,"Space Weather Message Code: WATA20
+Serial Number: 1095
+Issue Time: 2026 Feb 12 1455 UTC
+
+WATCH: Geomagnetic Storm Category G1 Predicted
+
+Highest Storm Level Predicted by Day:
+Feb 13:  None (Below G1)   Feb 14:  None (Below G1)   Feb 15:  G1 (Minor)
+
+THIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",A20F
+2026-02-11 22:21:19.7+00,"Space Weather Message Code: ALTK04
+Serial Number: 2630
+Issue Time: 2026 Feb 11 2221 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 11 2221 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-11 19:37:25.36+00,"Space Weather Message Code: WARK04
+Serial Number: 5252
+Issue Time: 2026 Feb 11 1937 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 11 1936 UTC
+Valid To: 2026 Feb 12 0600 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-10 23:30:24.04+00,"Space Weather Message Code: WARK05
+Serial Number: 2189
+Issue Time: 2026 Feb 10 2330 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 10 2330 UTC
+Valid To: 2026 Feb 11 0600 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-10 22:15:04.753+00,"Space Weather Message Code: ALTK04
+Serial Number: 2629
+Issue Time: 2026 Feb 10 2215 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 10 2214 UTC
+Synoptic Period: 2100-2400 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-10 22:14:25.17+00,"Space Weather Message Code: WARK04
+Serial Number: 5251
+Issue Time: 2026 Feb 10 2214 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 10 2213 UTC
+Valid To: 2026 Feb 11 0600 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-10 12:12:15.423+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3624
+Issue Time: 2026 Feb 10 1212 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3623
+Begin Time: 2026 Feb 07 1340 UTC
+Yesterday Maximum 2MeV Flux: 1764 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-09 12:11:51.637+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3623
+Issue Time: 2026 Feb 09 1211 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3622
+Begin Time: 2026 Feb 07 1340 UTC
+Yesterday Maximum 2MeV Flux: 1894 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-08 14:02:58.447+00,"Space Weather Message Code: SUM10R
+Serial Number: 900
+Issue Time: 2026 Feb 08 1402 UTC
+
+SUMMARY: 10cm Radio Burst
+Begin Time: 2026 Feb 08 1350 UTC
+Maximum Time: 2026 Feb 08 1350 UTC
+End Time: 2026 Feb 08 1353 UTC
+Duration: 3 minutes
+Peak Flux: 440 sfu
+Latest Penticton Noon Flux: 169 sfu
+
+
+
+Description: A 10cm radio burst indicates that the electromagnetic burst associated with a solar flare at the 10cm wavelength was double or greater than the initial 10cm radio background. This can be indicative of significant radio noise in association with a solar flare. This noise is generally short-lived but can cause interference for sensitive receivers including radar, GPS, and satellite communications.",BHIS
+2026-02-08 11:57:09.77+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3622
+Issue Time: 2026 Feb 08 1157 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3621
+Begin Time: 2026 Feb 07 1340 UTC
+Yesterday Maximum 2MeV Flux: 2062 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-07 21:25:17.17+00,"Space Weather Message Code: WARK04
+Serial Number: 5250
+Issue Time: 2026 Feb 07 2125 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5249
+Valid From: 2026 Feb 06 1253 UTC
+Now Valid Until: 2026 Feb 08 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-07 14:18:54.403+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3621
+Issue Time: 2026 Feb 07 1418 UTC
+
+ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Threshold Reached: 2026 Feb 07 1340 UTC
+Station: GOES18
+ 
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-07 08:48:49.977+00,"Space Weather Message Code: WARK04
+Serial Number: 5249
+Issue Time: 2026 Feb 07 0848 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5248
+Valid From: 2026 Feb 06 1253 UTC
+Now Valid Until: 2026 Feb 07 2359 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-06 23:51:59.563+00,"Space Weather Message Code: WARK04
+Serial Number: 5248
+Issue Time: 2026 Feb 06 2351 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5247
+Valid From: 2026 Feb 06 1253 UTC
+Now Valid Until: 2026 Feb 07 0900 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-06 17:44:39.027+00,"Space Weather Message Code: WARK05
+Serial Number: 2188
+Issue Time: 2026 Feb 06 1744 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 06 1744 UTC
+Valid To: 2026 Feb 06 2359 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-06 15:01:59.4+00,"Space Weather Message Code: ALTK04
+Serial Number: 2628
+Issue Time: 2026 Feb 06 1501 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 06 1459 UTC
+Synoptic Period: 1200-1500 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-06 12:54:21.057+00,"Space Weather Message Code: WARK04
+Serial Number: 5247
+Issue Time: 2026 Feb 06 1254 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 06 1253 UTC
+Valid To: 2026 Feb 06 2359 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-05 15:51:31.013+00,"Space Weather Message Code: WATA20
+Serial Number: 1094
+Issue Time: 2026 Feb 05 1551 UTC
+
+WATCH: Geomagnetic Storm Category G1 Predicted
+
+Highest Storm Level Predicted by Day:
+Feb 06:  G1 (Minor)   Feb 07:  None (Below G1)   Feb 08:  G1 (Minor)
+
+THIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",A20F
+2026-02-05 08:54:59.493+00,"Space Weather Message Code: WARK04
+Serial Number: 5246
+Issue Time: 2026 Feb 05 0854 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5245
+Valid From: 2026 Feb 04 1515 UTC
+Now Valid Until: 2026 Feb 05 1800 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-05 08:54:38.777+00,"Space Weather Message Code: WARK05
+Serial Number: 2187
+Issue Time: 2026 Feb 05 0854 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 5 expected
+Extension to Serial Number: 2186
+Valid From: 2026 Feb 05 0300 UTC
+Now Valid Until: 2026 Feb 05 1500 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-05 04:33:48.11+00,"Space Weather Message Code: ALTK05
+Serial Number: 1963
+Issue Time: 2026 Feb 05 0433 UTC
+
+ALERT: Geomagnetic K-index of 5
+ Threshold Reached: 2026 Feb 05 0426 UTC
+Synoptic Period: 0300-0600 UTC
+ 
+Active Warning: Yes
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05A
+2026-02-05 02:59:21.917+00,"Space Weather Message Code: WARK05
+Serial Number: 2186
+Issue Time: 2026 Feb 05 0259 UTC
+
+WARNING: Geomagnetic K-index of 5 expected
+Valid From: 2026 Feb 05 0300 UTC
+Valid To: 2026 Feb 05 0900 UTC
+Warning Condition: Onset
+NOAA Scale: G1 - Minor
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",K05W
+2026-02-04 23:12:38.203+00,"Space Weather Message Code: WARK04
+Serial Number: 5245
+Issue Time: 2026 Feb 04 2312 UTC
+
+EXTENDED WARNING: Geomagnetic K-index of 4 expected
+Extension to Serial Number: 5244
+Valid From: 2026 Feb 04 1515 UTC
+Now Valid Until: 2026 Feb 05 1200 UTC
+Warning Condition: Persistence
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-04 17:00:58.543+00,"Space Weather Message Code: ALTK04
+Serial Number: 2627
+Issue Time: 2026 Feb 04 1700 UTC
+
+ALERT: Geomagnetic K-index of 4
+ Threshold Reached: 2026 Feb 03 1700 UTC
+Synoptic Period: 1500-1800 UTC
+ 
+Active Warning: Yes
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04A
+2026-02-04 15:35:28.013+00,"Space Weather Message Code: SUMSUD
+Serial Number: 295
+Issue Time: 2026 Feb 04 1535 UTC
+
+SUMMARY: Geomagnetic Sudden Impulse
+Observed: 2026 Feb 04 1506 UTC
+Deviation: 16 nT
+Station: BOU
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation",MSIS
+2026-02-04 15:08:25.473+00,"Space Weather Message Code: WARK04
+Serial Number: 5244
+Issue Time: 2026 Feb 04 1508 UTC
+
+WARNING: Geomagnetic K-index of 4 expected
+Valid From: 2026 Feb 04 1515 UTC
+Valid To: 2026 Feb 04 2359 UTC
+Warning Condition: Onset
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 65 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Aurora - Aurora may be visible at high latitudes such as Canada and Alaska.",K04W
+2026-02-04 14:33:09.777+00,"Space Weather Message Code: WARSUD
+Serial Number: 250
+Issue Time: 2026 Feb 04 1433 UTC
+
+WARNING: Geomagnetic Sudden Impulse expected
+Valid From: 2026 Feb 04 1505 UTC
+Valid To: 2026 Feb 04 1535 UTC
+IP Shock Passage Observed: 2026 Feb 04 1421 UTC
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation",SGIW
+2026-02-04 12:39:18.833+00,"Space Weather Message Code: SUMX01
+Serial Number: 211
+Issue Time: 2026 Feb 04 1239 UTC
+
+SUMMARY: X-ray Event exceeded X1
+Begin Time: 2026 Feb 04 1202 UTC
+Maximum Time: 2026 Feb 04 1213 UTC
+End Time: 2026 Feb 04 1218 UTC
+X-ray Class: X4.2
+Optical Class: na
+Location: N14E04
+NOAA Scale: R3 - Strong
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact consists of large portions of the sunlit side of Earth, strongest at the sub-solar point.
+Radio - Wide area blackout of HF (high frequency) radio communication for about an hour.",XX0S
+2026-02-04 12:12:46.513+00,"Space Weather Message Code: ALTXMF
+Serial Number: 520
+Issue Time: 2026 Feb 04 1212 UTC
+
+ALERT: X-Ray Flux exceeded M5
+Threshold Reached: 2026 Feb 04 1209 UTC
+NOAA Scale: R2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact centered on sub-solar point on the sunlit side of Earth. Extent of blackout of HF (high frequency) radio communication dependent upon current X-ray Flux intensity. For real-time information on affected area and expected duration please see http://www.swpc.noaa.gov/products/d-region-absorption-predictions-d-rap.",XM5A
+2026-02-04 09:27:17.447+00,"Space Weather Message Code: ALTEF3
+Serial Number: 3620
+Issue Time: 2026 Feb 04 0927 UTC
+
+CONTINUED ALERT: Electron 2MeV Integral Flux exceeded 1000pfu
+Continuation of Serial Number: 3619
+Begin Time: 2026 Jan 21 0950 UTC
+Yesterday Maximum 2MeV Flux: 10480 pfu
+
+
+
+Potential Impacts: Satellite systems may experience significant charging resulting in increased risk to satellite systems.",EF3A
+2026-02-03 16:46:38.02+00,"Space Weather Message Code: WATA20
+Serial Number: 1093
+Issue Time: 2026 Feb 03 1646 UTC
+
+WATCH: Geomagnetic Storm Category G1 Predicted
+
+Highest Storm Level Predicted by Day:
+Feb 04:  None (Below G1)   Feb 05:  G1 (Minor)   Feb 06:  G1 (Minor)
+
+THIS SUPERSEDES ANY/ALL PRIOR WATCHES IN EFFECT
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact primarily poleward of 60 degrees Geomagnetic Latitude.
+Induced Currents - Weak power grid fluctuations can occur.
+Spacecraft - Minor impact on satellite operations possible.
+Aurora - Aurora may be visible at high latitudes, i.e., northern tier of the U.S. such as northern Michigan and Maine.",A20F
+2026-02-03 15:10:43.49+00,"Space Weather Message Code: SUMXM5
+Serial Number: 310
+Issue Time: 2026 Feb 03 1510 UTC
+
+SUMMARY: X-ray Event exceeded M5
+Begin Time: 2026 Feb 03 1445 UTC
+Maximum Time: 2026 Feb 03 1456 UTC
+End Time: 2026 Feb 03 1503 UTC
+X-ray Class: M7.2
+Location: N14E14
+NOAA Scale: R2 - Moderate
+
+NOAA Space Weather Scale descriptions can be found at
+www.swpc.noaa.gov/noaa-scales-explanation
+
+Potential Impacts: Area of impact centered primarily on sub-solar point on the sunlit side of Earth.
+Radio - Limited blackout of HF (high frequency) radio communication for tens of minutes.",XM5S
