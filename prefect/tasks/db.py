@@ -64,7 +64,7 @@ async def initial_latest_xray_db(conn: PoolConnectionProxy):
     try:
         logger.info("Ensuring xray table exists...")
         await ensure_table_exists(
-            conn, "solar_flare_events", create_sql=LATEST_X_RAY_CREATE_TABLE_SQL
+            conn, "goes_xray_events", create_sql=LATEST_X_RAY_CREATE_TABLE_SQL
         )
         logger.info("xray table is ready!")
 

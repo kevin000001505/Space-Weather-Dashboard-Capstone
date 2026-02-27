@@ -187,39 +187,43 @@ DO UPDATE SET absorption = EXCLUDED.absorption
 """
 
 LATEST_X_RAY_CREATE_TABLE_SQL = """
-CREATE TABLE solar_flare_events (
-    time_tag TIMESTAMPTZ PRIMARY KEY,  -- The snapshot time
-    satellite_id INTEGER,
-    
-    -- Current Status
-    current_class VARCHAR(10),       -- e.g., 'B3.0'
-    current_ratio DOUBLE PRECISION,   -- Short/Long ratio
-    current_int_flux DOUBLE PRECISION, -- Integrated flux (total energy)
-    
-    -- Event Lifecycle: Start
-    begin_time TIMESTAMPTZ,
-    begin_class VARCHAR(10),
-    
-    -- Event Lifecycle: Peak
-    max_time TIMESTAMPTZ,
-    max_class VARCHAR(10),
-    max_flux_long DOUBLE PRECISION,   -- max_xrlong from your data
-    
-    -- Event Lifecycle: End
-    end_time TIMESTAMPTZ,
-    end_class VARCHAR(10),
-    
-    -- Ratio Peak
-    max_ratio_time TIMESTAMPTZ,
-    max_ratio DOUBLE PRECISION
+-- 1) Create table (names match BaseModel exactly)
+CREATE TABLE IF NOT EXISTS goes_xray_events (
+  time_tag         timestamptz NOT NULL,          -- Observation timestamp
+  satellite        integer     NOT NULL,           -- GOES satellite number
+
+  current_class    text        NULL,               -- Current X-ray class
+  current_ratio    double precision NULL CHECK (current_ratio >= 0),
+  current_int_xrlong double precision NULL CHECK (current_int_xrlong >= 0),
+
+  begin_time       timestamptz NULL,               -- Event begin time
+  begin_class      text        NULL,
+
+  max_time         timestamptz NULL,               -- Maximum time
+  max_class        text        NULL,
+  max_xrlong       double precision NULL CHECK (max_xrlong >= 0),
+
+  end_time         timestamptz NULL,               -- Event end time
+  end_class        text        NULL,
+
+  max_ratio_time   timestamptz NULL,               -- Maximum ratio time
+  max_ratio        double precision NULL CHECK (max_ratio >= 0),
+
+  -- Choose a PK/unique key that fits your data behavior:
+  -- If you ingest one record per (time_tag, satellite), this is fine.
+  CONSTRAINT goes_xray_events_pkey PRIMARY KEY (time_tag, satellite)
 );
+
+-- Helpful indexes for time-range queries
+CREATE INDEX IF NOT EXISTS ix_goes_xray_events_time_tag ON goes_xray_events (time_tag);
+CREATE INDEX IF NOT EXISTS ix_goes_xray_events_satellite ON goes_xray_events (satellite);
 """
 
 LATEST_X_RAY_INSERT_SQL = """
-INSERT INTO solar_flare_events (
-    time_tag, satellite_id, current_class, current_ratio,
-    current_int_flux, begin_time, begin_class, max_time,
-    max_class, max_flux_long, end_time, end_class,
+INSERT INTO goes_xray_events (
+    time_tag, satellite, current_class, current_ratio,
+    current_int_xrlong, begin_time, begin_class, max_time,
+    max_class, max_xrlong, end_time, end_class,
     max_ratio_time, max_ratio
 )
 VALUES (
@@ -228,5 +232,5 @@ VALUES (
     $9, $10, $11, $12,
     $13, $14
 )
-ON CONFLICT (time_tag) DO NOTHING;
+ON CONFLICT (time_tag, satellite) DO NOTHING;
 """
