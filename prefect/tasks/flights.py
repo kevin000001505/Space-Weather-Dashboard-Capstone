@@ -139,7 +139,7 @@ async def cleanup_db():
     """Clean up old flight state records based on retention policy."""
     logger = get_run_logger()
 
-    retention_days = await Variable[int].aget("flight_data_retention_days", default=3)
+    retention_days = await Variable[int].aget("flight_data_retention_days", default=30)
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
 
     async with get_connection() as conn:
