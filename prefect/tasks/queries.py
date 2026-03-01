@@ -234,3 +234,29 @@ VALUES (
 )
 ON CONFLICT (time_tag, satellite) DO NOTHING;
 """
+
+PROTON_FLUX_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS goes_proton_flux (
+  time_tag         timestamptz      NOT NULL,          -- Observation timestamp
+  satellite        integer          NOT NULL,           -- GOES satellite number
+
+  flux_10_mev      double precision CHECK (flux_10_mev >= 0),   -- Proton flux >10 MeV
+  flux_50_mev      double precision CHECK (flux_50_mev >= 0),   -- Proton flux >50 MeV
+  flux_100_mev     double precision CHECK (flux_100_mev >= 0),  -- Proton flux >100 MeV
+  flux_500_mev     double precision CHECK (flux_500_mev >= 0),  -- Proton flux >500 MeV
+
+  CONSTRAINT goes_proton_flux_pkey PRIMARY KEY (time_tag, satellite)
+);
+
+CREATE INDEX IF NOT EXISTS ix_goes_proton_flux_time_tag ON goes_proton_flux (time_tag);
+CREATE INDEX IF NOT EXISTS ix_goes_proton_flux_satellite ON goes_proton_flux (satellite);
+"""
+
+PROTON_FLUX_INSERT_SQL = """
+INSERT INTO goes_proton_flux (
+    time_tag, satellite,
+    flux_10_mev, flux_50_mev, flux_100_mev, flux_500_mev
+)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (time_tag, satellite) DO NOTHING;
+"""

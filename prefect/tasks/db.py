@@ -9,6 +9,7 @@ from tasks.queries import (
     AIRPORT_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     LATEST_X_RAY_CREATE_TABLE_SQL,
+    PROTON_FLUX_CREATE_TABLE_SQL,
 )
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
@@ -73,6 +74,23 @@ async def initial_latest_xray_db(conn: PoolConnectionProxy):
         raise
 
 
+@task(cache_policy=NO_CACHE)
+async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
+    """Task to initialize the proton flux plot table."""
+    logger = get_run_logger()
+    try:
+        logger.info("Ensuring goes_proton_flux table exists...")
+        await ensure_table_exists(
+            conn, "goes_proton_flux", create_sql=PROTON_FLUX_CREATE_TABLE_SQL
+        )
+        logger.info("goes_proton_flux table is ready!")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize goes_proton_flux table: {e}")
+        raise
+
+
+# Cleanup tasks
 @task(cache_policy=NO_CACHE)
 async def cleanup_old_drap_data(conn: PoolConnectionProxy, older_than_days: int = 1):
     """Task to clean up old DRAP data."""

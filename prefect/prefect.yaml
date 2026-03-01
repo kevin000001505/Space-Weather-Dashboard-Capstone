@@ -5,15 +5,26 @@ pull:
 deployments:
   - name: db_initial
     entrypoint: flows/db_maintain.py:initialize_db_flow
+    description: "Initializes the database with necessary tables and indexes"
     work_pool:
       name: NOAA-pool
 
   - name: DRAP Extract
     entrypoint: flows/drap_extract.py:rap_extract_flow
+    description: "Fetches live DRAP data from NOAA every minute"
     work_pool:
       name: NOAA-pool
     schedules:
       - interval: 60 # 1 minute
+        timezone: UTC
+  
+  - name: Proton Flux Plot Extract
+    entrypoint: flows/proton_flux_plot.py:ingest_proton_flux_plot_flow
+    description: "Fetches live proton flux plot data from NOAA every 5 minutes"
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - interval: 300 # 5 minutes
         timezone: UTC
   
   - name: DRAP Cleanup
@@ -26,6 +37,7 @@ deployments:
 
   - name: X-ray Extract
     entrypoint: flows/xray_extract.py:xray_extract_flow
+    description: "Fetches live X-ray-flares data from NOAA every minute"
     work_pool:
       name: NOAA-pool
     schedules:
