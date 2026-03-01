@@ -4,10 +4,12 @@ import requests
 import json
 from tasks.models import XrayRecord
 from tasks.queries import LATEST_X_RAY_INSERT_SQL
-from datetime import datetime, timezone
 
 solar_flare_url = (
     "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json"
+)
+solar_flare_url_backup = (
+    "https://services.swpc.noaa.gov/json/goes/secondary/xray-flares-latest.json"
 )
 
 
@@ -67,14 +69,10 @@ async def extract_xray_data():
         if start == -1 and end == -1:
             xray_data = json.loads(f"[{text}]")
 
-        if start == end == 0:
-            logger.error("Could not find valid JSON array in response.")
-            print("Response text:", text)
-            raise ValueError("Invalid JSON response format")
     if xray_data is None or not isinstance(xray_data, list):
-        logger.error("Expected a list of X-ray records, got different format.")
-        print("Response text:", response.text)
-        raise ValueError("Invalid JSON response format")
+        logger.info("Start backup plan to secondary satellite data source.")
+        xray_data = extract_xray_data_backup()
+
     else:
         logger.info(
             f"✓ X-ray data request successful! Retrieved {len(xray_data)} records"
@@ -91,5 +89,36 @@ async def extract_xray_data():
         logger.info(
             f"✓ X-ray data inserted successfully! {len(parsed_xray_data)} records"
         )
+
+    return xray_data
+
+
+def extract_xray_data_backup():
+    """Extract X-ray data from backup API."""
+    response = requests.get(solar_flare_url_backup)
+    response.raise_for_status()
+
+    try:
+        response = requests.get(solar_flare_url_backup)
+        response.raise_for_status()
+
+        # Try normal parsing first
+        xray_data = response.json()
+    except json.JSONDecodeError:
+        # Fallback: try to extract the first JSON array/object
+        text = response.text
+        start = text.find("[")
+        end = text.rfind("]")
+        if start == -1:
+            xray_data = json.loads("[" + text)
+
+        if end == -1:
+            xray_data = json.loads(text + "]")
+
+        if start == -1 and end == -1:
+            xray_data = json.loads(f"[{text}]")
+
+    except Exception as e:
+        raise ValueError(f"Backup data source failed: {e}")
 
     return xray_data
