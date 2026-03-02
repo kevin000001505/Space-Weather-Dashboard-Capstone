@@ -57,7 +57,7 @@ export const buildDeckLayers = ({
     showAirports && new ScatterplotLayer({
       id: 'airports-base',
       data: airports,
-      getPosition: d => [parseFloat(d.longitude_deg),parseFloat(d.latitude_deg)],
+      getPosition: d => [parseFloat(d.lon),parseFloat(d.lat)],
       getFillColor: darkMode ? [168, 168, 168, 150] : [85, 85, 85, 150],
       getRadius: d => d.type === 'large_airport' ? 5 : 3,
       radiusUnits: 'pixels',
@@ -92,7 +92,7 @@ export const buildDeckLayers = ({
     showAirports && selectedAirport && new ScatterplotLayer({
       id: 'selected-airport',
       data: [selectedAirport],
-      getPosition: d => [parseFloat(d.longitude_deg),parseFloat(d.latitude_deg)],
+      getPosition: d => [parseFloat(d.lon),parseFloat(d.lat)],
       getFillColor: [255, 0, 0, 255],
       getRadius: d => d.type === 'large_airport' ? 7 : 5,
       radiusUnits: 'pixels',
