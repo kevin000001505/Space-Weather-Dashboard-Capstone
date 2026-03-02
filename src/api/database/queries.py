@@ -1,6 +1,6 @@
 AIRPORTS_LATEST_QUERY = """
     SELECT 
-        name, iata_code, gps_code, municipality, iso_country, elevation_ft, latitude_deg, longitude_deg
+        name, iata_code, gps_code, type, municipality, iso_country, elevation_ft, latitude_deg, longitude_deg
     FROM airports
 """
 

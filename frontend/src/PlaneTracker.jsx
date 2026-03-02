@@ -85,15 +85,15 @@ const PlaneTracker = () => {
       }
     } else if (result.type === 'airport') {
       const airport = result.data;
-      const lat = parseFloat(airport.latitude_deg);
-      const lon = parseFloat(airport.longitude_deg);
+      const lat = parseFloat(airport.lat);
+      const lon = parseFloat(airport.lon);
       
       setSelectedAirport(airport);
       setSelectedPlane(null);
       setViewState({
         ...viewState,
-        longitude: parseFloat(airport.longitude_deg),
-        latitude: parseFloat(airport.latitude_deg),
+        longitude: parseFloat(airport.lon),
+        latitude: parseFloat(airport.lat),
         zoom: 10,
         transitionDuration: 1500
       });
@@ -188,8 +188,8 @@ const PlaneTracker = () => {
         {/* Popups */}
         {showAirports && selectedAirport && (
           <Popup 
-            longitude={parseFloat(selectedAirport.longitude_deg)} 
-            latitude={parseFloat(selectedAirport.latitude_deg)} 
+            longitude={parseFloat(selectedAirport.lon)} 
+            latitude={parseFloat(selectedAirport.lat)} 
             closeOnClick={false}
             onClose={() => setSelectedAirport(null)}
             anchor="bottom"
@@ -200,8 +200,8 @@ const PlaneTracker = () => {
               <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
                 <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code}<br/>
                 <strong>Location:</strong> {selectedAirport.municipality || 'N/A'}, {selectedAirport.iso_country || ''}<br/>
-                <strong>Elevation:</strong> {getAltDisplay(selectedAirport.elevation_ft, useImperial)}<br/>
-                <strong>Position:</strong><br/> {formatCoord(selectedAirport.latitude_deg)}°, {formatCoord(selectedAirport.longitude_deg)}°
+                <strong>Elevation:</strong> {getAltDisplay(selectedAirport.elevation_ft, true, useImperial)}<br/>
+                <strong>Position:</strong><br/> {formatCoord(selectedAirport.lat)}°, {formatCoord(selectedAirport.lon)}°
               </div>
             </div>
           </Popup>
@@ -220,8 +220,8 @@ const PlaneTracker = () => {
               <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{selectedPlane.callsign || selectedPlane.icao24.toUpperCase()}</h3>
               <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
                 <strong>ICAO24:</strong> {selectedPlane.icao24.toUpperCase()}<br/>
-                <strong>Altitude:</strong> {getAltDisplay(selectedPlane.geo_altitude, useImperial)}<br/>
-                <strong>Speed:</strong> {getSpeedDisplay(selectedPlane.velocity, useImperial)}<br/>
+                <strong>Altitude:</strong> {getAltDisplay(selectedPlane.geo_altitude, false, useImperial)}<br/>
+                <strong>Speed:</strong> {getSpeedDisplay(selectedPlane.velocity, false, useImperial)}<br/>
                 <strong>Heading:</strong> {formatNumber(selectedPlane.heading, 0, '°')}<br/>
                 <strong>Position:</strong><br/> {formatCoord(selectedPlane.lat)}°, {formatCoord(selectedPlane.lon)}°
               </div>
