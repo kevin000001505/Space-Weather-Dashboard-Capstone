@@ -1,0 +1,64 @@
+from prefect import task, get_run_logger
+from database.db_tools import get_connection
+import requests
+import json
+from tasks.models import ProtonFluxPlot
+from tasks.queries import PROTON_FLUX_INSERT_SQL
+from typing import List
+
+
+@task(retries=3, retry_delay_seconds=5)
+def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
+    """Fetch all proton flux plot records from the NOAA API."""
+    logger = get_run_logger()
+    url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-plot-6-hour.json"
+    logger.info(f"Fetching proton flux plot data from {url}")
+    response = requests.get(url)
+    response.raise_for_status()
+    # Map API energy string to model field name
+    ENERGY_MAP = {
+        ">=10 MeV": "flux_10_mev",
+        ">=50 MeV": "flux_50_mev",
+        ">=100 MeV": "flux_100_mev",
+        ">=500 MeV": "flux_500_mev",
+    }
+
+    try:
+        data = response.json()
+
+        grouped: dict = {}
+        for row in data:
+            key = (row["time_tag"], row["satellite"])
+            if key not in grouped:
+                grouped[key] = {
+                    "time_tag": row["time_tag"],
+                    "satellite": row["satellite"],
+                }
+            field = ENERGY_MAP.get(row["energy"])
+            if field:
+                grouped[key][field] = row["flux"]
+
+        records = [ProtonFluxPlot(**entry) for entry in grouped.values()]
+        logger.info(f"Parsed {len(records)} proton flux records")
+        return records
+
+    except json.JSONDecodeError as e:
+        raise json.JSONDecodeError(
+            f"Failed to decode JSON response: {e}", response.text, 0
+        )
+    except Exception as e:
+        raise Exception(f"Error processing proton flux plot data: {e}")
+
+
+@task
+async def store_proton_flux_plot(plots: List[ProtonFluxPlot]) -> None:
+    """Bulk insert proton flux plot records into the database."""
+    logger = get_run_logger()
+    if not plots:
+        logger.warning("No proton flux records to store")
+        return
+
+    records = [plot.to_tuple() for plot in plots]
+    async with get_connection() as conn:
+        await conn.executemany(PROTON_FLUX_INSERT_SQL, records)
+    logger.info(f"Stored {len(records)} proton flux records")

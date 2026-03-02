@@ -1,0 +1,14 @@
+"""Proton Flux Plot data ingestion and maintenance flows."""
+
+from prefect import flow
+from tasks.proton_flux_plot import (
+    fetch_proton_flux_plot,
+    store_proton_flux_plot,
+)
+
+
+@flow(name="Ingest Proton Flux Plot Data", log_prints=True)
+async def ingest_proton_flux_plot_flow():
+    """Main flow for ingesting proton flux plot data from NOAA."""
+    records = fetch_proton_flux_plot()
+    await store_proton_flux_plot(records)

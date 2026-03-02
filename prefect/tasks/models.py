@@ -227,3 +227,37 @@ class XrayRecord(BaseModel):
     class Config:
         validate_assignment = True
         extra = "forbid"
+
+
+class ProtonFluxPlot(BaseModel):
+    """Proton flux plot record for database insertion."""
+
+    time_tag: datetime = Field(description="Observation timestamp (UTC)")
+    satellite: int = Field(description="GOES satellite number")
+    flux_10_mev: Optional[float] = Field(
+        default=None, ge=0, description="Proton flux >10 MeV"
+    )
+    flux_50_mev: Optional[float] = Field(
+        default=None, ge=0, description="Proton flux >50 MeV"
+    )
+    flux_100_mev: Optional[float] = Field(
+        default=None, ge=0, description="Proton flux >100 MeV"
+    )
+    flux_500_mev: Optional[float] = Field(
+        default=None, ge=0, description="Proton flux >500 MeV"
+    )
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg executemany."""
+        return (
+            self.time_tag,
+            self.satellite,
+            self.flux_10_mev,
+            self.flux_50_mev,
+            self.flux_100_mev,
+            self.flux_500_mev,
+        )
+
+    class Config:
+        validate_assignment = True
+        extra = "forbid"

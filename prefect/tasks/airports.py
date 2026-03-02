@@ -5,6 +5,7 @@ from tasks.models import AirportRecord
 from database.db_tools import get_connection
 import requests
 import csv
+import asyncpg
 from io import StringIO
 from datetime import datetime
 
