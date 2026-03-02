@@ -8,6 +8,7 @@ from tasks.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
+    KP_INDEX_CREATE_TABLE_SQL,
     LATEST_X_RAY_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
 )
@@ -87,6 +88,22 @@ async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
 
     except Exception as e:
         logger.error(f"Failed to initialize goes_proton_flux table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_kp_index_db(conn: PoolConnectionProxy):
+    """Task to initialize the Kp index table."""
+    logger = get_run_logger()
+    try:
+        logger.info("Ensuring kp_index table exists...")
+        await ensure_table_exists(
+            conn, "kp_index", create_sql=KP_INDEX_CREATE_TABLE_SQL
+        )
+        logger.info("kp_index table is ready!")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize kp_index table: {e}")
         raise
 
 

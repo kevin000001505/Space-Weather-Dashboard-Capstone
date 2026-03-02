@@ -260,3 +260,24 @@ INSERT INTO goes_proton_flux (
 VALUES ($1, $2, $3, $4, $5, $6)
 ON CONFLICT (time_tag, satellite) DO NOTHING;
 """
+
+KP_INDEX_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS kp_index (
+  time_tag         timestamptz       NOT NULL,                     -- Observation timestamp (UTC)
+  kp               double precision  CHECK (kp >= 0 AND kp <= 9),  -- Kp index value (0-9)
+  a_running        integer           CHECK (a_running >= 0),       -- Running A index
+  station_count    integer           CHECK (station_count >= 0),   -- Number of stations reporting
+
+  CONSTRAINT kp_index_pkey PRIMARY KEY (time_tag)
+);
+
+CREATE INDEX IF NOT EXISTS ix_kp_index_time_tag ON kp_index (time_tag);
+"""
+
+KP_INDEX_INSERT_SQL = """
+INSERT INTO kp_index (
+    time_tag, kp, a_running, station_count
+)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (time_tag) DO NOTHING;
+"""
