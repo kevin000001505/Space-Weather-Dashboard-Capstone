@@ -98,6 +98,7 @@ async def extract_xray_data():
 
 def extract_xray_data_backup():
     """Extract X-ray data from backup API."""
+    logger = get_run_logger()
     response = requests.get(solar_flare_url_backup)
     response.raise_for_status()
 
