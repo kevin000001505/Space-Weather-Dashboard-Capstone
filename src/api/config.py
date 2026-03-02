@@ -56,6 +56,7 @@ class Airport(BaseModel):
     name: str
     iata_code: Optional[str] = None
     gps_code: Optional[str] = None
+    type: Optional[str] = None
     municipality: Optional[str] = None
     country: Optional[str] = None
     elevation_ft: Optional[int] = None

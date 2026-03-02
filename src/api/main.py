@@ -85,6 +85,7 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=5000)):
                         name=row["name"],
                         iata_code=row["iata_code"],
                         gps_code=row["gps_code"],
+                        type=row["type"],
                         municipality=row["municipality"],
                         country=row["iso_country"],
                         elevation_ft=row["elevation_ft"],

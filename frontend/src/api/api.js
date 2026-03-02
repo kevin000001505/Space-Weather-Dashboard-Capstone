@@ -1,5 +1,4 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import Papa from 'papaparse';
 
 const API_BASE_URL = '/api/v1';
 
@@ -44,7 +43,14 @@ export const fetchAirports = createAsyncThunk(
         throw new Error('Failed to fetch airport data');
       }
       const data = await response.json();
-      return data;
+      console.log(data);
+      const validAirports = data.airports.filter(airport =>
+        airport.lat &&
+        airport.lon &&
+        (airport.type === 'large_airport' || airport.type === 'medium_airport')
+      );
+      console.log(validAirports);
+      return validAirports;
     } catch (error) {
       return rejectWithValue(error.message);
     }

@@ -13,19 +13,36 @@ export const formatCoord = (val) => {
   return isNaN(num) ? 'N/A' : num.toFixed(4);
 };
 
+// Metric to Imperial
 export const getAltFt = (m) => (m !== null && m !== undefined ? m * 3.28084 : null);
 export const getSpeedKts = (ms) => (ms !== null && ms !== undefined ? ms * 1.94384 : null);
 
-export const getAltDisplay = (alt, useImperial) => {
+// Imperial to Metric
+export const getAltM = (ft) => (ft !== null && ft !== undefined ? ft / 3.28084 : null);
+export const getSpeedMs = (kts) => (kts !== null && kts !== undefined ? kts / 1.94384 : null);
+
+export const getAltDisplay = (alt, isImperial, useImperial) => {
   if (alt === null || alt === undefined) return 'N/A';
-  const altValue = useImperial ? getAltFt(alt) : alt;
+  let altValue = alt;
+  if (isImperial && !useImperial) {
+    altValue = getAltM(alt);
+  }
+  else if (!isImperial && useImperial) {
+    altValue = getAltFt(alt);
+  }
   const suffix = useImperial ? ' ft' : ' m';
   return formatNumber(altValue, 0, suffix);
 }
 
-export const getSpeedDisplay = (speed, useImperial) => {
+export const getSpeedDisplay = (speed, isImperial, useImperial) => {
   if (speed === null || speed === undefined) return 'N/A';
-  const speedValue = useImperial ? getSpeedKts(speed) : speed;
+  let speedValue = speed;
+  if (isImperial && !useImperial) {
+    speedValue = getSpeedMs(speed);
+  }
+  else if (!isImperial && useImperial) {
+    speedValue = getSpeedKts(speed);
+  }
   const suffix = useImperial ? ' kts' : ' m/s';
   return formatNumber(speedValue, 0, suffix);
 }
