@@ -27,6 +27,15 @@ deployments:
       - interval: 300 # 5 minutes
         timezone: UTC
   
+  - name: Kp Index Extract
+    entrypoint: flows/kp_index.py:ingest_kp_index_flow
+    description: "Fetches live Kp index data from NOAA every 3 hours"
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - cron: "0 */3 * * *"  # Every 3 hours at minute 0
+        timezone: UTC
+  
   - name: DRAP Cleanup
     entrypoint: flows/db_maintain.py:db_maintenance_flow
     work_pool:

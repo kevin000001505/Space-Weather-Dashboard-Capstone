@@ -261,3 +261,25 @@ class ProtonFluxPlot(BaseModel):
     class Config:
         validate_assignment = True
         extra = "forbid"
+
+
+class KPIndexRecord(BaseModel):
+    """KP index record for database insertion."""
+
+    time_tag: datetime = Field(description="Observation timestamp (UTC)")
+    kp: float = Field(ge=0, le=9, description="Kp index value")
+    a_running: int = Field(ge=0, description="Running A index")
+    station_count: int = Field(ge=0, description="Number of stations reporting")
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg executemany."""
+        return (
+            self.time_tag,
+            self.kp,
+            self.a_running,
+            self.station_count,
+        )
+
+    class Config:
+        validate_assignment = True
+        extra = "forbid"

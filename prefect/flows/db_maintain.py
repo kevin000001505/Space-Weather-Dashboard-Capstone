@@ -7,6 +7,7 @@ from tasks.db import (
     cleanup_old_drap_data,
     initial_latest_xray_db,
     initial_proton_flux_plot_db,
+    initial_kp_index_db,
 )
 
 
@@ -36,6 +37,7 @@ async def initialize_db_flow():
             await initial_activate_flight_db(conn)
             await initial_latest_xray_db(conn)
             await initial_proton_flux_plot_db(conn)
+            await initial_kp_index_db(conn)
             logger.info("Database initialization completed successfully!")
 
     except Exception as e:
