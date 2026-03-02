@@ -105,10 +105,13 @@ class AirportRecord(BaseModel):
     longitude_deg: Optional[float] = Field(default=None, ge=-180, le=180)
     elevation_ft: Optional[float] = Field(default=None)
     continent: Optional[str] = Field(default=None, max_length=2)
+    country_name: Optional[str] = Field(default=None)
     iso_country: Optional[str] = Field(default=None, max_length=2)
+    region_name: Optional[str] = Field(default=None)
     iso_region: Optional[str] = Field(default=None)
+    local_region: Optional[str] = Field(default=None)
     municipality: Optional[str] = Field(default=None)
-    scheduled_service: Optional[str] = Field(default=None)
+    scheduled_service: Optional[bool] = Field(default=None)
     gps_code: Optional[str] = Field(default=None)
     iata_code: Optional[str] = Field(default=None, max_length=3)
     icao_code: Optional[str] = Field(default=None, max_length=4)
@@ -116,8 +119,8 @@ class AirportRecord(BaseModel):
     home_link: Optional[str] = Field(default=None)
     wikipedia_link: Optional[str] = Field(default=None)
     keywords: Optional[str] = Field(default=None)
-    geom_lon: Optional[float] = Field(default=None, ge=-180, le=180)
-    geom_lat: Optional[float] = Field(default=None, ge=-90, le=90)
+    score: Optional[int] = Field(default=None)
+    last_updated: Optional[datetime] = Field(default=None)
 
     def to_tuple(self) -> tuple:
         """Convert to tuple for asyncpg executemany."""
@@ -129,19 +132,22 @@ class AirportRecord(BaseModel):
             self.longitude_deg,
             self.elevation_ft,
             self.continent,
+            self.country_name,
             self.iso_country,
+            self.region_name,
             self.iso_region,
+            self.local_region,
             self.municipality,
             self.scheduled_service,
             self.gps_code,
-            self.iata_code,
             self.icao_code,
+            self.iata_code,
             self.local_code,
             self.home_link,
             self.wikipedia_link,
             self.keywords,
-            self.geom_lon,
-            self.geom_lat,
+            self.score,
+            self.last_updated,
         )
 
     class Config:
