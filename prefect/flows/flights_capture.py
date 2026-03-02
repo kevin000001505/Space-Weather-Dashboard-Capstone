@@ -1,10 +1,9 @@
 """Flight data ingestion and maintenance flows."""
 
 from prefect import flow
-from tasks.flights import (
+from tasks import (
     fetch_flights,
     clean_records,
-    insert_activate_flight,
     insert_batch,
     cleanup_db,
 )
@@ -15,7 +14,6 @@ async def ingest_flow():
     """Main flow for ingesting flight data from OpenSky."""
     df = fetch_flights()
     records = clean_records(df)
-    await insert_activate_flight(records)
     await insert_batch(records)
 
 
