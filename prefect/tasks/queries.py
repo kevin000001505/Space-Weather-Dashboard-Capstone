@@ -111,51 +111,71 @@ CREATE TABLE IF NOT EXISTS activate_flight (
 
 AIRPORT_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS airports (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     ident VARCHAR(10) NOT NULL UNIQUE,
-    type VARCHAR(50) NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    latitude_deg DOUBLE PRECISION NOT NULL,
-    longitude_deg DOUBLE PRECISION NOT NULL,
-    elevation_ft INTEGER,
+    type VARCHAR(50),
+    name VARCHAR(255),
+    latitude_deg DOUBLE PRECISION,
+    longitude_deg DOUBLE PRECISION,
+    elevation_ft REAL,
     continent VARCHAR(2),
+    country_name VARCHAR(100),
     iso_country VARCHAR(2),
+    region_name VARCHAR(100),
     iso_region VARCHAR(10),
-    municipality VARCHAR(255),
-    scheduled_service BOOLEAN DEFAULT FALSE,
+    local_region VARCHAR(100),
+    municipality VARCHAR(100),
+    scheduled_service BOOLEAN,
+    gps_code VARCHAR(10),
     icao_code VARCHAR(4),
     iata_code VARCHAR(3),
-    gps_code VARCHAR(4),
     local_code VARCHAR(10),
+    home_link VARCHAR(255),
+    wikipedia_link VARCHAR(255),
+    keywords VARCHAR(500),
+    score INTEGER,
+    last_updated TIMESTAMPTZ,
     geom GEOMETRY(POINT, 4326),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS airports_geom_gix ON airports USING GIST (geom);
+
+CREATE INDEX idx_airports_ident ON airports(ident);
+CREATE INDEX idx_airports_iata ON airports(iata_code);
+CREATE INDEX idx_airports_icao ON airports(icao_code);
+CREATE INDEX idx_airports_geom ON airports USING GIST(geom);
 """
 
 AIRPORTS_UPSERT_SQL = """
 INSERT INTO airports 
-(id, ident, type, name, latitude_deg, longitude_deg, elevation_ft, 
- continent, iso_country, iso_region, municipality, scheduled_service,
- icao_code, iata_code, gps_code, local_code)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+(ident, type, name, latitude_deg, longitude_deg, elevation_ft, 
+ continent, country_name, iso_country, region_name, iso_region, local_region, 
+ municipality, scheduled_service, gps_code, icao_code, iata_code, local_code, 
+ home_link, wikipedia_link, keywords, score, last_updated)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
 ON CONFLICT (ident) DO UPDATE SET
-    id = EXCLUDED.id,
     type = EXCLUDED.type,
     name = EXCLUDED.name,
     latitude_deg = EXCLUDED.latitude_deg,
     longitude_deg = EXCLUDED.longitude_deg,
     elevation_ft = EXCLUDED.elevation_ft,
     continent = EXCLUDED.continent,
+    country_name = EXCLUDED.country_name,
     iso_country = EXCLUDED.iso_country,
+    region_name = EXCLUDED.region_name,
     iso_region = EXCLUDED.iso_region,
+    local_region = EXCLUDED.local_region,
     municipality = EXCLUDED.municipality,
     scheduled_service = EXCLUDED.scheduled_service,
+    gps_code = EXCLUDED.gps_code,
     icao_code = EXCLUDED.icao_code,
     iata_code = EXCLUDED.iata_code,
-    gps_code = EXCLUDED.gps_code,
     local_code = EXCLUDED.local_code,
+    home_link = EXCLUDED.home_link,
+    wikipedia_link = EXCLUDED.wikipedia_link,
+    keywords = EXCLUDED.keywords,
+    score = EXCLUDED.score,
+    last_updated = EXCLUDED.last_updated,
     updated_at = CURRENT_TIMESTAMP
 """
 
