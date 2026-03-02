@@ -55,7 +55,7 @@ async def extract_xray_data():
 
         # Try normal parsing first
         xray_data = response.json()
-    except json.JSONDecodeError:
+    except requests.exceptions.JSONDecodeError:
         # Fallback: try to extract the first JSON array/object
         text = response.text
         start = text.find("[")
@@ -68,6 +68,9 @@ async def extract_xray_data():
 
         if start == -1 and end == -1:
             xray_data = json.loads(f"[{text}]")
+    except Exception as e:
+        logger.debug(f"Response text: {response.text}")
+        raise ValueError(f"Backup data source failed: {e}")
 
     if xray_data is None or not isinstance(xray_data, list):
         logger.info("Start backup plan to secondary satellite data source.")
@@ -104,7 +107,7 @@ def extract_xray_data_backup():
 
         # Try normal parsing first
         xray_data = response.json()
-    except json.JSONDecodeError:
+    except requests.exceptions.JSONDecodeError:
         # Fallback: try to extract the first JSON array/object
         text = response.text
         start = text.find("[")
@@ -119,6 +122,7 @@ def extract_xray_data_backup():
             xray_data = json.loads(f"[{text}]")
 
     except Exception as e:
+        logger.debug(f"Response text: {response.text}")
         raise ValueError(f"Backup data source failed: {e}")
 
     return xray_data
