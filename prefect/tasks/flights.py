@@ -15,6 +15,9 @@ from tasks.queries import (
 )
 
 
+BATCH_SIZE = 500
+
+
 def clean_row(row) -> FlightStateRecord:
     """
     Maps OpenSky Arrow-backed DataFrame row -> Native Python Tuple for AsyncPG.
@@ -109,29 +112,30 @@ def fetch_flights():
 
 
 @task(name="Insert Flight States Batch")
-async def insert_batch(records):
-    """Insert batch of flight records into flight_states table."""
+async def insert_batch(records, batch_size: int = BATCH_SIZE):
+    """Insert flight records into both tables in chunked transactions to avoid timeouts."""
     logger = get_run_logger()
+    logger.info(f"Inserting {len(records)} records in batches of {batch_size}.")
 
     async with get_connection() as conn:
         first_ts = records[0].time
         await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, first_ts)
 
-        await conn.executemany(
-            FLIGHT_STATES_INSERT_QUERY, [r.to_tuple() for r in records]
-        )
-        logger.info(f"Inserted {len(records)} records into flight_states.")
+        total = 0
+        for i in range(0, len(records), batch_size):
+            chunk = records[i : i + batch_size]
+            tuples = [r.to_tuple() for r in chunk]
 
+            async with conn.transaction():
+                await conn.executemany(FLIGHT_STATES_INSERT_QUERY, tuples)
+                await conn.executemany(ACTIVATE_FLIGHT_UPSERT_QUERY, tuples)
 
-@task(name="Insert Activate Flight Data")
-async def insert_activate_flight(records):
-    """Insert or update flight records in activate_flight table."""
-    logger = get_run_logger()
-    async with get_connection() as conn:
-        await conn.executemany(
-            ACTIVATE_FLIGHT_UPSERT_QUERY, [r.to_tuple() for r in records]
-        )
-        logger.info(f"Inserted {len(records)} records into activate_flight.")
+            total += len(chunk)
+            logger.info(
+                f"Batch {i // batch_size + 1}: inserted {total}/{len(records)} records"
+            )
+
+        logger.info(f"Finished inserting {total} records.")
 
 
 @task(name="Cleanup Old Flight Data")
