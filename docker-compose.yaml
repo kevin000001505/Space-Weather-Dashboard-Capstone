@@ -4,13 +4,26 @@ services:
     container_name: nginx
     restart: always
     ports:
-      - "4200:4200"
+      - "80:80"
     volumes:
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - prefect-server
+      - fastapi
+      - frontend
     networks:
-      - prefect_network
+      - web_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    networks:
+      - web_network
+    depends_on:
+      - fastapi
 
   postgis:
     image: postgis/postgis:16-3.4
@@ -27,14 +40,13 @@ services:
       - postgis_data:/var/lib/postgresql/data
       - ./docker/db-init-scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432" # Bind to localhost for local development
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prefect -d prefect -h 127.0.0.1 -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 10
     networks:
-      - prefect_network
       - data_network
 
   redis:
@@ -48,7 +60,6 @@ services:
       retries: 5
     networks:
       - prefect_network
-      - data_network
 
   prefect-server:
     image: prefecthq/prefect:3-latest
@@ -66,12 +77,15 @@ services:
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: 6379
       PREFECT_REDIS_MESSAGING_DB: 0
-      PREFECT_UI_API_URL: /api
+      PREFECT_UI_API_URL: /prefect/api
+      PREFECT_UI_SERVE_BASE: /prefect
     command: prefect server start --host 0.0.0.0
     volumes:
       - prefect_home:/root/.prefect
     networks:
+      - web_network
       - prefect_network
+      - data_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:4200/api/health', timeout=1)"]
@@ -135,13 +149,11 @@ services:
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
       PYTHONPATH: /app
-    ports:
-      - "8000:8000"
     volumes:
       - ./src/api:/app
       - ./shared:/app/shared
     networks:
-      - prefect_network
+      - web_network
       - data_network
 
 
@@ -154,6 +166,8 @@ volumes:
     driver: local
 
 networks:
+  web_network:
+    driver: bridge
   prefect_network:
     driver: bridge
   data_network:

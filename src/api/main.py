@@ -40,8 +40,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="D-RAP Data API",
-    description="API for accessing D-RAP geomagnetic data and flight information",
+    title="Space Weather API",
+    description="API for accessing space weather data and flight information",
     version="1.0.0",
     lifespan=lifespan,
     default_response_class=ORJSONResponse,
