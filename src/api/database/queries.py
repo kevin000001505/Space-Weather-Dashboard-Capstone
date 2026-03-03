@@ -32,7 +32,7 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
         ROUND(heading::numeric, 2) AS heading,
         on_ground
     FROM activate_flight
-    WHERE on_ground = FALSE AND time_pos >= NOW() - INTERVAL '12 hours';
+    WHERE on_ground = FALSE AND time_pos >= NOW() - INTERVAL '5 minutes';
 """
 
 
