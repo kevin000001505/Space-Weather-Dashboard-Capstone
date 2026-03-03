@@ -70,7 +70,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      PREFECT_SERVER_DATABASE_CONNECTION_URL: ${DATABASE_URL}
+      PREFECT_API_DATABASE_CONNECTION_URL: ${DATABASE_URL}
       PREFECT_SERVER_API_HOST: 0.0.0.0
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
@@ -93,8 +93,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
-  prefect-worker:
+  prefect-init:
+    container_name: prefect-init
     build:
       context: .
       dockerfile: docker/flows_package/Dockerfile
@@ -105,7 +105,49 @@ services:
         condition: service_healthy
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
-      PREFECT_SERVER_DATABASE_CONNECTION_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
+      DEVELOPER_USER: ${DEVELOPER_USER}
+      DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
+      DEVELOPER_DB: ${DEVELOPER_DB}
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        cd /opt/prefect-app
+
+        # Create both pools here
+        prefect work-pool create NOAA-pool --type process --overwrite
+        prefect work-pool create flight-pool --type process --overwrite
+
+        # Deploy ALL flows ONCE
+        prefect deploy --all
+
+        # Run DB init ONCE and wait
+        prefect deployment run "initialize-db-flow/db_initial" --watch
+    volumes:
+      - ./prefect:/opt/prefect-app
+      - ./shared:/opt/shared
+    networks:
+      - prefect_network
+      - data_network
+    restart: "no"   # exits after done
+
+  prefect-worker-noaa:
+    container_name: prefect-worker-noaa
+    build:
+      context: .
+      dockerfile: docker/flows_package/Dockerfile
+    depends_on:
+      prefect-init:
+        condition: service_completed_successfully
+      prefect-server:
+        condition: service_healthy
+      postgis:
+        condition: service_healthy
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
       DEVELOPER_USER: ${DEVELOPER_USER}
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
@@ -114,19 +156,40 @@ services:
       - -c
       - |
         cd /opt/prefect-app
-        prefect work-pool create NOAA-pool --type process --overwrite
-        prefect work-pool create flight-pool --type process --overwrite
-        
-        prefect deploy --all
-
-        # Start workers FIRST
-        prefect worker start --pool NOAA-pool &
-        prefect worker start --pool flight-pool &
-
-        # Then run the init deployment and wait for it
-        prefect deployment run "initialize-db-flow/db_initial" --watch
-
-        wait
+        prefect worker start --pool NOAA-pool 
+    restart: unless-stopped
+    volumes:
+      - ./prefect:/opt/prefect-app
+      - ./shared:/opt/shared
+      - ${PYOPENSKY_SETTINGS}:/root/.config/pyopensky/settings.conf
+    networks:
+      - prefect_network
+      - data_network
+  
+  prefect-worker-flight:
+    container_name: prefect-worker-flight
+    build:
+      context: .
+      dockerfile: docker/flows_package/Dockerfile
+    depends_on:
+      prefect-init:
+        condition: service_completed_successfully
+      prefect-server:
+        condition: service_healthy
+      postgis:
+        condition: service_healthy
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql://developer:${DEVELOPER_PASSWORD}@postgis:5432/app
+      DEVELOPER_USER: ${DEVELOPER_USER}
+      DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
+      DEVELOPER_DB: ${DEVELOPER_DB}
+    command:
+      - bash
+      - -c
+      - |
+        cd /opt/prefect-app
+        prefect worker start --pool flight-pool
     restart: unless-stopped
     volumes:
       - ./prefect:/opt/prefect-app
