@@ -17,6 +17,7 @@ This repository provides a standardized directory structure for **George Mason U
 │   └── nginx/                # Nginx configuration file.
 ├── prefect/                  # Prefect main folder.
 │   └── flows/                # Store all the pipeline flows.
+│   └── tasks/                # Store all the pipeline tasks.
 ├── src/                  # Backend main code.
 │   └── api/                  # FastAPI implementation.
 ├── shared/                   # Shared function for all the code.
@@ -48,7 +49,9 @@ This repository provides a standardized directory structure for **George Mason U
 - **postgis**: PostgreSQL database with PostGIS extension (user: `prefect`/`developer`, database: `prefect`/`app`)
 - **redis**: Message broker for Prefect
 - **prefect-server**: Prefect orchestration server
-- **prefect-worker**: Executes Prefect flows (NOAA-pool, flight-pool)
+- **prefect-init**: Executes Prefect init commands
+- **prefect-worker-noaa**: Executes Prefect flows (NOAA-pool)
+- **prefect-worker-flight**: Executes Prefect flows (flight-pool)
 - **fastapi**: REST API server
 - **nginx**: Reverse proxy on port 4200
 
@@ -58,6 +61,7 @@ This repository provides a standardized directory structure for **George Mason U
 **Purpose:** Contains Prefect workflow orchestration code.
 
 - **`flows/`**: Prefect flow definitions for data pipelines (e.g., NOAA weather data, flight data ingestion).
+- **`tasks/`**: Prefect task definitions for data pipelines (e.g., NOAA weather data, flight data ingestion).
 
 **Environment Variables:**
 - `PREFECT_API_URL`: Connection to Prefect server
@@ -169,10 +173,10 @@ PYOPENSKY_SETTINGS=/path/to/pyopensky/settings.conf
    ```
 
 4. **Access the services:**
-   - Prefect UI: http://localhost:4200
-   - FastAPI: http://localhost:8000
-   - FastAPI Docs: http://localhost:8000/docs
-   - PostgreSQL: localhost:5432
+   - Prefect UI: ip/prefect
+   - Prefect FastAPI docs: ip/prefect/docs
+   - FastAPI: ip/api
+   - FastAPI Docs: ip/api/docs
 
 ---
 
@@ -203,6 +207,9 @@ PYOPENSKY_SETTINGS=/path/to/pyopensky/settings.conf
 
 2. **Make changes and test locally:**
    - Add Prefect flows in `prefect/flows/`
+   - Add Prefect tasks in `prefect/tasks/`
+   - Add Data type in `prefect/tasks/models`
+   - Add SQL queries in `prefect/tasks/queries`
    - Add API endpoints in `backend/api/`
    - Add shared utilities in `shared/`
 
