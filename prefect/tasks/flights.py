@@ -15,7 +15,7 @@ from tasks.queries import (
 )
 
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 
 def clean_row(row) -> FlightStateRecord:
