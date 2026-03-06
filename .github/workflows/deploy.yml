@@ -1,24 +1,19 @@
-name: Cloud Runner Deployment
+name: CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: 
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest 
-    
+    runs-on: self-hosted 
     steps:
-      - name: Execute Deployment Commands via SSH
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USERNAME }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
-            echo "Successfully connected to the VM from GitHub Cloud!"
-            cd ~/202610-003-Team-Space-Weather
-            
-            # docker-compose up -d --build
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      # Add testing pipeline here
+        
+      - name: Build and Restart Application
+        run: |
+          docker compose up -d --build
