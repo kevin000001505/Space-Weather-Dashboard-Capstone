@@ -35,6 +35,15 @@ deployments:
     schedules:
       - cron: "0 */3 * * *"  # Every 3 hours at minute 0
         timezone: UTC
+
+  - name: Alert Extract
+    entrypoint: flows/alert.py:alerts_extract_flow
+    description: "Fetches live alerts data from NOAA every 3 hours"
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - cron: 60  # Every 1 min at minute 0
+        timezone: UTC
   
   - name: DRAP Cleanup
     entrypoint: flows/db_maintain.py:db_maintenance_flow

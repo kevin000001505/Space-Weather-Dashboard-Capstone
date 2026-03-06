@@ -283,3 +283,23 @@ class KPIndexRecord(BaseModel):
     class Config:
         validate_assignment = True
         extra = "forbid"
+
+
+class AlertRecord(BaseModel):
+    """Alert record for database insertion."""
+
+    alert_id: str = Field(description="Unique alert identifier")
+    issue_datetime: datetime = Field(description="Alert timestamp")
+    message: str = Field(description="Alert message")
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg executemany."""
+        return (
+            self.alert_id,
+            self.issue_datetime,
+            self.message,
+        )
+
+    class Config:
+        validate_assignment = True
+        extra = "forbid"

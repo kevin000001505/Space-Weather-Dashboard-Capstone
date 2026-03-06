@@ -301,3 +301,18 @@ INSERT INTO kp_index (
 VALUES ($1, $2, $3, $4)
 ON CONFLICT (time_tag) DO NOTHING;
 """
+
+ALERT_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS alerts (
+    alert_id VARCHAR(50) PRIMARY KEY,
+    issue_datetime TIMESTAMPTZ NOT NULL,
+    alert_messages TEXT NOT NULL
+);
+"""
+
+ALERT_INSERT_SQL = """
+INSERT INTO alerts (
+    alert_id, issue_datetime, alert_messages)
+    VALUES ($1, $2, $3)
+ON CONFLICT (alert_id) DO NOTHING;
+"""

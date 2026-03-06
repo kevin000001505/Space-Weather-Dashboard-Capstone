@@ -11,6 +11,7 @@ from tasks.queries import (
     KP_INDEX_CREATE_TABLE_SQL,
     LATEST_X_RAY_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
+    ALERT_CREATE_TABLE_SQL,
 )
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
@@ -104,6 +105,20 @@ async def initial_kp_index_db(conn: PoolConnectionProxy):
 
     except Exception as e:
         logger.error(f"Failed to initialize kp_index table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_alert_db(conn: PoolConnectionProxy):
+    """Task to initialize the alert table."""
+    logger = get_run_logger()
+    try:
+        logger.info("Ensuring alerts table exists...")
+        await ensure_table_exists(conn, "alerts", create_sql=ALERT_CREATE_TABLE_SQL)
+        logger.info("alerts table is ready!")
+
+    except Exception as e:
+        logger.error(f"Failed to initialize alerts table: {e}")
         raise
 
 
