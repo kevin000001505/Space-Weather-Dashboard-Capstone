@@ -1,4 +1,16 @@
+import { useDispatch, useSelector } from "react-redux";
+import { toggleSidebar } from "../../store/slices/planesSlice";
+
 const SettingsPanel = ({ darkMode, setDarkMode, useImperial, setUseImperial, showSettings, setShowSettings }) => {
+  
+  const dispatch = useDispatch();
+  const isSidebarOpen = useSelector(state => state.planes.isSidebarOpen);
+
+  const handleSidebar = (value) => {
+    console.log(value);
+    dispatch(toggleSidebar(value))
+  }
+
   const btnStyle = {
     width: '45px', height: '45px',
     border: '1px solid var(--ui-border)',
@@ -26,6 +38,7 @@ const SettingsPanel = ({ darkMode, setDarkMode, useImperial, setUseImperial, sho
       <div style={{ display: 'flex', gap: '5px' }}>
         <button onClick={() => setShowSettings(!showSettings)} style={btnStyle} title="Settings">⚙️</button>
         <button onClick={() => setDarkMode(!darkMode)} style={btnStyle} title="Toggle Theme">{darkMode ? '☀️' : '🌙'}</button>
+        <button onClick={() => handleSidebar(true)} style={btnStyle} title="Toggle Filters">☰</button>
       </div>
       {showSettings && (
         <div style={{
