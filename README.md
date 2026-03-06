@@ -35,7 +35,7 @@ This repository provides a standardized directory structure for **George Mason U
 ### `docker/`
 **Purpose:** Contains all Docker-related configurations for containerizing the application.
 
-- **`api/`**: Dockerfile and configuration for the FastAPI application container.
+- **`api/`**: Dockerfile, configuration and packages for the FastAPI application container.
 - **`db-init-scripts/`**: Initialization scripts for setting up PostGIS database, creating users, databases, and schemas.
 - **`flows_package/`**: Dockerfile for the Prefect worker container that runs data pipeline flows.
 - **`nginx/`**: Configuration files for NGINX reverse proxy.
