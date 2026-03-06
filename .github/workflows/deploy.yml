@@ -87,6 +87,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
+      
+      - name: Write pyopensky config
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          mkdir -p ./secrets
+          echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
 
       - name: Build and Deploy Containers
         run: |
