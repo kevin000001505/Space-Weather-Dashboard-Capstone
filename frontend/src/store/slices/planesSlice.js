@@ -9,8 +9,13 @@ const planesSlice = createSlice({
     count: 0,
     loading: false,
     error: null,
+    isSidebarOpen: false,
   },
-  reducers: {},
+  reducers: {
+    toggleSidebar: (state, action) => {
+      state.isSidebarOpen = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchPlanes.pending, (state) => {
@@ -30,4 +35,5 @@ const planesSlice = createSlice({
   }
 });
 
+export const { toggleSidebar } = planesSlice.actions;
 export default planesSlice.reducer;
