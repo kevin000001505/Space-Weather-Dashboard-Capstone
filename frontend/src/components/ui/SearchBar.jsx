@@ -1,14 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  setSearchOpen,
+  setSearchQuery,
+  setSearchResults,
+  setSelectedAirport,
+  setSelectedPlane,
+  setViewState,
+} from '../../store/slices/uiSlice';
 
-const SearchBar = ({ planes, airports, onSelect }) => {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
+const SearchBar = () => {
+  const dispatch = useDispatch();
+  const planes = useSelector((state) => state.planes.data);
+  const airports = useSelector((state) => state.airports.data);
+  const { searchQuery: query, searchResults: results, isSearchOpen: isOpen, viewState } = useSelector((state) => state.ui);
 
   // Debounce search to avoid lagging while typing
   useEffect(() => {
     if (!query || query.length < 2) {
-      setResults([]);
+      dispatch(setSearchResults([]));
+      dispatch(setSearchOpen(false));
       return;
     }
 
@@ -34,17 +45,46 @@ const SearchBar = ({ planes, airports, onSelect }) => {
         .slice(0, 5)
         .map(a => ({ type: 'airport', data: a }));
 
-      setResults([...planeMatches, ...airportMatches]);
-      setIsOpen(true);
+      dispatch(setSearchResults([...planeMatches, ...airportMatches]));
+      dispatch(setSearchOpen(true));
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, planes, airports]);
+  }, [airports, dispatch, planes, query]);
 
   const handleSelect = (item) => {
-    onSelect(item);
-    setQuery('');
-    setIsOpen(false);
+    if (item.type === 'plane') {
+      const plane = item.data;
+      if (plane.lat && plane.lon) {
+        dispatch(setSelectedPlane(plane));
+        dispatch(setSelectedAirport(null));
+        dispatch(setViewState({
+          ...viewState,
+          longitude: plane.lon,
+          latitude: plane.lat,
+          zoom: 10,
+          transitionDuration: 1500,
+        }));
+      }
+    } else if (item.type === 'airport') {
+      const airport = item.data;
+      const lat = parseFloat(airport.lat);
+      const lon = parseFloat(airport.lon);
+
+      dispatch(setSelectedAirport(airport));
+      dispatch(setSelectedPlane(null));
+      dispatch(setViewState({
+        ...viewState,
+        longitude: lon,
+        latitude: lat,
+        zoom: 10,
+        transitionDuration: 1500,
+      }));
+    }
+
+    dispatch(setSearchQuery(''));
+    dispatch(setSearchResults([]));
+    dispatch(setSearchOpen(false));
   };
 
   return (
@@ -62,8 +102,8 @@ const SearchBar = ({ planes, airports, onSelect }) => {
         type="text"
         placeholder="Search flight or airport..."
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onFocus={() => query.length >= 2 && setIsOpen(true)}
+        onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+        onFocus={() => query.length >= 2 && dispatch(setSearchOpen(true))}
         style={{
           width: '100%',
           padding: '8px',

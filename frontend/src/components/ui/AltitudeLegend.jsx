@@ -1,6 +1,9 @@
 import { getStops } from '../../utils/mapUtils';
+import { useSelector } from 'react-redux';
 
-const AltitudeLegend = ({ useImperial }) => {
+const AltitudeLegend = () => {
+  const useImperial = useSelector((state) => state.ui.useImperial);
+
   return (
     <div style={{
       position: 'absolute',

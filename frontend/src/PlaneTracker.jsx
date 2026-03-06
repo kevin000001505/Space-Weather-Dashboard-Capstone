@@ -1,5 +1,5 @@
 //Base imports
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 // MapLibre imports
@@ -16,6 +16,14 @@ import SettingsPanel from './components/ui/SettingsPanel';
 import FilterPanel from './components/ui/FilterPanel';
 import StatsPanel from './components/ui/StatsPanel';
 
+// Redux action imports
+import {
+  clearSelections,
+  setSelectedAirport,
+  setSelectedPlane,
+  setViewState,
+} from './store/slices/uiSlice';
+
 // Utility imports
 import { getAltFt, getAltDisplay, getSpeedDisplay, formatNumber, formatCoord } from './utils/mapUtils';
 import { buildDeckLayers } from './utils/deckLayersConfig';
@@ -28,26 +36,18 @@ const DeckGLOverlay = (props) => {
 
 const PlaneTracker = () => {
   const dispatch = useDispatch();
-  const { data: planes, loading: planesLoading, error: planesError } = useSelector((state) => state.planes);
-  const { points: drapPoints, loading: drapLoading, error: drapError } = useSelector((state) => state.drap);
-  const { data: airports, loading: airportsLoading } = useSelector((state) => state.airports);
-  
-  const [useImperial, setUseImperial] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [selectedPlane, setSelectedPlane] = useState(null);
-  const [selectedAirport, setSelectedAirport] = useState(null);
-  const [mapCenter, setMapCenter] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [darkMode, setDarkMode] = useState(false);
-  const [showAirports, setShowAirports] = useState(true);
-
-  const [viewState, setViewState] = useState({
-    longitude: 0,
-    latitude: 30,
-    zoom: 3,
-    pitch: 0,
-    bearing: 0
-  });
+  const { data: planes } = useSelector((state) => state.planes);
+  const { points: drapPoints } = useSelector((state) => state.drap);
+  const { data: airports } = useSelector((state) => state.airports);
+  const {
+    useImperial,
+    selectedPlane,
+    selectedAirport,
+    filter,
+    darkMode,
+    showAirports,
+    viewState,
+  } = useSelector((state) => state.ui);
 
   const highThresh = useImperial ? 36000 : 11000;
   const lowThresh = useImperial ? 30000 : 9000;
@@ -69,38 +69,7 @@ const PlaneTracker = () => {
     return () => clearInterval(interval);
   }, [dispatch, airports.length]);
 
-  const handleSearchSelect = (result) => {
-    if (result.type === 'plane') {
-      const plane = result.data;
-      if (plane.lat && plane.lon) {
-        setSelectedPlane(plane);
-        setSelectedAirport(null);
-        setViewState({
-          ...viewState,
-          longitude: plane.lon,
-          latitude: plane.lat,
-          zoom: 10,
-          transitionDuration: 1500
-        });
-      }
-    } else if (result.type === 'airport') {
-      const airport = result.data;
-      const lat = parseFloat(airport.lat);
-      const lon = parseFloat(airport.lon);
-      
-      setSelectedAirport(airport);
-      setSelectedPlane(null);
-      setViewState({
-        ...viewState,
-        longitude: parseFloat(airport.lon),
-        latitude: parseFloat(airport.lat),
-        zoom: 10,
-        transitionDuration: 1500
-      });
-    }
-  };
-
-  const { filteredPlanes, counts } = useMemo(() => {
+  const filteredPlanes = useMemo(() => {
     const valid = [];
     const high = [];
     const med = [];
@@ -121,17 +90,8 @@ const PlaneTracker = () => {
     if (filter === 'medium') activePlanes = med;
     if (filter === 'low') activePlanes = low;
 
-    return {
-      filteredPlanes: activePlanes,
-      counts: { 
-        total: valid.length,
-        high: high.length,
-        medium: med.length,
-        low: low.length,
-        airports: airports.length
-      }
-    };
-  }, [planes, filter, useImperial, highThresh, lowThresh, airports.length]);
+    return activePlanes;
+  }, [planes, filter, useImperial, highThresh, lowThresh]);
 
   const deckLayers = useMemo(() => buildDeckLayers({
     drapPoints,
@@ -142,9 +102,10 @@ const PlaneTracker = () => {
     useImperial,
     selectedPlane,
     selectedAirport,
-    setSelectedPlane,
-    setSelectedAirport
+    setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
+    setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport))
   }), [
+    dispatch,
     drapPoints,
     airports,
     filteredPlanes,
@@ -166,15 +127,12 @@ const PlaneTracker = () => {
     <div style={{ ...themeVars, width: '100%', height: '100vh', position: 'relative', display: 'flex' }}>
       <Map
         {...viewState}
-        onMove={evt => setViewState(evt.viewState)}
+        onMove={(evt) => dispatch(setViewState(evt.viewState))}
         mapStyle={darkMode 
           ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
           : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
         }
-        onClick={() => {
-          setSelectedPlane(null);
-          setSelectedAirport(null);
-        }}
+        onClick={() => dispatch(clearSelections())}
       >
         {/* Airports and Planes rendering */}
         <DeckGLOverlay
@@ -191,7 +149,7 @@ const PlaneTracker = () => {
             longitude={parseFloat(selectedAirport.lon)} 
             latitude={parseFloat(selectedAirport.lat)} 
             closeOnClick={false}
-            onClose={() => setSelectedAirport(null)}
+            onClose={() => dispatch(setSelectedAirport(null))}
             anchor="bottom"
             offset={15}
           >
@@ -212,7 +170,7 @@ const PlaneTracker = () => {
             longitude={selectedPlane.lon} 
             latitude={selectedPlane.lat} 
             closeOnClick={false}
-            onClose={() => setSelectedPlane(null)}
+            onClose={() => dispatch(setSelectedPlane(null))}
             anchor="bottom"
             offset={30}
           >
@@ -254,15 +212,10 @@ const PlaneTracker = () => {
       `}</style>
 
       {/* Overlays */}
-      <FilterPanel 
-        useImperial={useImperial} filter={filter} setFilter={setFilter} 
-        showAirports={showAirports} setShowAirports={setShowAirports} 
-        counts={counts}
-        searchProps={{ planes, airports, onSelect: handleSearchSelect }}
-      />
-      <StatsPanel planesCount={planes.length} drapCount={drapPoints.length} planesError={planesError} drapError={drapError} />
-      <SettingsPanel darkMode={darkMode} setDarkMode={setDarkMode} useImperial={useImperial} setUseImperial={setUseImperial} showSettings={showSettings} setShowSettings={setShowSettings} />
-      <AltitudeLegend useImperial={useImperial} />
+      <FilterPanel />
+      <StatsPanel />
+      <SettingsPanel />
+      <AltitudeLegend />
     </div>
   );
 };

@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Box,
   Drawer,
@@ -7,20 +6,14 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  AppBar,
-  Toolbar,
-  Typography,
   IconButton
 } from "@mui/material";
 
-import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import SettingsIcon from "@mui/icons-material/Settings";
 import CloseIcon from "@mui/icons-material/Close";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../store/slices/planesSlice";
-import FilterPanel from "./FilterPanel";
 
 const drawerWidth = 280;
 
@@ -29,9 +22,8 @@ export const Sidebar = () => {
   const isSidebarOpen = useSelector(state => state.planes.isSidebarOpen);
 
   const handleSidebar = (value) => {
-    console.log(value);
-    dispatch(toggleSidebar(value))
-  }
+    dispatch(toggleSidebar(value));
+  };
 
   const drawerContent = (
     <Box sx={{ width: drawerWidth }} role="presentation">
