@@ -1,0 +1,24 @@
+name: Cloud Runner Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest 
+    
+    steps:
+      - name: Execute Deployment Commands via SSH
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            echo "Successfully connected to the VM from GitHub Cloud!"
+            cd ~/202610-003-Team-Space-Weather
+            
+            # docker-compose up -d --build
