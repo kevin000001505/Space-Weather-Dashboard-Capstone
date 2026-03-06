@@ -1,4 +1,11 @@
-const StatsPanel = ({ planesCount, drapCount, planesError, drapError }) => {
+import { useSelector } from 'react-redux';
+
+const StatsPanel = () => {
+  const planesCount = useSelector((state) => state.planes.data.length);
+  const drapCount = useSelector((state) => state.drap.points.length);
+  const planesError = useSelector((state) => state.planes.error);
+  const drapError = useSelector((state) => state.drap.error);
+
   return (
     <div style={{
       position: 'absolute',
