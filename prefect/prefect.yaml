@@ -42,7 +42,7 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - cron: 60  # Every 1 min at minute 0
+      - interval: 60 # 1 minute
         timezone: UTC
   
   - name: DRAP Cleanup

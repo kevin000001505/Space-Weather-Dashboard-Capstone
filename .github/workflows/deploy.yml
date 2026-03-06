@@ -100,14 +100,14 @@ jobs:
         run: |
           docker compose build --parallel   # builds all images simultaneously (fine)
           docker compose up -d --no-build --remove-orphans || true  # starts in depends_on order (db → prefect-init → prefect-worker)
-          sleep 10
-          docker compose logs postgis
+          # sleep 10
+          # docker compose logs postgis
       
-      - name: Debug postgis
-        if: always()  # ← runs even if previous step failed
-        run: |
-          docker compose logs postgis
-          docker inspect postgis --format='{{json .State.Health}}' | python3 -m json.tool
+      # - name: Debug postgis
+      #   if: always()  # ← runs even if previous step failed
+      #   run: |
+      #     docker compose logs postgis
+      #     docker inspect postgis --format='{{json .State.Health}}' | python3 -m json.tool
 
 
       - name: System Cleanup
