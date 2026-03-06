@@ -127,7 +127,7 @@ services:
         prefect deploy --all
 
         # Run DB init ONCE and wait
-        prefect deployment run "initialize-db-flow/db_initial" --watch
+        prefect deployment run "initialize-db-flow/db_initial"
     volumes:
       - ./prefect:/opt/prefect-app
       - ./shared:/opt/shared
