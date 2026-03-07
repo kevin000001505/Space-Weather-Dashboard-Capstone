@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 
 // MapLibre imports
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import Map, { Popup, useControl } from 'react-map-gl/maplibre';
+import Map, { Layer, Popup, Source, useControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // API imports
@@ -23,12 +23,33 @@ import {
   setSelectedPlane,
   setViewState,
   setIsZooming,
-  setShowDRAP,
 } from './store/slices/uiSlice';
 
 // Utility imports
 import { getAltFt, getAltDisplay, getSpeedDisplay, formatNumber, formatCoord } from './utils/mapUtils';
 import { buildDeckLayers } from './utils/deckLayersConfig';
+
+// DRAP implementations
+import { 
+  createDRAPHeatmapLayers,
+  getDRAPHeatmapGeoJSON,
+  getDRAPHeatmapMapLayers
+} from './utils/drap-implementations/heatmap';
+import { 
+  createDRAPBitmapLayers,
+  getDRAPBitmapGeoJSON,
+  getDRAPBitmapMapLayers
+} from './utils/drap-implementations/bitmap';
+import { 
+  createDRAPFilledCellsLayers,
+  getDRAPFilledCellsGeoJSON,
+  getDRAPFilledCellsMapLayers
+} from './utils/drap-implementations/filled-cells';
+import { 
+  createDRAPContourLinesLayers,
+  getDRAPContourLinesGeoJSON,
+  getDRAPContourLinesMapLayers
+} from './utils/drap-implementations/contour-lines';
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -49,6 +70,7 @@ const PlaneTracker = () => {
     darkMode,
     showAirports,
     showDRAP,
+    drapImplementation,
     viewState,
     isZooming,
   } = useSelector((state) => state.ui);
@@ -99,32 +121,81 @@ const PlaneTracker = () => {
 
     return activePlanes;
   }, [planes, filter, useImperial, highThresh, lowThresh]);
+// Dynamic DRAP implementation selection
+  const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
+    if (!drapPoints || drapPoints.length === 0) {
+      return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
+    }
 
-  const deckLayers = useMemo(() => buildDeckLayers({
-    drapPoints,
-    airports,
+    try {
+      switch (drapImplementation) {
+        case 'heatmap':
+          return {
+            drapGeoJson: getDRAPHeatmapGeoJSON?.(drapPoints),
+            drapMapLayers: getDRAPHeatmapMapLayers?.(isZooming, darkMode),
+            drapDeckLayers: createDRAPHeatmapLayers(drapPoints, isZooming),
+          };
+
+        case 'bitmap':
+          return {
+            drapGeoJson: getDRAPBitmapGeoJSON?.(drapPoints),
+            drapMapLayers: getDRAPBitmapMapLayers?.(isZooming, darkMode),
+            drapDeckLayers: createDRAPBitmapLayers(drapPoints, isZooming),
+          };
+
+        case 'filled-cells':
+          return {
+            drapGeoJson: getDRAPFilledCellsGeoJSON(drapPoints),
+            drapMapLayers: getDRAPFilledCellsMapLayers(isZooming, darkMode),
+            drapDeckLayers: [],
+          };
+
+        case 'contour-lines':
+        default:
+          return {
+            drapGeoJson: getDRAPContourLinesGeoJSON(drapPoints),
+            drapMapLayers: getDRAPContourLinesMapLayers(isZooming, darkMode),
+            drapDeckLayers: [],
+          };
+      }
+    } catch (error) {
+      console.error(`DRAP implementation failed: ${drapImplementation}`, error);
+      return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
+    }
+  }, [drapPoints, drapImplementation, isZooming, darkMode]);
+  const deckLayers = useMemo(() => {
+
+    const baseLayers = buildDeckLayers({
+      airports,
+      filteredPlanes,
+      showAirports,
+      darkMode,
+      useImperial,
+      selectedPlane,
+      selectedAirport,
+      isZooming,
+      setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
+      setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport))
+    });
+    
+    // Add DRAP deck.gl layers if using deck.gl-based implementation
+    if (showDRAP && drapDeckLayers && drapDeckLayers.length > 0) {
+      return [...drapDeckLayers, ...baseLayers];
+    }
+    
+    return baseLayers;
+  }, [
+    dispatch,
+      airports,
+      showDRAP,
     filteredPlanes,
     showAirports,
-    showDRAP,
     darkMode,
     useImperial,
     selectedPlane,
     selectedAirport,
     isZooming,
-    setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
-    setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport))
-  }), [
-    dispatch,
-    drapPoints,
-    airports,
-    filteredPlanes,
-    showAirports,
-    showDRAP,
-    darkMode,
-    useImperial,
-    selectedPlane,
-    selectedAirport,
-    isZooming
+    drapDeckLayers
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -160,6 +231,15 @@ const PlaneTracker = () => {
         }
         onClick={() => dispatch(clearSelections())}
       >
+        {/* MapLibre-based DRAP implementations (filled-cells, contour-lines) */}
+        {showDRAP && drapGeoJson && drapMapLayers && drapGeoJson.features?.length > 0 && (
+          <Source id="drap-cells" type="geojson" data={drapGeoJson}>
+            {drapMapLayers.map((layer) => (
+              <Layer key={layer.id} {...layer} />
+            ))}
+          </Source>
+        )}
+
         {/* Airports and Planes rendering */}
         <DeckGLOverlay
           layers={deckLayers}
@@ -176,25 +256,23 @@ const PlaneTracker = () => {
             latitude={parseFloat(selectedAirport.lat)} 
             closeOnClick={false}
             onClose={() => dispatch(setSelectedAirport(null))}
-            anchor="bottom"
-            offset={15}
+            anchor="top"
+            offset={10}
           >
-            <div style={{ padding: '5px' }}>
-              <h4 style={{ margin: '0 0 5px 0' }}>{selectedAirport.name}</h4>
-              <div style={{ fontSize: '13px', lineHeight: '1.5' }}>
-                <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code}<br/>
-                <strong>Location:</strong> {selectedAirport.municipality || 'N/A'}, {selectedAirport.iso_country || ''}<br/>
-                <strong>Elevation:</strong> {getAltDisplay(selectedAirport.elevation_ft, true, useImperial)}<br/>
-                <strong>Position:</strong><br/> {formatCoord(selectedAirport.lat)}°, {formatCoord(selectedAirport.lon)}°
+            <div style={{ padding: '8px', minWidth: '150px' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{selectedAirport.name}</h3>
+              <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
+                <strong>Code:</strong> {selectedAirport.iata || selectedAirport.icao}<br/>
+                <strong>Location:</strong> {selectedAirport.city}, {selectedAirport.country}
               </div>
             </div>
           </Popup>
         )}
 
-        {selectedPlane && filteredPlanes.includes(selectedPlane) && (
+        {selectedPlane && (
           <Popup 
-            longitude={selectedPlane.lon} 
-            latitude={selectedPlane.lat} 
+            longitude={parseFloat(selectedPlane.lon)} 
+            latitude={parseFloat(selectedPlane.lat)} 
             closeOnClick={false}
             onClose={() => dispatch(setSelectedPlane(null))}
             anchor="bottom"
@@ -213,6 +291,7 @@ const PlaneTracker = () => {
           </Popup>
         )}
       </Map>
+
       <style>{`
         .maplibregl-popup-content {
           background-color: var(--ui-bg) !important;
@@ -220,10 +299,8 @@ const PlaneTracker = () => {
           border: 1px solid var(--ui-border) !important;
           box-shadow: var(--ui-shadow) !important;
           backdrop-filter: blur(4px) !important;
-          border-radius: 6px !important;
-          padding: 10px !important;
         }
-        .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+        .maplibregl-popup-tip {
           border-top-color: var(--ui-border) !important;
         }
         .maplibregl-popup-close-button {
