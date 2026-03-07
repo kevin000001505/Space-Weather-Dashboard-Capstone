@@ -1,14 +1,14 @@
 import SearchBar from './SearchBar';
 import { useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setFilter, setShowAirports } from '../../store/slices/uiSlice';
+import { setFilter, setShowAirports, setShowDRAP } from '../../store/slices/uiSlice';
 import { getAltFt } from '../../utils/mapUtils';
 
 const FilterPanel = () => {
   const dispatch = useDispatch();
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
-  const { useImperial, filter, showAirports } = useSelector((state) => state.ui);
+  const { useImperial, filter, showAirports, showDRAP } = useSelector((state) => state.ui);
 
   const counts = useMemo(() => {
     const highThresh = useImperial ? 36000 : 11000;
@@ -63,15 +63,20 @@ const FilterPanel = () => {
       <div style={panelStyle}>
         <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Filter:</div>
         <select value={filter} onChange={(e) => dispatch(setFilter(e.target.value))} style={{ padding: '5px', borderRadius: '3px', width: '100%', color: 'var(--ui-text)', backgroundColor: 'var(--ui-bg)', border: 'var(--ui-border)' }}>
+          <option value="none">No Planes</option>
           <option value="all">All Planes ({counts.total})</option>
           <option value="high">High Alt ({useImperial ? '>36k ft' : '>11 km'}) ({counts.high})</option>
           <option value="medium">Med Alt ({useImperial ? '30k-36k ft' : '9k-11 km'}) ({counts.medium})</option>
           <option value="low">Low Alt ({useImperial ? '<30k ft' : '<9 km'}) ({counts.low})</option>
         </select>
-        <div style={{ marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+        <div style={{ marginTop: '10px', borderTop: '1px solid #ccc', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
             <input type="checkbox" checked={showAirports} onChange={() => dispatch(setShowAirports(!showAirports))} style={{ marginRight: '8px' }} />
             Show Airports ({counts.airports})
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <input type="checkbox" checked={showDRAP} onChange={() => dispatch(setShowDRAP(!showDRAP))} style={{ marginRight: '8px' }} />
+            Show DRAP
           </label>
         </div>
       </div>

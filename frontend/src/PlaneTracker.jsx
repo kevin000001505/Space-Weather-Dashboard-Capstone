@@ -1,5 +1,5 @@
 //Base imports
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 // MapLibre imports
@@ -22,6 +22,8 @@ import {
   setSelectedAirport,
   setSelectedPlane,
   setViewState,
+  setIsZooming,
+  setShowDRAP,
 } from './store/slices/uiSlice';
 
 // Utility imports
@@ -46,8 +48,12 @@ const PlaneTracker = () => {
     filter,
     darkMode,
     showAirports,
+    showDRAP,
     viewState,
+    isZooming,
   } = useSelector((state) => state.ui);
+  
+  const zoomTimeoutRef = useRef(null);
 
   const highThresh = useImperial ? 36000 : 11000;
   const lowThresh = useImperial ? 30000 : 9000;
@@ -89,6 +95,7 @@ const PlaneTracker = () => {
     if (filter === 'high') activePlanes = high;
     if (filter === 'medium') activePlanes = med;
     if (filter === 'low') activePlanes = low;
+    if (filter === 'none') activePlanes = [];
 
     return activePlanes;
   }, [planes, filter, useImperial, highThresh, lowThresh]);
@@ -98,10 +105,12 @@ const PlaneTracker = () => {
     airports,
     filteredPlanes,
     showAirports,
+    showDRAP,
     darkMode,
     useImperial,
     selectedPlane,
     selectedAirport,
+    isZooming,
     setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
     setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport))
   }), [
@@ -110,11 +119,28 @@ const PlaneTracker = () => {
     airports,
     filteredPlanes,
     showAirports,
+    showDRAP,
     darkMode,
     useImperial,
     selectedPlane,
-    selectedAirport
+    selectedAirport,
+    isZooming
   ]);
+
+  const handleViewStateChange = (evt) => {
+    dispatch(setViewState(evt.viewState));
+    dispatch(setIsZooming(true));
+    
+    // Clear existing timeout
+    if (zoomTimeoutRef.current) {
+      clearTimeout(zoomTimeoutRef.current);
+    }
+    
+    // Set new timeout to reset zoom state after 150ms of inactivity
+    zoomTimeoutRef.current = setTimeout(() => {
+      dispatch(setIsZooming(false));
+    }, 150);
+  };
 
   const themeVars = {
     '--ui-bg': darkMode ? 'rgba(30, 30, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)',
@@ -127,10 +153,10 @@ const PlaneTracker = () => {
     <div style={{ ...themeVars, width: '100%', height: '100vh', position: 'relative', display: 'flex' }}>
       <Map
         {...viewState}
-        onMove={(evt) => dispatch(setViewState(evt.viewState))}
+        onMove={handleViewStateChange}
         mapStyle={darkMode 
-          ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
-          : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
+          ? 'https://tiles.stadiamaps.com/styles/stamen_toner.json'
+          : 'https://tiles.stadiamaps.com/styles/stamen_toner_lite.json'
         }
         onClick={() => dispatch(clearSelections())}
       >
