@@ -18,6 +18,8 @@ EXPOSE 8000
 
 # Set Python path to include /app for shared module imports
 ENV PYTHONPATH=/app
+# Don't generate byte code to prevent permission errors
+ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run FastAPI application (will be overridden if command is specified in docker-compose)
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
