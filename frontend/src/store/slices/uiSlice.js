@@ -9,6 +9,7 @@ const initialState = {
   darkMode: false,
   showAirports: true,
   showDRAP: true,
+  drapImplementation: 'filled-cells', // 'heatmap', 'bitmap', 'filled-cells', 'contour-lines'
   viewState: {
     longitude: 0,
     latitude: 30,
@@ -69,6 +70,9 @@ const uiSlice = createSlice({
     setShowDRAP: (state, action) => {
       state.showDRAP = action.payload;
     },
+    setDrapImplementation: (state, action) => {
+      state.drapImplementation = action.payload;
+    },
   },
 });
 
@@ -87,6 +91,7 @@ export const {
   clearSelections,
   setIsZooming,
   setShowDRAP,
+  setDrapImplementation,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

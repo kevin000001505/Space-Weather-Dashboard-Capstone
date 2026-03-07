@@ -1,14 +1,14 @@
 import SearchBar from './SearchBar';
 import { useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setFilter, setShowAirports, setShowDRAP } from '../../store/slices/uiSlice';
+import { setFilter, setShowAirports, setShowDRAP, setDrapImplementation } from '../../store/slices/uiSlice';
 import { getAltFt } from '../../utils/mapUtils';
 
 const FilterPanel = () => {
   const dispatch = useDispatch();
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
-  const { useImperial, filter, showAirports, showDRAP } = useSelector((state) => state.ui);
+  const { useImperial, filter, showAirports, showDRAP, drapImplementation } = useSelector((state) => state.ui);
 
   const counts = useMemo(() => {
     const highThresh = useImperial ? 36000 : 11000;
@@ -78,6 +78,30 @@ const FilterPanel = () => {
             <input type="checkbox" checked={showDRAP} onChange={() => dispatch(setShowDRAP(!showDRAP))} style={{ marginRight: '8px' }} />
             Show DRAP
           </label>
+          {false && showDRAP && (
+            <div style={{ marginLeft: '24px', marginTop: '5px' }}>
+              <label style={{ fontSize: '0.85em', color: 'var(--ui-text-dim, #666)' }}>DRAP Style:</label>
+              <select 
+                value={drapImplementation} 
+                onChange={(e) => dispatch(setDrapImplementation(e.target.value))} 
+                style={{ 
+                  padding: '3px', 
+                  borderRadius: '3px', 
+                  width: '100%', 
+                  marginTop: '3px',
+                  fontSize: '0.9em',
+                  color: 'var(--ui-text)', 
+                  backgroundColor: 'var(--ui-bg)', 
+                  border: 'var(--ui-border)' 
+                }}
+              >
+                <option value="contour-lines">Contour Lines</option>
+                <option value="filled-cells">Filled Cells</option>
+                <option value="bitmap">Bitmap</option>
+                <option value="heatmap">Heatmap</option>
+              </select>
+            </div>
+          )}
         </div>
       </div>
     </div>
