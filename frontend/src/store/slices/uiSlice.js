@@ -8,6 +8,7 @@ const initialState = {
   filter: 'all',
   darkMode: false,
   showAirports: true,
+  showDRAP: true,
   viewState: {
     longitude: 0,
     latitude: 30,
@@ -18,6 +19,7 @@ const initialState = {
   searchQuery: '',
   searchResults: [],
   isSearchOpen: false,
+  isZooming: false,
 };
 
 const uiSlice = createSlice({
@@ -61,6 +63,12 @@ const uiSlice = createSlice({
       state.selectedPlane = null;
       state.selectedAirport = null;
     },
+    setIsZooming: (state, action) => {
+      state.isZooming = action.payload;
+    },
+    setShowDRAP: (state, action) => {
+      state.showDRAP = action.payload;
+    },
   },
 });
 
@@ -77,6 +85,8 @@ export const {
   setSearchResults,
   setSearchOpen,
   clearSelections,
+  setIsZooming,
+  setShowDRAP,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;
