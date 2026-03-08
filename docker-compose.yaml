@@ -81,6 +81,7 @@ services:
       PREFECT_REDIS_MESSAGING_DB: 0
       PREFECT_UI_API_URL: /prefect/api
       PREFECT_UI_SERVE_BASE: /prefect
+      PREFECT_API_SERVICES_SCHEDULER_MAX_CATCHUP_SECONDS: "60"
     command: prefect server start --host 0.0.0.0
     volumes:
       - prefect_home:/root/.prefect

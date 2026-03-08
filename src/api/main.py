@@ -7,17 +7,24 @@ from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     AIRPORTS_LATEST_QUERY,
     FLIGHT_PATH_QUERY,
+    KP_INDEX_QUERY,
     LATEST_DRAP_QUERY,
-    LATEST_FLIGHT_STATES_QUERY,
+    XRAY_FLUX_QUERY,
+    PROTON_FLUX_QUERY,
 )
 from config import (
-    FlightState,
     FlightStatesResponse,
     DRAPResponse,
     FlightPathResponse,
     ActivateFlightState,
     Airport,
     AirportsResponse,
+    KpIndexResponse,
+    KpIndexListResponse,
+    XRayResponse,
+    XRayListResponse,
+    ProtonFluxResponse,
+    ProtonFluxListResponse,
 )
 import logging
 import json
@@ -130,7 +137,7 @@ async def get_flight_path(icao24: str):
 
 
 @app.get("/api/v1/active-flight-states/latest", response_model=FlightStatesResponse)
-async def get_activate_flight_states(limit: int = Query(None, ge=1, le=1000)):
+async def get_activate_flight_states(limit: int = Query(10, ge=1, le=1000)):
     """
     Retrieve all flight states from the most recent timestamp in activate_flight table.
 
@@ -188,76 +195,6 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=1000)):
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/flight-states/latest", response_model=FlightStatesResponse)
-async def get_latest_flight_states(limit: int = Query(None, ge=1, le=1000)):
-    """
-    Retrieve all flight states from the most recent timestamp.
-    Uses optimized query with subquery for better performance.
-
-    - **limit**: Optional parameter to limit results (e.g., ?limit=50 returns 50 records)
-    """
-    start_time = time.time()
-
-    async with get_connection() as conn:
-        try:
-            query_start = time.time()
-
-            # Optimized single query: get max time and filter in one go
-            rows = await conn.fetch(LATEST_FLIGHT_STATES_QUERY)
-
-            query_time_ms = (time.time() - query_start) * 1000
-
-            if not rows:
-                raise HTTPException(status_code=404, detail="No flight data available")
-
-            latest_time = rows[0]["time"]
-
-            flights = []
-            for row in rows:
-                if limit and len(flights) >= limit:
-                    break
-                flights.append(
-                    FlightState(
-                        icao24=row["icao24"],
-                        callsign=row["callsign"],
-                        time=row["time"].isoformat(),
-                        time_pos=(
-                            row["time_pos"].isoformat() if row["time_pos"] else None
-                        ),
-                        lat=row["lat"],
-                        lon=row["lon"],
-                        baro_altitude=row["baro_altitude"],
-                        geo_altitude=row["geo_altitude"],
-                        velocity=row["velocity"],
-                        heading=row["heading"],
-                        vert_rate=row["vert_rate"],
-                        on_ground=(
-                            row["on_ground"] if row["on_ground"] is not None else False
-                        ),
-                    )
-                )
-
-            total_time_ms = (time.time() - start_time) * 1000
-
-            logger.info(
-                f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms"
-            )
-
-            return FlightStatesResponse(
-                timestamp=latest_time.isoformat(),
-                count=len(flights),
-                flights=flights,
-                query_time_ms=round(query_time_ms, 2),
-                total_time_ms=round(total_time_ms, 2),
-            )
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching flight states: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
 @app.get("/api/v1/drap/latest", response_model=DRAPResponse)
 async def latest_drap():
     start_time = time.time()
@@ -290,3 +227,126 @@ async def latest_drap():
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
+@app.get("/api/v1/kp-index", response_model=KpIndexListResponse)
+async def kp_index(hours: int = Query(24, ge=1, le=168)):
+    """
+    Retrieve the Kp index value from the past specified hours.
+
+    - **hours**: Number of past hours to look back for the latest Kp index (default: 3)
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                KP_INDEX_QUERY,
+                hours,
+            )
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No Kp index data available")
+
+        indices = []
+        for row in rows:
+            indices.append(
+                KpIndexResponse(
+                    time_tag=row["time_tag"],
+                    kp=row["kp"],
+                    a_running=row.get("a_running"),
+                    station_count=row.get("station_count"),
+                )
+            )
+
+        return KpIndexListResponse(indices=indices)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching latest Kp index: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/xray", response_model=XRayListResponse)
+async def xray_flux(hours: int = Query(24, ge=1, le=168)):
+    """
+    Retrieve the latest X-ray flux data from the past specified hours.
+
+    - **hours**: Number of past hours to look back for the latest X-ray flux (default: 3)
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                XRAY_FLUX_QUERY,
+                hours,
+            )
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No X-ray flux data available")
+
+        xray_fluxes = []
+        for row in rows:
+            xray_fluxes.append(
+                XRayResponse(
+                    time_tag=row["time_tag"],
+                    satellite=row["satellite"],
+                    current_class=row["current_class"],
+                    current_ratio=row["current_ratio"],
+                    current_int_xrlong=row["current_int_xrlong"],
+                    begin_time=row["begin_time"],
+                    begin_class=row["begin_class"],
+                    max_time=row["max_time"],
+                    max_class=row["max_class"],
+                    max_xrlong=row["max_xrlong"],
+                    end_time=row["end_time"],
+                    end_class=row["end_class"],
+                    max_ratio_time=row["max_ratio_time"],
+                    max_ratio=row["max_ratio"],
+                )
+            )
+
+        return XRayListResponse(xray_fluxes=xray_fluxes)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching latest X-ray flux: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/proton-flux", response_model=ProtonFluxListResponse)
+async def proton_flux(hours: int = Query(24, ge=1, le=168)):
+    """
+    Retrieve proton flux data from the past specified hours.
+
+    - **hours**: Number of past hours to look back (default: 24)
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                PROTON_FLUX_QUERY,
+                hours,
+            )
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No proton flux data available")
+
+        data = []
+        for row in rows:
+            data.append(
+                ProtonFluxResponse(
+                    time_tag=row["time_tag"],
+                    satellite=row["satellite"],
+                    flux_10_mev=row.get("flux_10_mev"),
+                    flux_50_mev=row.get("flux_50_mev"),
+                    flux_100_mev=row.get("flux_100_mev"),
+                    flux_500_mev=row.get("flux_500_mev"),
+                )
+            )
+
+        return ProtonFluxListResponse(data=data)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching proton flux: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

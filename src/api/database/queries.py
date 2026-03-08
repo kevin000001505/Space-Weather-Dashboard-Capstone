@@ -85,3 +85,24 @@ LATEST_DRAP_QUERY = """
     ) AS payload
     FROM pts;
 """
+
+KP_INDEX_QUERY = """
+SELECT time_tag, kp, a_running, station_count
+FROM kp_index
+WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+ORDER BY time_tag DESC
+"""
+
+XRAY_FLUX_QUERY = """
+SELECT *
+FROM goes_xray_events
+WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+ORDER BY time_tag DESC
+"""
+
+PROTON_FLUX_QUERY = """
+SELECT time_tag, satellite, flux_10_mev, flux_50_mev, flux_100_mev, flux_500_mev
+FROM goes_proton_flux
+WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+ORDER BY time_tag DESC
+"""
