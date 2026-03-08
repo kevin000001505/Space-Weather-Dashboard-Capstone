@@ -34,8 +34,8 @@ export const getDRAPFilledCellsGeoJSON = (drapPoints) => {
   const latStep = getMedianStep(uniqueLats) || 2;
   const lonStep = getMedianStep(uniqueLons) || 4;
 
-  const halfLat = latStep / 2 + 0.02;
-  const halfLon = lonStep / 2 + 0.02;
+  const halfLat = latStep / 2;
+  const halfLon = lonStep / 2;
 
   const ampByCell = new Map();
   let maxAmp = 0;
@@ -96,34 +96,28 @@ export const getDRAPFilledCellsGeoJSON = (drapPoints) => {
   };
 };
 
-export const getDRAPFilledCellsMapLayers = (isZooming, darkMode) => {
+export const getDRAPFilledCellsMapLayers = (isZooming) => {
   return [
     {
       id: 'drap-filled-cells',
       type: 'fill',
       source: 'drap-cells',
       paint: {
+        'fill-antialias': false,
         'fill-color': [
           'interpolate',
           ['linear'],
-          ['coalesce', ['to-number', ['get', 'amp']], 0],
-          0.0, '#4169e1',
-          0.25, '#00bfff',
-          0.5, '#32cd32',
-          0.75, '#ffa500',
-          1.0, '#ff4500',
+          ['coalesce', ['to-number', ['get', 'ampRaw']], 0],
+          0,  '#000000',
+          5,  '#7700ff',
+          10, '#0000ff',
+          15, '#00ffff',
+          20, '#55ff00',
+          25, '#ffff00',
+          30, '#ff8000',
+          35, '#ff0000',
         ],
         'fill-opacity': isZooming? 0.1 : 0.5,
-      },
-    },
-    {
-      id: 'drap-filled-cells-outline',
-      type: 'line',
-      source: 'drap-cells',
-      paint: {
-        'line-color': darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-        'line-width': 0.5,
-        'line-opacity': isZooming ? 0.1 : 1,
       },
     },
   ];

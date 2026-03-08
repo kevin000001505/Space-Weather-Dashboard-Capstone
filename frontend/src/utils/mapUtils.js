@@ -74,11 +74,18 @@ export const getStops = (useImperial) => {
 };
 
 // Interpolates the color based on the active unit's stops
-export const getAltitudeColor = (altValue, useImperial) => {
-  if (altValue === null || altValue === undefined) return [150, 150, 150];
+export const getAltitudeColor = (alt, isImperial, useImperial) => {
+  if (alt === null || alt === undefined) return [150, 150, 150];
   
   const stops = getStops(useImperial);
   
+  let altValue = alt;
+  if (isImperial && !useImperial) {
+    altValue = getAltM(alt);
+  }
+  else if (!isImperial && useImperial) {
+    altValue = getAltFt(alt);
+  }
   if (altValue <= stops[0].val) return stops[0].color;
   if (altValue >= stops[stops.length - 1].val) return stops[stops.length - 1].color;
 

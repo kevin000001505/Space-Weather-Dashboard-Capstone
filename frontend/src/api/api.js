@@ -1,6 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const fetchPlanes = createAsyncThunk(
   'planes/fetchPlanes',
@@ -43,14 +43,7 @@ export const fetchAirports = createAsyncThunk(
         throw new Error('Failed to fetch airport data');
       }
       const data = await response.json();
-      console.log(data);
-      const validAirports = data.airports.filter(airport =>
-        airport.lat &&
-        airport.lon &&
-        (airport.type === 'large_airport' || airport.type === 'medium_airport')
-      );
-      console.log(validAirports);
-      return validAirports;
+      return data.airports;
     } catch (error) {
       return rejectWithValue(error.message);
     }

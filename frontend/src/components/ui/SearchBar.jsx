@@ -91,7 +91,6 @@ const SearchBar = () => {
     <div style={{
       position: 'relative',
       width: '250px',
-      marginBottom: '10px',
       color: 'var(--ui-text)',
       backgroundColor: 'var(--ui-bg)',
       boxShadow: 'var(--ui-shadow)',

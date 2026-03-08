@@ -5,11 +5,14 @@ const initialState = {
   showSettings: false,
   selectedPlane: null,
   selectedAirport: null,
-  filter: 'all',
+  planeFilter: 'all',
+  airportFilter: ['large_airport', 'medium_airport'],
   darkMode: false,
+  showPlanes: true,
   showAirports: true,
   showDRAP: true,
   drapImplementation: 'filled-cells', // 'heatmap', 'bitmap', 'filled-cells', 'contour-lines'
+  isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,
     latitude: 30,
@@ -39,11 +42,17 @@ const uiSlice = createSlice({
     setSelectedAirport: (state, action) => {
       state.selectedAirport = action.payload;
     },
-    setFilter: (state, action) => {
-      state.filter = action.payload;
+    setPlaneFilter: (state, action) => {
+      state.planeFilter = action.payload;
+    },
+    setAirportFilter: (state, action) => {
+      state.airportFilter = action.payload;
     },
     setDarkMode: (state, action) => {
       state.darkMode = action.payload;
+    },
+    setShowPlanes: (state, action) => {
+      state.showPlanes = action.payload;
     },
     setShowAirports: (state, action) => {
       state.showAirports = action.payload;
@@ -73,6 +82,9 @@ const uiSlice = createSlice({
     setDrapImplementation: (state, action) => {
       state.drapImplementation = action.payload;
     },
+    setIsAirportDropdownOpen: (state, action) => {
+      state.isAirportDropdownOpen = action.payload;
+    },
   },
 });
 
@@ -81,9 +93,11 @@ export const {
   setShowSettings,
   setSelectedPlane,
   setSelectedAirport,
-  setFilter,
+  setPlaneFilter,
+  setAirportFilter,
   setDarkMode,
   setShowAirports,
+  setShowPlanes,
   setViewState,
   setSearchQuery,
   setSearchResults,
@@ -92,6 +106,7 @@ export const {
   setIsZooming,
   setShowDRAP,
   setDrapImplementation,
+  setIsAirportDropdownOpen,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

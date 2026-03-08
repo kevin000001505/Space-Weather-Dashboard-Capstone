@@ -66,9 +66,11 @@ const PlaneTracker = () => {
     useImperial,
     selectedPlane,
     selectedAirport,
-    filter,
+    planeFilter,
+    airportFilter,
     darkMode,
     showAirports,
+    showPlanes,
     showDRAP,
     drapImplementation,
     viewState,
@@ -114,13 +116,19 @@ const PlaneTracker = () => {
     });
 
     let activePlanes = valid;
-    if (filter === 'high') activePlanes = high;
-    if (filter === 'medium') activePlanes = med;
-    if (filter === 'low') activePlanes = low;
-    if (filter === 'none') activePlanes = [];
+    if (planeFilter === 'high') activePlanes = high;
+    if (planeFilter === 'medium') activePlanes = med;
+    if (planeFilter === 'low') activePlanes = low;
+    if (planeFilter === 'none') activePlanes = [];
 
     return activePlanes;
-  }, [planes, filter, useImperial, highThresh, lowThresh]);
+  }, [planes, planeFilter, useImperial, highThresh, lowThresh]);
+
+  const filteredAirports = useMemo(() => {
+    if (airportFilter.length === 0) return [];
+    return airports.filter(a => airportFilter.includes(a.type));
+  }, [airports, airportFilter]);
+
 // Dynamic DRAP implementation selection
   const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
     if (!drapPoints || drapPoints.length === 0) {
@@ -166,9 +174,10 @@ const PlaneTracker = () => {
   const deckLayers = useMemo(() => {
 
     const baseLayers = buildDeckLayers({
-      airports,
       filteredPlanes,
+      filteredAirports,
       showAirports,
+      showPlanes,
       darkMode,
       useImperial,
       selectedPlane,
@@ -186,10 +195,11 @@ const PlaneTracker = () => {
     return baseLayers;
   }, [
     dispatch,
-      airports,
-      showDRAP,
+    filteredAirports,
+    showDRAP,
     filteredPlanes,
     showAirports,
+    showPlanes,
     darkMode,
     useImperial,
     selectedPlane,
@@ -214,7 +224,7 @@ const PlaneTracker = () => {
   };
 
   const themeVars = {
-    '--ui-bg': darkMode ? 'rgba(30, 30, 30, 0.75)' : 'rgba(255, 255, 255, 0.75)',
+    '--ui-bg': darkMode ? 'rgba(30, 30, 30, 1)' : 'rgba(255, 255, 255, 1)',
     '--ui-text': darkMode ? '#ffffff' : '#000000',
     '--ui-border': darkMode ? '#555555' : '#cccccc',
     '--ui-shadow': '0 4px 12px rgba(0,0,0,0.3)',
@@ -262,14 +272,19 @@ const PlaneTracker = () => {
             <div style={{ padding: '8px', minWidth: '150px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{selectedAirport.name}</h3>
               <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                <strong>Code:</strong> {selectedAirport.iata || selectedAirport.icao}<br/>
-                <strong>Location:</strong> {selectedAirport.city}, {selectedAirport.country}
+                <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code}<br/>
+                <strong>Type:</strong>
+                {selectedAirport.type.replace('_', ' ').split(' ').map(word => word.charAt(0)
+                .toUpperCase() + word.slice(1)).join(' ')}<br/>
+                <strong>Location:</strong> {selectedAirport.municipality || 'N/A'}, {selectedAirport.country}<br/>
+                <strong>Elevation:</strong> {getAltDisplay(selectedAirport.elevation_ft, true, useImperial)}<br/>
+                <strong>Position:</strong> {formatCoord(selectedAirport.lat)}°, {formatCoord(selectedAirport.lon)}°
               </div>
             </div>
           </Popup>
         )}
 
-        {selectedPlane && (
+        {showPlanes && selectedPlane && (
           <Popup 
             longitude={parseFloat(selectedPlane.lon)} 
             latitude={parseFloat(selectedPlane.lat)} 
@@ -285,7 +300,7 @@ const PlaneTracker = () => {
                 <strong>Altitude:</strong> {getAltDisplay(selectedPlane.geo_altitude, false, useImperial)}<br/>
                 <strong>Speed:</strong> {getSpeedDisplay(selectedPlane.velocity, false, useImperial)}<br/>
                 <strong>Heading:</strong> {formatNumber(selectedPlane.heading, 0, '°')}<br/>
-                <strong>Position:</strong><br/> {formatCoord(selectedPlane.lat)}°, {formatCoord(selectedPlane.lon)}°
+                <strong>Position:</strong> {formatCoord(selectedPlane.lat)}°, {formatCoord(selectedPlane.lon)}°
               </div>
             </div>
           </Popup>

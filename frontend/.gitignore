@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Include .env files but ignore .env.local which may contain secrets
+!.env.development
+!.env.production

@@ -1,15 +1,15 @@
 import { ScatterplotLayer, IconLayer } from "@deck.gl/layers";
 import {
-  getAltFt,
   getAltitudeColor,
   PLANE_ATLAS,
   PLANE_OUTLINE_ATLAS,
 } from "./mapUtils";
 
 export const buildDeckLayers = ({
-  airports,
   filteredPlanes,
+  filteredAirports,
   showAirports,
+  showPlanes,
   darkMode,
   useImperial,
   selectedPlane,
@@ -43,10 +43,12 @@ export const buildDeckLayers = ({
     showAirports &&
       new ScatterplotLayer({
         id: "airports-base",
-        data: airports,
+        data: filteredAirports,
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-        getFillColor: darkMode ? [168, 168, 168, 150] : [85, 85, 85, 150],
-        getRadius: (d) => (d.type === "large_airport" ? 5 : 3),
+        getFillColor: (d) => {
+          return getAltitudeColor(d.elevation_ft, true, useImperial);
+        },
+        getRadius: 5,
         radiusUnits: "pixels",
         lineWidthMinPixels: 1,
         stroked: true,
@@ -58,32 +60,30 @@ export const buildDeckLayers = ({
       }),
 
     // Planes Icon Layer
-    new IconLayer({
-      id: "planes-base",
-      data: filteredPlanes,
-      pickable: true,
-      iconAtlas: PLANE_ATLAS,
-      iconMapping: {
-        plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
-      },
-      getIcon: (d) => "plane",
-      getPosition: (d) => [d.lon, d.lat],
-      getSize: 30,
-      getAngle: (d) => -(d.heading || 0),
-      getColor: (d) => {
-        const color = getAltitudeColor(
-          useImperial ? getAltFt(d.geo_altitude) : d.geo_altitude,
-          useImperial,
-        );
-        // Reduce opacity to 0.1 when zooming
-        return isZooming ? [color[0], color[1], color[2], 25] : color;
-      },
-      onClick: handlePlaneClick,
-      updateTriggers: {
-        getSize: selectedPlane?.icao24,
-        getColor: [useImperial, isZooming],
-      },
-    }),
+    showPlanes &&
+      new IconLayer({
+        id: "planes-base",
+        data: filteredPlanes,
+        pickable: true,
+        iconAtlas: PLANE_ATLAS,
+        iconMapping: {
+          plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
+        },
+        getIcon: (d) => "plane",
+        getPosition: (d) => [d.lon, d.lat],
+        getSize: 30,
+        getAngle: (d) => -(d.heading || 0),
+        getColor: (d) => {
+          const color = getAltitudeColor(d.geo_altitude, false, useImperial);
+          // Reduce opacity to 0.1 when zooming
+          return isZooming ? [color[0], color[1], color[2], 25] : color;
+        },
+        onClick: handlePlaneClick,
+        updateTriggers: {
+          getSize: selectedPlane?.icao24,
+          getColor: [useImperial, isZooming],
+        },
+      }),
 
     // Selected Airport Highlight
     showAirports &&
@@ -93,7 +93,7 @@ export const buildDeckLayers = ({
         data: [selectedAirport],
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
         getFillColor: [255, 0, 0, 255],
-        getRadius: (d) => (d.type === "large_airport" ? 7 : 5),
+        getRadius: 7,
         radiusUnits: "pixels",
         lineWidthMinPixels: 2,
         stroked: true,
@@ -104,8 +104,8 @@ export const buildDeckLayers = ({
       }),
 
     // Selected Plane Outline
-    selectedPlane &&
-      filteredPlanes.includes(selectedPlane) &&
+    showPlanes &&
+      selectedPlane &&
       new IconLayer({
         id: "selected-plane-outline",
         data: [selectedPlane],
@@ -124,8 +124,8 @@ export const buildDeckLayers = ({
       }),
 
     // Selected Plane Fill
-    selectedPlane &&
-      filteredPlanes.includes(selectedPlane) &&
+    showPlanes &&
+      selectedPlane &&
       new IconLayer({
         id: "selected-plane-fill",
         data: [selectedPlane],
@@ -137,11 +137,7 @@ export const buildDeckLayers = ({
         getPosition: (d) => [d.lon, d.lat],
         getSize: 45,
         getAngle: (d) => -(d.heading || 0),
-        getColor: (d) =>
-          getAltitudeColor(
-            useImperial ? getAltFt(d.geo_altitude) : d.geo_altitude,
-            useImperial,
-          ),
+        getColor: (d) => getAltitudeColor(d.geo_altitude, false, useImperial),
         updateTriggers: {
           getColor: [useImperial],
         },
