@@ -8,10 +8,8 @@ from database.queries import (
     AIRPORTS_LATEST_QUERY,
     FLIGHT_PATH_QUERY,
     LATEST_DRAP_QUERY,
-    LATEST_FLIGHT_STATES_QUERY,
 )
 from config import (
-    FlightState,
     FlightStatesResponse,
     DRAPResponse,
     FlightPathResponse,
@@ -181,76 +179,6 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=1000)):
                 query_time_ms=round(query_time_ms, 2),
                 total_time_ms=round(total_time_ms, 2),
             )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching flight states: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
-@app.get("/api/v1/flight-states/latest", response_model=FlightStatesResponse)
-async def get_latest_flight_states(limit: int = Query(None, ge=1, le=1000)):
-    """
-    Retrieve all flight states from the most recent timestamp.
-    Uses optimized query with subquery for better performance.
-
-    - **limit**: Optional parameter to limit results (e.g., ?limit=50 returns 50 records)
-    """
-    start_time = time.time()
-
-    async with get_connection() as conn:
-        try:
-            query_start = time.time()
-
-            # Optimized single query: get max time and filter in one go
-            rows = await conn.fetch(LATEST_FLIGHT_STATES_QUERY)
-
-            query_time_ms = (time.time() - query_start) * 1000
-
-            if not rows:
-                raise HTTPException(status_code=404, detail="No flight data available")
-
-            latest_time = rows[0]["time"]
-
-            flights = []
-            for row in rows:
-                if limit and len(flights) >= limit:
-                    break
-                flights.append(
-                    FlightState(
-                        icao24=row["icao24"],
-                        callsign=row["callsign"],
-                        time=row["time"].isoformat(),
-                        time_pos=(
-                            row["time_pos"].isoformat() if row["time_pos"] else None
-                        ),
-                        lat=row["lat"],
-                        lon=row["lon"],
-                        baro_altitude=row["baro_altitude"],
-                        geo_altitude=row["geo_altitude"],
-                        velocity=row["velocity"],
-                        heading=row["heading"],
-                        vert_rate=row["vert_rate"],
-                        on_ground=(
-                            row["on_ground"] if row["on_ground"] is not None else False
-                        ),
-                    )
-                )
-
-            total_time_ms = (time.time() - start_time) * 1000
-
-            logger.info(
-                f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms"
-            )
-
-            return FlightStatesResponse(
-                timestamp=latest_time.isoformat(),
-                count=len(flights),
-                flights=flights,
-                query_time_ms=round(query_time_ms, 2),
-                total_time_ms=round(total_time_ms, 2),
-            )
-
         except HTTPException:
             raise
         except Exception as e:

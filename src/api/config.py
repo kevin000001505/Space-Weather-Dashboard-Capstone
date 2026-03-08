@@ -3,22 +3,6 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-# Response Models for Flight States
-class FlightState(BaseModel):
-    icao24: str
-    callsign: Optional[str]
-    time: str
-    time_pos: Optional[str]
-    lat: Optional[float]
-    lon: Optional[float]
-    baro_altitude: Optional[float]
-    geo_altitude: Optional[float]
-    velocity: Optional[float]
-    heading: Optional[float]
-    vert_rate: Optional[float]
-    on_ground: bool
-
-
 class DRAPResponse(BaseModel):
     timestamp: datetime
     count: int
@@ -47,7 +31,7 @@ class ActivateFlightState(BaseModel):
 class FlightStatesResponse(BaseModel):
     timestamp: str
     count: int
-    flights: List[FlightState | ActivateFlightState]
+    flights: List[ActivateFlightState]
     query_time_ms: float  # Add query execution time
     total_time_ms: float  # Add total endpoint time
 
