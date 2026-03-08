@@ -50,3 +50,48 @@ class Airport(BaseModel):
 
 class AirportsResponse(BaseModel):
     airports: List[Airport]
+
+
+class KpIndexResponse(BaseModel):
+    time_tag: datetime
+    kp: float
+    a_running: Optional[int] = None
+    station_count: Optional[int] = None
+
+
+class KpIndexListResponse(BaseModel):
+    indices: List[KpIndexResponse]
+
+
+class ProtonFluxResponse(BaseModel):
+    time_tag: datetime
+    satellite: int
+    flux_10_mev: Optional[float] = None
+    flux_50_mev: Optional[float] = None
+    flux_100_mev: Optional[float] = None
+    flux_500_mev: Optional[float] = None
+
+
+class ProtonFluxListResponse(BaseModel):
+    data: List[ProtonFluxResponse]
+
+
+class XRayResponse(BaseModel):
+    time_tag: datetime
+    satellite: int
+    current_class: Optional[str] = None
+    current_ratio: Optional[float] = None
+    current_int_xrlong: Optional[float] = None
+    begin_time: Optional[datetime] = None
+    begin_class: Optional[str] = None
+    max_time: Optional[datetime] = None
+    max_class: Optional[str] = None
+    max_xrlong: Optional[float] = None
+    end_time: Optional[datetime] = None
+    end_class: Optional[str] = None
+    max_ratio_time: Optional[datetime] = None
+    max_ratio: Optional[float] = None
+
+
+class XRayListResponse(BaseModel):
+    xray_fluxes: List[XRayResponse]
