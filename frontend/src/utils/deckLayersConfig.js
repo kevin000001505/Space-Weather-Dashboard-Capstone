@@ -5,6 +5,34 @@ import {
   PLANE_OUTLINE_ATLAS,
 } from "./mapUtils";
 
+const svgToDataUrl = (svg) =>
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+const SHAPE_SVGS = {
+  star6: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><polygon points="64,4 76,40 116,24 88,56 124,64 88,72 116,104 76,88 64,124 52,88 12,104 40,72 4,64 40,56 12,24 52,40" fill="white"/></svg>',
+  star5: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><polygon points="64,6 78,45 119,46 86,71 98,111 64,87 30,111 42,71 9,46 50,45" fill="white"/></svg>',
+  star4: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><polygon points="64,4 80,48 124,64 80,80 64,124 48,80 4,64 48,48" fill="white"/></svg>',
+  square: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect x="8" y="8" width="112" height="112" fill="white"/></svg>',
+  triangle: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><polygon points="64,8 120,120 8,120" fill="white"/></svg>',
+  circle: '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><circle cx="64" cy="64" r="60" fill="white"/></svg>',
+};
+
+const AIRPORT_ICONS = Object.fromEntries(
+  Object.entries({
+    large_airport: 'star6',
+    medium_airport: 'star5',
+    small_airport: 'star4',
+    heliport: 'square',
+    seaplane_base: 'triangle',
+    balloonport: 'circle',
+  }).map(([type, shape]) => [
+    type,
+    { id: shape, url: svgToDataUrl(SHAPE_SVGS[shape]), width: 128, height: 128, mask: true },
+  ])
+);
+
+const DEFAULT_AIRPORT_ICON = AIRPORT_ICONS.small_airport;
+
 export const buildDeckLayers = ({
   filteredPlanes,
   filteredAirports,
@@ -39,24 +67,21 @@ export const buildDeckLayers = ({
   };
 
   return [
-    // Airports Scatterplot Layer
+    // Airports Icon Layer
     showAirports &&
-      new ScatterplotLayer({
+      new IconLayer({
         id: "airports-base",
         data: filteredAirports,
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-        getFillColor: (d) => {
-          return getAltitudeColor(d.elevation_ft, true, useImperial);
+        getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+        getSize: 14,
+        getColor: (d) => {
+          const color = getAltitudeColor(d.elevation_ft, true, useImperial);
+          return isZooming ? [color[0], color[1], color[2], 25] : color;
         },
-        getRadius: 5,
-        radiusUnits: "pixels",
-        lineWidthMinPixels: 1,
-        stroked: true,
-        getLineColor: [0, 0, 0, 100],
         pickable: true,
         onClick: handleAirportClick,
-        opacity: isZooming ? 0.05 : 1,
-        updateTriggers: { getFillColor: darkMode },
+        updateTriggers: { getColor: [darkMode, useImperial, isZooming] },
       }),
 
     // Planes Icon Layer
