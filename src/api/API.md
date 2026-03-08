@@ -307,5 +307,5 @@ All endpoints return standard error objects on failure:
 | `500` | Internal database or server error |
 
 ```json
-{ "detail": "No Kp index data available" }
+{ "detail": "No {type} data available" }
 ```
