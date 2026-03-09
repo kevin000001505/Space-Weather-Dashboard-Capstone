@@ -76,7 +76,7 @@ async def health_check():
 
 
 @app.get("/api/v1/airports/latest", response_model=AirportsResponse)
-async def get_latest_airports(limit: int = Query(None, ge=1, le=5000)):
+async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
     async with get_connection() as conn:
         try:
             rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
@@ -137,7 +137,7 @@ async def get_flight_path(icao24: str):
 
 
 @app.get("/api/v1/active-flight-states/latest", response_model=FlightStatesResponse)
-async def get_activate_flight_states(limit: int = Query(10, ge=1, le=1000)):
+async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
     """
     Retrieve all flight states from the most recent timestamp in activate_flight table.
 
