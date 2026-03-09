@@ -1,6 +1,6 @@
 *
 !docker/
-!prefect/
+!prefect_workflows/
 !src/
 !tests
 **/__pycache__

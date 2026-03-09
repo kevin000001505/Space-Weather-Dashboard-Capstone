@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from tasks.queries import DRAP_DATA_INSERT_SQL
 from asyncpg.pool import PoolConnectionProxy
 from tasks.models import DrapRecord
-from prefect_workflows import get_run_logger
+from prefect import get_run_logger
 
 
 async def insert_drap_data(df_long, conn: PoolConnectionProxy):

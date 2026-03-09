@@ -131,7 +131,7 @@ services:
         # Run DB init ONCE and wait
         prefect deployment run "initialize-db-flow/db_initial"
     volumes:
-      - ./prefect:/opt/prefect-app
+      - ./prefect_workflows:/opt/prefect-app
       - ./shared:/opt/shared
     networks:
       - prefect_network
@@ -164,7 +164,7 @@ services:
         prefect worker start --pool NOAA-pool 
     restart: unless-stopped
     volumes:
-      - ./prefect:/opt/prefect-app
+      - ./prefect_workflows:/opt/prefect-app
       - ./shared:/opt/shared
       - ${PYOPENSKY_SETTINGS}:/root/.config/pyopensky/settings.conf
     networks:
@@ -197,7 +197,7 @@ services:
         prefect worker start --pool flight-pool
     restart: unless-stopped
     volumes:
-      - ./prefect:/opt/prefect-app
+      - ./prefect_workflows:/opt/prefect-app
       - ./shared:/opt/shared
       - ${PYOPENSKY_SETTINGS}:/root/.config/pyopensky/settings.conf
     networks:
