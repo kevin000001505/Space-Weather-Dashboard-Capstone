@@ -1,3 +1,4 @@
+import logging
 from database.db_tools import get_connection
 from prefect import flow, get_run_logger
 from tasks.db import (
@@ -11,11 +12,21 @@ from tasks.db import (
     initial_alert_db,
 )
 
+_fallback = logging.getLogger(__name__)
+
+
+def _logger():
+    """Return Prefect run logger if in a flow/task context, else stdlib logger."""
+    try:
+        return get_run_logger()
+    except Exception:
+        return _fallback
+
 
 @flow(log_prints=True)
 async def db_maintenance_flow():
     """Flow to perform database maintenance tasks."""
-    logger = get_run_logger()
+    logger = _logger()
     logger.info("Starting database maintenance flow...")
     try:
         async with get_connection() as conn:
@@ -29,7 +40,7 @@ async def db_maintenance_flow():
 @flow(log_prints=True)
 async def initialize_db_flow():
     """Flow to initialize the database schema."""
-    logger = get_run_logger()
+    logger = _logger()
     logger.info("Starting database initialization flow...")
     try:
         async with get_connection() as conn:
@@ -44,3 +55,24 @@ async def initialize_db_flow():
 
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
+
+
+if __name__ == "__main__":
+    import asyncio
+    import asyncpg
+    import os
+
+    async def run():
+        conn = await asyncpg.connect(os.environ["DATABASE_URL"])
+        try:
+            await initial_drap_db.fn(conn)
+            await initial_airport_db.fn(conn)
+            await initial_activate_flight_db.fn(conn)
+            await initial_latest_xray_db.fn(conn)
+            await initial_proton_flux_plot_db.fn(conn)
+            await initial_kp_index_db.fn(conn)
+            await initial_alert_db.fn(conn)
+        finally:
+            await conn.close()
+
+    asyncio.run(run())

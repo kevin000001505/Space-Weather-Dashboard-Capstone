@@ -1,5 +1,6 @@
 """Database initialization and maintenance tasks."""
 
+import logging
 from database.db_tools import (
     ensure_table_exists,
     cleanup_old_data,
@@ -17,11 +18,21 @@ from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
 from asyncpg.pool import PoolConnectionProxy
 
+_fallback = logging.getLogger(__name__)
+
+
+def _logger():
+    """Return Prefect run logger if in a flow/task context, else stdlib logger."""
+    try:
+        return get_run_logger()
+    except Exception:
+        return _fallback
+
 
 @task(cache_policy=NO_CACHE)
 async def initial_drap_db(conn: PoolConnectionProxy):
     """Task to initialize the DRAP region table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring DRAP region table exists...")
         await ensure_table_exists(conn, "drap_region", create_sql=DRAP_CREATE_TABLE_SQL)
@@ -35,7 +46,7 @@ async def initial_drap_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_activate_flight_db(conn: PoolConnectionProxy):
     """Task to initialize the activate_flight table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring activate_flight table exists...")
         await ensure_table_exists(
@@ -49,7 +60,7 @@ async def initial_activate_flight_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_airport_db(conn: PoolConnectionProxy):
     """Task to initialize the airports table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring airports table exists...")
         await ensure_table_exists(conn, "airports", create_sql=AIRPORT_CREATE_TABLE_SQL)
@@ -63,7 +74,7 @@ async def initial_airport_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_latest_xray_db(conn: PoolConnectionProxy):
     """Task to initialize the xray table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring xray table exists...")
         await ensure_table_exists(
@@ -79,7 +90,7 @@ async def initial_latest_xray_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
     """Task to initialize the proton flux plot table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring goes_proton_flux table exists...")
         await ensure_table_exists(
@@ -95,7 +106,7 @@ async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_kp_index_db(conn: PoolConnectionProxy):
     """Task to initialize the Kp index table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring kp_index table exists...")
         await ensure_table_exists(
@@ -111,7 +122,7 @@ async def initial_kp_index_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def initial_alert_db(conn: PoolConnectionProxy):
     """Task to initialize the alert table."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info("Ensuring alerts table exists...")
         await ensure_table_exists(conn, "alerts", create_sql=ALERT_CREATE_TABLE_SQL)
@@ -126,7 +137,7 @@ async def initial_alert_db(conn: PoolConnectionProxy):
 @task(cache_policy=NO_CACHE)
 async def cleanup_old_drap_data(conn: PoolConnectionProxy, older_than_days: int = 1):
     """Task to clean up old DRAP data."""
-    logger = get_run_logger()
+    logger = _logger()
     try:
         logger.info(f"Cleaning up DRAP data older than {older_than_days} days...")
         await cleanup_old_data(conn, "drap_region", older_than_days=older_than_days)

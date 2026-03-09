@@ -4,3 +4,5 @@ asyncpg
 pydantic
 prefect
 redis
+pytest
+pytest-asyncio

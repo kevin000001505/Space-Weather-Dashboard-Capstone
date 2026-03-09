@@ -37,6 +37,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$DEVELOPER_DB" <<-
 EOSQL
 
 # ── 5. Create tables, indexes, functions as developer ──
+export PGPASSWORD="${DEVELOPER_PASSWORD}"
 psql -v ON_ERROR_STOP=1 --username "$DEVELOPER_USER" --dbname "$DEVELOPER_DB" <<-EOSQL
 
     -- ── Tables ──

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 from typing import Optional
 
@@ -88,11 +88,7 @@ class FlightStateRecord(BaseModel):
             self.geom_lat,
         )
 
-    class Config:
-        """Pydantic configuration."""
-
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class AirportRecord(BaseModel):
@@ -150,9 +146,7 @@ class AirportRecord(BaseModel):
             self.last_updated,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class DrapRecord(BaseModel):
@@ -174,9 +168,7 @@ class DrapRecord(BaseModel):
             self.absorption,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class XrayRecord(BaseModel):
@@ -224,9 +216,7 @@ class XrayRecord(BaseModel):
             self.max_ratio,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class ProtonFluxPlot(BaseModel):
@@ -258,9 +248,7 @@ class ProtonFluxPlot(BaseModel):
             self.flux_500_mev,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class KPIndexRecord(BaseModel):
@@ -280,9 +268,7 @@ class KPIndexRecord(BaseModel):
             self.station_count,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
 class AlertRecord(BaseModel):
@@ -300,6 +286,4 @@ class AlertRecord(BaseModel):
             self.message,
         )
 
-    class Config:
-        validate_assignment = True
-        extra = "forbid"
+    model_config = ConfigDict(validate_assignment=True, extra="forbid")

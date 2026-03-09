@@ -3,7 +3,7 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main
+      - "**"      
   pull_request:
     branches:
       - main
@@ -12,6 +12,23 @@ jobs:
   test-api:
     name: Run API Tests
     runs-on: ubuntu-latest 
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: prefect
+          POSTGRES_PASSWORD: prefect
+          POSTGRES_DB: prefect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+        
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -25,7 +42,25 @@ jobs:
             
       - name: Install API Dependencies
         run: pip install -r docker/api/requirements.txt
-            
+
+      - name: Test Folder Structure
+        run: pytest tests/test_folder_structure.py
+      
+      - name: Run init.sh
+        run: |
+          chmod +x ./docker/db-init-scripts/init.sh
+          ./docker/db-init-scripts/init.sh
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGPASSWORD: prefect
+          POSTGRES_USER: prefect
+          POSTGRES_DB: prefect
+          DEVELOPER_DB: app
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+
       - name: Execute API Tests
         run: |
           # Placeholder for future FastAPI test implementation
@@ -34,6 +69,23 @@ jobs:
   test-flows:
     name: Run Flows Tests
     runs-on: ubuntu-latest 
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: prefect
+          POSTGRES_PASSWORD: prefect
+          POSTGRES_DB: prefect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
@@ -47,11 +99,42 @@ jobs:
             
       - name: Install Flows Dependencies
         run: pip install -r docker/flows_package/requirements.txt
-            
-      - name: Execute Flows Tests
+      
+      - name: Test Folder Structure
+        run: pytest tests/test_folder_structure.py
+
+      - name: Detect Test Coverage
+        run: pytest tests/test_coverage_enforcement.py -v
+
+      - name: Run init.sh
         run: |
-          # Placeholder for future Prefect workflow test implementation
-          echo "pytest tests/prefect/"
+          chmod +x ./docker/db-init-scripts/init.sh
+          ./docker/db-init-scripts/init.sh
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGPASSWORD: prefect
+          POSTGRES_USER: prefect
+          POSTGRES_DB: prefect
+          DEVELOPER_DB: app
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+
+      - name: Run db_maintain.py
+        run: python prefect_workflows/flows/db_maintain.py
+        env:
+          PYTHONPATH: prefect_workflows
+          DATABASE_URL: postgresql://developer:${{ secrets.DEVELOPER_PASSWORD }}@localhost:5432/app
+
+      - name: Execute Flows Tests
+        run: pytest tests/tests_prefect_workflows/ -v
+        env:
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          DEVELOPER_DB: app
+          PGHOST: localhost
+          PGPORT: "5432"
 
   test-frontend:
     name: Run Frontend Tests

@@ -47,3 +47,5 @@ pyproject.toml
 .python-version
 *ipynb
 notebooks/
+bin/
+.github/workflows/.secretsbin/act

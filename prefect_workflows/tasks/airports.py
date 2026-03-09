@@ -5,7 +5,6 @@ from tasks.models import AirportRecord
 from database.db_tools import get_connection
 import requests
 import csv
-import asyncpg
 from io import StringIO
 from datetime import datetime
 
@@ -36,7 +35,7 @@ def parse_bool(value):
         return None
     if isinstance(value, bool):
         return value
-    return value.lower() in ('true', '1', 'yes', 'y')
+    return value.lower() in ("true", "1", "yes", "y")
 
 
 def parse_datetime(value):
@@ -44,7 +43,7 @@ def parse_datetime(value):
     if not value or value == "":
         return None
     try:
-        return datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except (ValueError, TypeError, AttributeError):
         return None
 
@@ -103,7 +102,9 @@ async def ingest_airports_csv():
                     batch_num += 1
                     await conn.executemany(AIRPORTS_UPSERT_SQL, batch)
                     total_inserted += len(batch)
-                    logger.info(f"Batch {batch_num}: Inserted {len(batch)} airports (Total: {total_inserted})")
+                    logger.info(
+                        f"Batch {batch_num}: Inserted {len(batch)} airports (Total: {total_inserted})"
+                    )
                     batch = []
 
             # Insert remaining records
@@ -111,9 +112,13 @@ async def ingest_airports_csv():
                 batch_num += 1
                 await conn.executemany(AIRPORTS_UPSERT_SQL, batch)
                 total_inserted += len(batch)
-                logger.info(f"Batch {batch_num}: Inserted final {len(batch)} airports (Total: {total_inserted})")
+                logger.info(
+                    f"Batch {batch_num}: Inserted final {len(batch)} airports (Total: {total_inserted})"
+                )
 
-        logger.info(f"✓ Airports data loaded successfully! Total batches: {batch_num}, Total records: {total_inserted}")
+        logger.info(
+            f"✓ Airports data loaded successfully! Total batches: {batch_num}, Total records: {total_inserted}"
+        )
 
     except Exception as e:
         logger.error(f"Failed to load airports data: {e}")

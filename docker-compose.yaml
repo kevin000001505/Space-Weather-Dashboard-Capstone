@@ -48,6 +48,7 @@ services:
       retries: 10
       start_period: 60s  
     networks:
+      - postgis_external  # must be first so port publishing works (data_network is internal)
       - data_network
 
   redis:
@@ -242,3 +243,5 @@ networks:
   data_network:
     driver: bridge
     internal: true
+  postgis_external:
+    driver: bridge
