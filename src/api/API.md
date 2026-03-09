@@ -32,7 +32,7 @@ Returns all airports from the database.
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `limit` | int | No | all | 1–5000 | Maximum number of airports to return |
+| `limit` | int | No | all | 1–200,000 | Maximum number of airports to return |
 
 **Response** — `AirportsResponse`
 ```json
@@ -75,7 +75,7 @@ Returns currently active airborne flights from the last 20 minutes.
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `limit` | int | No | 10 | 1–1000 | Maximum number of flights to return |
+| `limit` | int | No | all | 1–20,000 | Maximum number of flights to return |
 
 **Response** — `FlightStatesResponse`
 ```json
