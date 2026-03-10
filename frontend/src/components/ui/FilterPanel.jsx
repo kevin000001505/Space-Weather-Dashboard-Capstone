@@ -140,12 +140,13 @@ const FilterPanel = () => {
       <div style={panelStyle}>
         <SearchBar />
       </div>
-      <div style={panelStyle}>
-        <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Filter Planes</div>
-        {showPlanes && (
-          <select value={planeFilter} onChange={(e) => dispatch(setPlaneFilter(e.target.value))} style={{ padding: '5px', borderRadius: '3px', width: '100%', color: 'var(--ui-text)', backgroundColor: 'var(--ui-bg)', border: 'var(--ui-border)'}}>
-            <option value="all">All Planes ({counts.planes_all})</option>
-            <option value="high">High Alt ({useImperial ? '>36k ft' : '>11 km'}) ({counts.planes_high})</option>
+      {false && (
+        <div style={panelStyle}>
+          <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>Filter Planes</div>
+          {showPlanes && (
+            <select value={planeFilter} onChange={(e) => dispatch(setPlaneFilter(e.target.value))} style={{ padding: '5px', borderRadius: '3px', width: '100%', color: 'var(--ui-text)', backgroundColor: 'var(--ui-bg)', border: 'var(--ui-border)'}}>
+              <option value="all">All Planes ({counts.planes_all})</option>
+              <option value="high">High Alt ({useImperial ? '>36k ft' : '>11 km'}) ({counts.planes_high})</option>
             <option value="medium">Med Alt ({useImperial ? '30k-36k ft' : '9k-11 km'}) ({counts.planes_medium})</option>
             <option value="low">Low Alt ({useImperial ? '<30k ft' : '<9 km'}) ({counts.planes_low})</option>
           </select>
@@ -235,7 +236,7 @@ const FilterPanel = () => {
             </div>
           )}
         </div>
-      </div>
+      </div>)}
     </div>
   );
 };

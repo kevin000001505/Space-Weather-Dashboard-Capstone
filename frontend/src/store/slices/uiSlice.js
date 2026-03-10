@@ -24,6 +24,10 @@ const initialState = {
   searchResults: [],
   isSearchOpen: false,
   isZooming: false,
+  settingsTabIndex: 0,
+  altitudeRange: [0, 40000],
+  airportAltitudeRange: [0, 10000],
+  drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
 };
 
 const uiSlice = createSlice({
@@ -85,6 +89,18 @@ const uiSlice = createSlice({
     setIsAirportDropdownOpen: (state, action) => {
       state.isAirportDropdownOpen = action.payload;
     },
+    setSettingsTabIndex: (state, action) => {
+      state.settingsTabIndex = action.payload;
+    },
+    setAltitudeRange: (state, action) => {
+      state.altitudeRange = action.payload;
+    },
+    setAirportAltitudeRange: (state, action) => {
+      state.airportAltitudeRange = action.payload;
+    },
+    setDrapRegionRange: (state, action) => {
+      state.drapRegionRange = action.payload;
+    },
   },
 });
 
@@ -107,6 +123,10 @@ export const {
   setShowDRAP,
   setDrapImplementation,
   setIsAirportDropdownOpen,
+  setSettingsTabIndex,
+  setAltitudeRange,
+  setAirportAltitudeRange,
+  setDrapRegionRange,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

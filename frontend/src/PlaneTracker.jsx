@@ -75,6 +75,9 @@ const PlaneTracker = () => {
     drapImplementation,
     viewState,
     isZooming,
+    altitudeRange,
+    airportAltitudeRange,
+    drapRegionRange,
   } = useSelector((state) => state.ui);
   
   const zoomTimeoutRef = useRef(null);
@@ -107,9 +110,9 @@ const PlaneTracker = () => {
 
     planes.forEach(p => {
       if (!p.lat || !p.lon) return;
-      valid.push(p);
       const altValue = useImperial ? getAltFt(p.geo_altitude) : p.geo_altitude;
-      
+      if (altitudeRange && (altValue < altitudeRange[0] || altValue > altitudeRange[1])) return;
+      valid.push(p);
       if (altValue > highThresh) high.push(p);
       else if (altValue >= lowThresh && altValue <= highThresh) med.push(p);
       else low.push(p);
@@ -122,12 +125,20 @@ const PlaneTracker = () => {
     if (planeFilter === 'none') activePlanes = [];
 
     return activePlanes;
-  }, [planes, planeFilter, useImperial, highThresh, lowThresh]);
+  }, [planes, planeFilter, useImperial, highThresh, lowThresh, altitudeRange]);
 
   const filteredAirports = useMemo(() => {
     if (airportFilter.length === 0) return [];
-    return airports.filter(a => airportFilter.includes(a.type));
-  }, [airports, airportFilter]);
+    return airports.filter(a => {
+      if (!airportFilter.includes(a.type)) return false;
+      // Use 'elevation_ft' from CSV, fallback to 0 if missing
+      let elevation = a.elevation_ft !== undefined ? parseFloat(a.elevation_ft) : (a.elevation !== undefined ? parseFloat(a.elevation) : 0);
+      if (isNaN(elevation)) elevation = 0;
+      const altValue = useImperial ? elevation : elevation * 0.3048;
+      if (airportAltitudeRange && (altValue < airportAltitudeRange[0] || altValue > airportAltitudeRange[1])) return false;
+      return true;
+    });
+  }, [airports, airportFilter, airportAltitudeRange, useImperial]);
 
 // Dynamic DRAP implementation selection
   const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
@@ -135,25 +146,29 @@ const PlaneTracker = () => {
       return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
     }
 
+    // Filter DRAP points by amplitude range
+    const [minAmp, maxAmp] = drapRegionRange || [0, 35];
+    const filteredDrapPoints = drapPoints.filter(([lat, lon, amp]) => amp >= minAmp && amp <= maxAmp);
+
     try {
       switch (drapImplementation) {
         case 'heatmap':
           return {
-            drapGeoJson: getDRAPHeatmapGeoJSON?.(drapPoints),
+            drapGeoJson: getDRAPHeatmapGeoJSON?.(filteredDrapPoints),
             drapMapLayers: getDRAPHeatmapMapLayers?.(isZooming, darkMode),
-            drapDeckLayers: createDRAPHeatmapLayers(drapPoints, isZooming),
+            drapDeckLayers: createDRAPHeatmapLayers(filteredDrapPoints, isZooming),
           };
 
         case 'bitmap':
           return {
-            drapGeoJson: getDRAPBitmapGeoJSON?.(drapPoints),
+            drapGeoJson: getDRAPBitmapGeoJSON?.(filteredDrapPoints),
             drapMapLayers: getDRAPBitmapMapLayers?.(isZooming, darkMode),
-            drapDeckLayers: createDRAPBitmapLayers(drapPoints, isZooming),
+            drapDeckLayers: createDRAPBitmapLayers(filteredDrapPoints, isZooming),
           };
 
         case 'filled-cells':
           return {
-            drapGeoJson: getDRAPFilledCellsGeoJSON(drapPoints),
+            drapGeoJson: getDRAPFilledCellsGeoJSON(filteredDrapPoints),
             drapMapLayers: getDRAPFilledCellsMapLayers(isZooming, darkMode),
             drapDeckLayers: [],
           };
@@ -161,7 +176,7 @@ const PlaneTracker = () => {
         case 'contour-lines':
         default:
           return {
-            drapGeoJson: getDRAPContourLinesGeoJSON(drapPoints),
+            drapGeoJson: getDRAPContourLinesGeoJSON(filteredDrapPoints),
             drapMapLayers: getDRAPContourLinesMapLayers(isZooming, darkMode),
             drapDeckLayers: [],
           };
@@ -170,7 +185,7 @@ const PlaneTracker = () => {
       console.error(`DRAP implementation failed: ${drapImplementation}`, error);
       return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
     }
-  }, [drapPoints, drapImplementation, isZooming, darkMode]);
+  }, [drapPoints, drapImplementation, isZooming, darkMode, drapRegionRange]);
   const deckLayers = useMemo(() => {
 
     const baseLayers = buildDeckLayers({
