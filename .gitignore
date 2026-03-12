@@ -49,3 +49,6 @@ pyproject.toml
 notebooks/
 bin/
 .github/workflows/.secretsbin/act
+
+# frontend/src/dummy_data/
+frontend/src/dummy_data/
