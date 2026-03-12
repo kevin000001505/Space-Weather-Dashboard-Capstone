@@ -23,6 +23,8 @@ import {
   setSelectedPlane,
   setViewState,
   setIsZooming,
+  addFlightPanel,
+  removeFlightPanel,
 } from './store/slices/uiSlice';
 
 // Utility imports
@@ -50,6 +52,7 @@ import {
   getDRAPContourLinesGeoJSON,
   getDRAPContourLinesMapLayers
 } from './utils/drap-implementations/contour-lines';
+import FlightDetailsPanel from './components/ui/FlightDetailsPanel';
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -60,8 +63,11 @@ const DeckGLOverlay = (props) => {
 const PlaneTracker = () => {
   const dispatch = useDispatch();
   const { data: planes } = useSelector((state) => state.planes);
+  const selectedFlightsPanels = useSelector(state => state.ui.selectedFlightsPanels);
   const { points: drapPoints } = useSelector((state) => state.drap);
   const { data: airports } = useSelector((state) => state.airports);
+  
+  const flightPath = useSelector(state => state.flightPath.paths);
   const {
     useImperial,
     selectedPlane,
@@ -78,6 +84,7 @@ const PlaneTracker = () => {
     altitudeRange,
     airportAltitudeRange,
     drapRegionRange,
+    isolateMode,
   } = useSelector((state) => state.ui);
   
   const zoomTimeoutRef = useRef(null);
@@ -140,7 +147,15 @@ const PlaneTracker = () => {
     });
   }, [airports, airportFilter, airportAltitudeRange, useImperial]);
 
-// Dynamic DRAP implementation selection
+  // Isolate mode logic
+  const showPlanesIsolate = isolateMode ? true : showPlanes;
+  const showAirportsIsolate = isolateMode ? false : showAirports;
+  const filteredPlanesIsolate = isolateMode
+    ? selectedFlightsPanels
+    : filteredPlanes;
+  const filteredAirportsIsolate = isolateMode ? [] : filteredAirports;
+
+  // Dynamic DRAP implementation selection
   const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
     if (!drapPoints || drapPoints.length === 0) {
       return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
@@ -187,40 +202,42 @@ const PlaneTracker = () => {
     }
   }, [drapPoints, drapImplementation, isZooming, darkMode, drapRegionRange]);
   const deckLayers = useMemo(() => {
-
     const baseLayers = buildDeckLayers({
-      filteredPlanes,
-      filteredAirports,
-      showAirports,
-      showPlanes,
+      filteredPlanes: filteredPlanesIsolate,
+      filteredAirports: filteredAirportsIsolate,
+      showAirports: showAirportsIsolate,
+      showPlanes: showPlanesIsolate,
       darkMode,
       useImperial,
       selectedPlane,
       selectedAirport,
       isZooming,
+      flightPath,
       setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
-      setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport))
+      setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport)),
+      dispatch,
+      addFlightPanel: (plane) => dispatch(addFlightPanel(plane)),
+      selectedFlightsPanels,
     });
-    
-    // Add DRAP deck.gl layers if using deck.gl-based implementation
     if (showDRAP && drapDeckLayers && drapDeckLayers.length > 0) {
       return [...drapDeckLayers, ...baseLayers];
     }
-    
     return baseLayers;
   }, [
     dispatch,
-    filteredAirports,
+    filteredAirportsIsolate,
     showDRAP,
-    filteredPlanes,
-    showAirports,
-    showPlanes,
+    filteredPlanesIsolate,
+    showAirportsIsolate,
+    showPlanesIsolate,
     darkMode,
     useImperial,
     selectedPlane,
     selectedAirport,
     isZooming,
-    drapDeckLayers
+    drapDeckLayers,
+    flightPath,
+    isolateMode
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -251,8 +268,8 @@ const PlaneTracker = () => {
         {...viewState}
         onMove={handleViewStateChange}
         mapStyle={darkMode 
-          ? 'https://tiles.stadiamaps.com/styles/stamen_toner.json'
-          : 'https://tiles.stadiamaps.com/styles/stamen_toner_lite.json'
+          ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+          : 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json'
         }
         onClick={() => dispatch(clearSelections())}
       >
@@ -334,13 +351,7 @@ const PlaneTracker = () => {
           border-top-color: var(--ui-border) !important;
         }
         .maplibregl-popup-close-button {
-          color: var(--ui-text) !important;
-          font-size: 16px;
-          padding: 4px 8px;
-        }
-        .maplibregl-popup-close-button:hover {
-          background-color: transparent !important;
-          opacity: 0.7;
+          display: none !important;
         }
       `}</style>
 
@@ -349,6 +360,18 @@ const PlaneTracker = () => {
       <StatsPanel />
       <SettingsPanel />
       <AltitudeLegend />
+
+      {/* Flight Details Panels */}
+      {selectedFlightsPanels.map(flight => (
+        <FlightDetailsPanel
+          key={flight.icao24}
+          flight={flight}
+          onClose={() => {
+            dispatch(removeFlightPanel(flight.icao24));
+            dispatch({ type: 'flightPath/removeFlightPath', payload: flight.icao24 });
+          }}
+        />
+      ))}
     </div>
   );
 };

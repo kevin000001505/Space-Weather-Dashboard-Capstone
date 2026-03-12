@@ -49,3 +49,18 @@ export const fetchAirports = createAsyncThunk(
     }
   }
 );
+
+
+export const fetchFlightPath = createAsyncThunk(
+  'flightPath/fetchFlightPath',
+  async (flightId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/flight-path/${flightId}`);
+      if (!response.ok) throw new Error('Failed to fetch flight path');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);

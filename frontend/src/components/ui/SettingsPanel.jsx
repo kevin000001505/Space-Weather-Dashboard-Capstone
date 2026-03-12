@@ -2,6 +2,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../store/slices/planesSlice";
 import {
   setDarkMode,
+  setShowAltitudeLegend,
+  setShowIconLegend,
   setShowSettings,
   setUseImperial,
   setSettingsTabIndex,
@@ -33,6 +35,8 @@ import Chip from "@mui/material/Chip";
 import { Rnd } from "react-rnd";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import { toggleIsolateMode } from '../../store/slices/uiSlice';
+import Tooltip from '@mui/material/Tooltip';
 
 const SettingsPanel = () => {
   const dispatch = useDispatch();
@@ -48,6 +52,8 @@ const SettingsPanel = () => {
     showPlanes,
     showDRAP,
     drapRegionRange,
+    showAltitudeLegend,
+    showIconLegend,
   } = useSelector((state) => state.ui);
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
@@ -241,6 +247,28 @@ const SettingsPanel = () => {
                   />
                   <FormControlLabel
                     control={
+                      <Checkbox
+                        checked={showAltitudeLegend}
+                        onChange={() => dispatch(setShowAltitudeLegend(!showAltitudeLegend))}
+                        sx={{ p: 0.5 }}
+                      />
+                    }
+                    label={<span style={{ fontSize: "0.92rem" }}>Show Altitude Legend</span>}
+                    sx={{ mb: 0.5 }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={showIconLegend}
+                        onChange={() => dispatch(setShowIconLegend(!showIconLegend))}
+                        sx={{ p: 0.5 }}
+                      />
+                    }
+                    label={<span style={{ fontSize: "0.92rem" }}>Show Icon Legend</span>}
+                    sx={{ mb: 0.5 }}
+                  />
+                  <FormControlLabel
+                    control={
                       <Switch
                         checked={darkMode}
                         onChange={() => dispatch(setDarkMode(!darkMode))}
@@ -287,7 +315,7 @@ const SettingsPanel = () => {
                     value={altitudeRange}
                     min={0}
                     max={useImperial ? 50000 : 15000}
-                    step={useImperial ? 500 : 100}
+                    step={useImperial ? 5000 : 1000}
                     marks={[
                       { value: 0, label: "0" },
                       {
@@ -446,7 +474,7 @@ const SettingsPanel = () => {
                     value={airportAltitudeRange}
                     min={0}
                     max={useImperial ? 10000 : 3000}
-                    step={useImperial ? 100 : 50}
+                    step={useImperial ? 1000 : 300}
                     marks={[
                       { value: 0, label: "0" },
                       {
@@ -467,8 +495,20 @@ const SettingsPanel = () => {
                         boxShadow: "none",
                       },
                       "& .MuiSlider-rail": {
-                        background:
-                          "linear-gradient(90deg, #ff0000 0%, #ff8000 14%, #ffff00 28%, #55ff00 43%, #00ffff 57%, #0000ff 71%, #7700ff 85%, #000000 100%)",
+                        background: (() => {
+                          // Use getStops to get legend stops
+                          const stops = [
+                            { val: 0, color: [242, 114, 39] },
+                            { val: 2000, color: [245, 145, 40] },
+                            { val: 4000, color: [242, 197, 49] },
+                            { val: 10000, color: [104, 202, 85] }
+                          ];
+                          const percent = (v) => (v / 10000) * 100;
+                          return `linear-gradient(90deg, ${stops.map((s, i) => {
+                            const rgb = `rgb(${s.color.join(",")})`;
+                            return `${rgb} ${percent(s.val)}%`;
+                          }).join(", ")})`;
+                        })(),
                       },
                     }}
                   />
@@ -516,7 +556,7 @@ const SettingsPanel = () => {
                     value={drapRegionRange}
                     min={0}
                     max={35}
-                    step={0.1}
+                    step={0.5}
                     valueLabelDisplay="auto"
                     onChange={(e, v) => dispatch(setDrapRegionRange(v))}
                     sx={{
@@ -562,6 +602,7 @@ const SettingsPanel = () => {
             </div>
           </Paper>
         </Rnd>
+        
       )}
       <div
         style={{
@@ -576,6 +617,15 @@ const SettingsPanel = () => {
         }}
       >
         <div style={{ display: "flex", gap: "5px" }}>
+          <Tooltip title="Show Only Selected Planes and their Path" placement="bottom">
+            <IconButton
+              onClick={() => dispatch(toggleIsolateMode())}
+              style={btnStyle}
+              aria-label="Isolate Mode"
+            >
+              I
+            </IconButton>
+          </Tooltip>
           <button
             onClick={() => dispatch(setShowSettings(!showSettings))}
             style={btnStyle}

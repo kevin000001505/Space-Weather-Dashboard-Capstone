@@ -29,6 +29,7 @@ const AIRPORT_TYPES = [
 
 const StatsPanel = () => {
   const [hovered, setHovered] = useState(false);
+  const showIconLegend = useSelector((state) => state.ui.showIconLegend);
   const planesCount = useSelector((state) => state.planes.data.length);
   const airports = useSelector((state) => state.airports.data);
 
@@ -45,12 +46,12 @@ const StatsPanel = () => {
   const iconColor = 'rgb(242, 114, 39)';
 
   return (
-    <div
+    ((showIconLegend || hovered) && <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         position: 'absolute',
-        left: '10px',
+        left: '20px',
         bottom: '10px',
         zIndex: 1000,
         backgroundColor: 'var(--ui-bg)',
@@ -103,7 +104,7 @@ const StatsPanel = () => {
         </div>
       </div>
 
-    </div>
+    </div>)
   );
 };
 export default StatsPanel;

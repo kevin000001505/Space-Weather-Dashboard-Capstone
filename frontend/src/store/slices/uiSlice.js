@@ -2,8 +2,11 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
   useImperial: true,
+  showAltitudeLegend: true,
+  showIconLegend: true,
   showSettings: false,
   selectedPlane: null,
+  selectedFlightsPanels: [], // Array of flights for FlightDetailsPanel
   selectedAirport: null,
   planeFilter: 'all',
   airportFilter: ['large_airport', 'medium_airport'],
@@ -28,20 +31,46 @@ const initialState = {
   altitudeRange: [0, 40000],
   airportAltitudeRange: [0, 10000],
   drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
+  isolateMode: false, // Isolate mode: only show selected planes and paths
 };
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
+    toggleIsolateMode: (state) => {
+      state.isolateMode = !state.isolateMode;
+    },
     setUseImperial: (state, action) => {
       state.useImperial = action.payload;
+    },
+    setShowAltitudeLegend: (state, action) => {
+      state.showAltitudeLegend = action.payload;
+    },
+    setShowIconLegend: (state, action) => {
+      state.showIconLegend = action.payload;
     },
     setShowSettings: (state, action) => {
       state.showSettings = action.payload;
     },
     setSelectedPlane: (state, action) => {
       state.selectedPlane = action.payload;
+    },
+    addFlightPanel: (state, action) => {
+      // Toggle: remove if present, add if not
+      const exists = state.selectedFlightsPanels.some(f => f.icao24 === action.payload.icao24);
+      if (exists) {
+        state.selectedFlightsPanels = state.selectedFlightsPanels.filter(f => f.icao24 !== action.payload.icao24);
+      } else {
+        state.selectedFlightsPanels.push(action.payload);
+      }
+    },
+    removeFlightPanel: (state, action) => {
+      // Remove flight panel by ICAO24
+      state.selectedFlightsPanels = state.selectedFlightsPanels.filter(f => f.icao24 !== action.payload);
+    },
+    clearFlightPanels: (state) => {
+      state.selectedFlightsPanels = [];
     },
     setSelectedAirport: (state, action) => {
       state.selectedAirport = action.payload;
@@ -106,6 +135,8 @@ const uiSlice = createSlice({
 
 export const {
   setUseImperial,
+  setShowAltitudeLegend,
+  setShowIconLegend,
   setShowSettings,
   setSelectedPlane,
   setSelectedAirport,
@@ -127,6 +158,10 @@ export const {
   setAltitudeRange,
   setAirportAltitudeRange,
   setDrapRegionRange,
+  addFlightPanel,
+  removeFlightPanel,
+  clearFlightPanels,
+  toggleIsolateMode,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

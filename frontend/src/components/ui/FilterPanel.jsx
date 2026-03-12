@@ -128,7 +128,7 @@ const FilterPanel = () => {
   return (
     <div style={{
       position: 'absolute',
-      left: '50px',
+      left: '20px',
       top: '10px',
       zIndex: 1000,
       display: 'flex',
