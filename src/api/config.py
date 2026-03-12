@@ -15,6 +15,7 @@ class FlightPathResponse(BaseModel):
     icao24: str
     callsign: Optional[str]
     path_geojson: dict
+    number_of_points: int
 
 
 class ActivateFlightState(BaseModel):

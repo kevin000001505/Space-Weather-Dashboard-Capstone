@@ -36,30 +36,6 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
 """
 
 
-LATEST_FLIGHT_STATES_QUERY = """
-    WITH latest_time AS (
-        SELECT MAX(time) as max_time FROM flight_states
-    )
-    SELECT 
-        fs.icao24,
-        fs.callsign,
-        fs.time,
-        fs.time_pos,
-        ROUND(fs.lat::numeric, 4) AS lat,
-        ROUND(fs.lon::numeric, 4) AS lon,
-        ROUND(fs.baro_altitude::numeric, 2) AS baro_altitude,
-        ROUND(fs.geo_altitude::numeric, 2) AS geo_altitude,
-        ROUND(fs.velocity::numeric, 2) AS velocity,
-        ROUND(fs.heading::numeric, 2) AS heading,
-        ROUND(fs.vert_rate::numeric, 2) AS vert_rate,
-        fs.on_ground
-    FROM flight_states fs
-    CROSS JOIN latest_time lt
-    WHERE fs.time = lt.max_time
-    ORDER BY fs.callsign NULLS LAST, fs.icao24
-"""
-
-
 LATEST_DRAP_QUERY = """
     WITH latest_time AS (
       SELECT MAX(observed_at) AS max_ts

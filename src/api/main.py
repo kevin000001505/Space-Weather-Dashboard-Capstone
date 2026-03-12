@@ -127,6 +127,7 @@ async def get_flight_path(icao24: str):
                 icao24=row["icao24"],
                 callsign=row["callsign"],
                 path_geojson=path_geojson,
+                number_of_points=len(path_geojson.get("coordinates", [])),
             )
 
         except HTTPException:
