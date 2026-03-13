@@ -19,7 +19,12 @@ async def get_pool():
             min_size=2,
             max_size=10,
             command_timeout=60,
+            server_settings={
+                'lock_timeout': '10s',        
+                'statement_timeout': '60s',  
+            }
         )
+
     return _pool
 
 

@@ -3,7 +3,7 @@ from database.db_tools import get_connection
 import requests
 from datetime import datetime
 from tasks.models import KPIndexRecord
-from tasks.queries import KP_INDEX_INSERT_SQL
+from tasks.queries import KP_STAGING_DDL, KP_STAGING_COLUMNS, KP_TRANSFORM_SQL
 from typing import List
 
 KP_INDEX_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
@@ -61,5 +61,12 @@ async def store_kp_index(kp_records: List[KPIndexRecord]) -> None:
 
     records = [r.to_tuple() for r in kp_records]
     async with get_connection() as conn:
-        await conn.executemany(KP_INDEX_INSERT_SQL, records)
+        async with conn.transaction():
+            await conn.execute(KP_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "kp_index_staging",
+                records=records,
+                columns=KP_STAGING_COLUMNS,
+            )
+            await conn.execute(KP_TRANSFORM_SQL)
     logger.info(f"Stored {len(records)} Kp index records")

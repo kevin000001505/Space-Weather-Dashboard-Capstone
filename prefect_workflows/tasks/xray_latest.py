@@ -3,7 +3,7 @@ from database.db_tools import get_connection
 import requests
 import json
 from tasks.models import XrayRecord
-from tasks.queries import LATEST_X_RAY_INSERT_SQL
+from tasks.queries import XRAY_STAGING_DDL, XRAY_STAGING_COLUMNS, XRAY_TRANSFORM_SQL
 
 solar_flare_url = (
     "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json"
@@ -88,7 +88,14 @@ async def extract_xray_data():
         return xray_data
 
     async with get_connection() as conn:
-        await conn.executemany(LATEST_X_RAY_INSERT_SQL, parsed_xray_data)
+        async with conn.transaction():
+            await conn.execute(XRAY_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "goes_xray_events_staging",
+                records=parsed_xray_data,
+                columns=XRAY_STAGING_COLUMNS,
+            )
+            await conn.execute(XRAY_TRANSFORM_SQL)
         logger.info(
             f"✓ X-ray data inserted successfully! {len(parsed_xray_data)} records"
         )

@@ -3,7 +3,7 @@ from database.db_tools import get_connection
 import requests
 import json
 from tasks.models import ProtonFluxPlot
-from tasks.queries import PROTON_FLUX_INSERT_SQL
+from tasks.queries import PROTON_FLUX_STAGING_DDL, PROTON_FLUX_STAGING_COLUMNS, PROTON_FLUX_TRANSFORM_SQL
 from typing import List
 
 
@@ -60,5 +60,12 @@ async def store_proton_flux_plot(plots: List[ProtonFluxPlot]) -> None:
 
     records = [plot.to_tuple() for plot in plots]
     async with get_connection() as conn:
-        await conn.executemany(PROTON_FLUX_INSERT_SQL, records)
+        async with conn.transaction():
+            await conn.execute(PROTON_FLUX_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "goes_proton_flux_staging",
+                records=records,
+                columns=PROTON_FLUX_STAGING_COLUMNS,
+            )
+            await conn.execute(PROTON_FLUX_TRANSFORM_SQL)
     logger.info(f"Stored {len(records)} proton flux records")

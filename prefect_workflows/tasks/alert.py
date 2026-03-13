@@ -3,7 +3,7 @@ from prefect import task, get_run_logger
 from database.db_tools import get_connection
 from datetime import datetime
 from typing import List
-from tasks.queries import ALERT_INSERT_SQL
+from tasks.queries import ALERTS_STAGING_DDL, ALERTS_STAGING_COLUMNS, ALERTS_TRANSFORM_SQL
 from tasks.models import AlertRecord
 
 url = "https://services.swpc.noaa.gov/products/alerts.json"
@@ -58,6 +58,13 @@ async def store_alert(alerts_records: List[AlertRecord]) -> None:
 
     records = [r.to_tuple() for r in alerts_records]
     async with get_connection() as conn:
-        await conn.executemany(ALERT_INSERT_SQL, records)
+        async with conn.transaction():
+            await conn.execute(ALERTS_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "alerts_staging",
+                records=records,
+                columns=ALERTS_STAGING_COLUMNS,
+            )
+            await conn.execute(ALERTS_TRANSFORM_SQL)
 
     logger.info(f"Stored {len(records)} alert records")

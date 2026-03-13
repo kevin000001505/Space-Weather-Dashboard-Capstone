@@ -65,7 +65,7 @@ class FlightStateRecord(BaseModel):
         return v.strip() if v else v
 
     def to_tuple(self) -> tuple:
-        """Convert to tuple for asyncpg executemany."""
+        """Convert to tuple for asyncpg copy_records_to_table."""
         return (
             self.time,
             self.icao24,

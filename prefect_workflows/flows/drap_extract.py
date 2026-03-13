@@ -8,7 +8,7 @@ from tasks.drap import extract_data, load_data
     description="ETL flow for D-RAP data extraction, transformation, and loading.",
 )
 async def rap_extract_flow():
-    last_seen = Variable.get("data_last_updated", default=None)
+    last_seen = await Variable.get("data_last_updated", default=None)
     metadata, df_wide, df_long = await extract_data()
     current_updated = metadata.get("valid_at", "Unknown")
 
@@ -21,7 +21,7 @@ async def rap_extract_flow():
     else:
         logger.info("New data detected. Loading...")
         await load_data(df_long)
-        Variable.set("data_last_updated", current_updated, overwrite=True)
+        await Variable.set("data_last_updated", current_updated, overwrite=True)
         logger.info("Metadata: %s", metadata)
         logger.info("Wide DataFrame:\n%s", df_wide.head())
         logger.info("Long DataFrame:\n%s", df_long.head())

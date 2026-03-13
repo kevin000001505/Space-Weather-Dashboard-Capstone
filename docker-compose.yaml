@@ -28,6 +28,14 @@ services:
   postgis:
     image: postgis/postgis:16-3.4
     container_name: postgis
+    command: >
+      postgres
+      -c shared_buffers=8GB
+      -c work_mem=128MB
+      -c effective_cache_size=23GB
+      -c maintenance_work_mem=2GB
+      -c wal_buffers=64MB
+      -c checkpoint_completion_target=0.9
     environment:
       - POSTGRES_USER=prefect
       - POSTGRES_PASSWORD=prefect

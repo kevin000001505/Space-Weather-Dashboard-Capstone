@@ -8,14 +8,15 @@ from prefect.variables import Variable
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
 from tasks.queries import (
-    FLIGHT_STATES_INSERT_QUERY,
-    ACTIVATE_FLIGHT_UPSERT_QUERY,
     CLEANUP_OLD_FLIGHT_DATA_QUERY,
     CREATE_PARTITION_IF_MISSING_QUERY,
+    FLIGHT_STATES_STAGING_DDL,
+    FLIGHT_STATES_STAGING_COLUMNS,
+    FLIGHT_STATES_TRANSFORM_SQL,
+    ACTIVATE_FLIGHT_STAGING_DDL,
+    ACTIVATE_FLIGHT_STAGING_COLUMNS,
+    ACTIVATE_FLIGHT_TRANSFORM_SQL,
 )
-
-
-BATCH_SIZE = 500
 
 
 def clean_row(row) -> FlightStateRecord:
@@ -111,31 +112,37 @@ def fetch_flights():
         raise
 
 
-@task(name="Insert Flight States Batch")
-async def insert_batch(records, batch_size: int = BATCH_SIZE):
-    """Insert flight records into both tables in chunked transactions to avoid timeouts."""
+@task(name="Insert Flight States")
+async def insert_batch(records):
+    """Insert flight records into both tables using COPY + server-side transform."""
     logger = get_run_logger()
-    logger.info(f"Inserting {len(records)} records in batches of {batch_size}.")
+    logger.info(f"Inserting {len(records)} records.")
+
+    tuples = [r.to_tuple() for r in records]  # convert once, not per batch
 
     async with get_connection() as conn:
-        first_ts = records[0].time
-        await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, first_ts)
+        await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, records[0].time)
 
-        total = 0
-        for i in range(0, len(records), batch_size):
-            chunk = records[i : i + batch_size]
-            tuples = [r.to_tuple() for r in chunk]
-
-            async with conn.transaction():
-                await conn.executemany(FLIGHT_STATES_INSERT_QUERY, tuples)
-                await conn.executemany(ACTIVATE_FLIGHT_UPSERT_QUERY, tuples)
-
-            total += len(chunk)
-            logger.info(
-                f"Batch {i // batch_size + 1}: inserted {total}/{len(records)} records"
+        async with conn.transaction():
+            # flight_states
+            await conn.execute(FLIGHT_STATES_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "flight_states_staging",
+                records=tuples,
+                columns=FLIGHT_STATES_STAGING_COLUMNS,
             )
+            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
-        logger.info(f"Finished inserting {total} records.")
+            # activate_flight
+            await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "activate_flight_staging",
+                records=tuples,
+                columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
+            )
+            await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
+
+    logger.info(f"Finished inserting {len(records)} records.")
 
 
 @task(name="Cleanup Old Flight Data")
