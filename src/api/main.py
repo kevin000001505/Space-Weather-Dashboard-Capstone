@@ -290,18 +290,11 @@ async def xray_flux(hours: int = Query(24, ge=1, le=168)):
                 XRayResponse(
                     time_tag=row["time_tag"],
                     satellite=row["satellite"],
-                    current_class=row["current_class"],
-                    current_ratio=row["current_ratio"],
-                    current_int_xrlong=row["current_int_xrlong"],
-                    begin_time=row["begin_time"],
-                    begin_class=row["begin_class"],
-                    max_time=row["max_time"],
-                    max_class=row["max_class"],
-                    max_xrlong=row["max_xrlong"],
-                    end_time=row["end_time"],
-                    end_class=row["end_class"],
-                    max_ratio_time=row["max_ratio_time"],
-                    max_ratio=row["max_ratio"],
+                    flux=row["flux"],
+                    observed_flux=row["observed_flux"],
+                    electron_correction=row["electron_correction"],
+                    electron_contamination=row["electron_contamination"],
+                    energy=row["energy"],
                 )
             )
 

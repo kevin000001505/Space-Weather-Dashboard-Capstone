@@ -80,18 +80,11 @@ class ProtonFluxListResponse(BaseModel):
 class XRayResponse(BaseModel):
     time_tag: datetime
     satellite: int
-    current_class: Optional[str] = None
-    current_ratio: Optional[float] = None
-    current_int_xrlong: Optional[float] = None
-    begin_time: Optional[datetime] = None
-    begin_class: Optional[str] = None
-    max_time: Optional[datetime] = None
-    max_class: Optional[str] = None
-    max_xrlong: Optional[float] = None
-    end_time: Optional[datetime] = None
-    end_class: Optional[str] = None
-    max_ratio_time: Optional[datetime] = None
-    max_ratio: Optional[float] = None
+    flux: float
+    observed_flux: float
+    electron_correction: float
+    electron_contamination: bool
+    energy: str
 
 
 class XRayListResponse(BaseModel):

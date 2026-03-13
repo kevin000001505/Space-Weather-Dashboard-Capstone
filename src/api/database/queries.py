@@ -70,8 +70,8 @@ ORDER BY time_tag DESC
 """
 
 XRAY_FLUX_QUERY = """
-SELECT *
-FROM goes_xray_events
+SELECT time_tag, satellite, flux, observed_flux, electron_correction, electron_contamination, energy
+FROM goes_xray_6hour
 WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
 ORDER BY time_tag DESC
 """
