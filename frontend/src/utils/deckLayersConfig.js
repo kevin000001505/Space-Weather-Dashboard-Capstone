@@ -141,7 +141,6 @@ export const buildDeckLayers = ({
         getWidth: 4,
         widthMinPixels: 2,
         widthMaxPixels: 8,
-        rounded: true,
         capRounded: true,
         jointRounded: true,
         pickable: false,
@@ -230,7 +229,7 @@ export const buildDeckLayers = ({
         getPixelOffset: () => [0, 24], // Move label below icon
         background: true,
         backgroundPadding: [2, 2],
-        backgroundColor: [255,255,255,200],
+        getBackgroundColor: () => [255,255,255,200],
         pickable: false,
         parameters: {
           depthTest: false,

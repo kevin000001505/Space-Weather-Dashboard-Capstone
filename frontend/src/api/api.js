@@ -34,6 +34,22 @@ export const fetchDRAP = createAsyncThunk(
   }
 );
 
+export const fetchAurora = createAsyncThunk(
+  'aurora/fetchAurora',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/aurora/latest`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch Aurora data');
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const fetchAirports = createAsyncThunk(
   'airports/fetchAirports',
   async (_, { rejectWithValue }) => {
