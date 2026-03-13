@@ -14,7 +14,8 @@ const initialState = {
   showPlanes: true,
   showAirports: true,
   showDRAP: true,
-  drapImplementation: 'filled-cells', // 'heatmap', 'bitmap', 'filled-cells', 'contour-lines'
+  showAurora: false,
+  auroraRegionRange: [0, 100],
   isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,
@@ -112,8 +113,11 @@ const uiSlice = createSlice({
     setShowDRAP: (state, action) => {
       state.showDRAP = action.payload;
     },
-    setDrapImplementation: (state, action) => {
-      state.drapImplementation = action.payload;
+    setShowAurora: (state, action) => {
+      state.showAurora = action.payload;
+    },
+    setAuroraRegionRange: (state, action) => {
+      state.auroraRegionRange = action.payload;
     },
     setIsAirportDropdownOpen: (state, action) => {
       state.isAirportDropdownOpen = action.payload;
@@ -152,7 +156,8 @@ export const {
   clearSelections,
   setIsZooming,
   setShowDRAP,
-  setDrapImplementation,
+  setShowAurora,
+  setAuroraRegionRange,
   setIsAirportDropdownOpen,
   setSettingsTabIndex,
   setAltitudeRange,

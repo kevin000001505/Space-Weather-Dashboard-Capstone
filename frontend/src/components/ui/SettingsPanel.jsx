@@ -12,8 +12,10 @@ import {
   setAirportFilter,
   setShowAirports,
   setShowDRAP,
+  setShowAurora,
   setShowPlanes,
   setDrapRegionRange,
+  setAuroraRegionRange,
 } from "../../store/slices/uiSlice";
 import Slider from "@mui/material/Slider";
 import Box from "@mui/material/Box";
@@ -54,6 +56,8 @@ const SettingsPanel = () => {
     drapRegionRange,
     showAltitudeLegend,
     showIconLegend,
+    showAurora,
+    auroraRegionRange,
   } = useSelector((state) => state.ui);
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
@@ -289,7 +293,7 @@ const SettingsPanel = () => {
               {settingsTabIndex === 1 && (
                 <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
                   <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
-                    Filter Planes
+                    Filter Airports
                   </Typography>
                   <FormControlLabel
                     control={
@@ -515,89 +519,174 @@ const SettingsPanel = () => {
                 </Paper>
               )}
               {settingsTabIndex === 3 && (
-                <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
-                  <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
-                    DRAP Region
-                  </Typography>
-                  <Typography
-                    variant="subtitle1"
-                    sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
-                  >
-                    <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> DRAP cells between{" "}
-                    <b>
-                      {Array.isArray(drapRegionRange)
-                        ? drapRegionRange[0]
-                        : drapRegionRange}
-                    </b>{" "}
-                    dB and{" "}
-                    <b>
-                      {Array.isArray(drapRegionRange)
-                        ? drapRegionRange[1]
-                        : drapRegionRange}
-                    </b>{" "}
-                    dB absorption.
-                  </Typography>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={showDRAP}
-                        onChange={(e) =>
-                          dispatch(setShowDRAP(e.target.checked))
-                        }
-                        sx={{ p: 0.5 }}
-                      />
-                    }
-                    label={
-                      <span style={{ fontSize: "0.92rem" }}>Show DRAP</span>
-                    }
-                    sx={{ mb: 0.5, px: 1.5 }}
-                  />
-                  <Slider
-                    value={drapRegionRange}
-                    min={0}
-                    max={35}
-                    step={0.5}
-                    valueLabelDisplay="auto"
-                    onChange={(e, v) => dispatch(setDrapRegionRange(v))}
-                    sx={{
-                      mt: 0.5,
-                      mb: 0.5,
-                      width: "calc(100% - 40px)",
-                      mx: 2,
-                      "& .MuiSlider-track": {
-                        background: "unset",
-                        border: "none",
-                        boxShadow: "none",
-                      },
-                      "& .MuiSlider-rail": {
-                        background:
-                          "linear-gradient(90deg, #000000 0%, #7700ff 14%, #0000ff 28%, #00ffff 43%, #55ff00 57%, #ffff00 71%, #ff8000 85%, #ff0000 100%)",
-                      },
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      width: "calc(100% - 40px)",
-                      mx: 2,
-                      mb: 1,
-                    }}
-                  >
-                    <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                      Min:{" "}
-                      {Array.isArray(drapRegionRange)
-                        ? drapRegionRange[0]
-                        : drapRegionRange}
+                <div>
+                  <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                    <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
+                      DRAP Region
                     </Typography>
-                    <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                      Max:{" "}
-                      {Array.isArray(drapRegionRange)
-                        ? drapRegionRange[1]
-                        : drapRegionRange}
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
+                    >
+                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> DRAP cells between{" "}
+                      <b>
+                        {Array.isArray(drapRegionRange)
+                          ? drapRegionRange[0]
+                          : drapRegionRange}
+                      </b>
+                      dB and{" "}
+                      <b>
+                        {Array.isArray(drapRegionRange)
+                          ? drapRegionRange[1]
+                          : drapRegionRange}
+                      </b>
+                      dB absorption.
                     </Typography>
-                  </Box>
-                </Paper>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={showDRAP}
+                          onChange={(e) =>
+                            dispatch(setShowDRAP(e.target.checked))
+                          }
+                          sx={{ p: 0.5 }}
+                        />
+                      }
+                      label={
+                        <span style={{ fontSize: "0.92rem" }}>Show DRAP</span>
+                      }
+                      sx={{ mb: 0.5, px: 1.5 }}
+                    />
+                    <Slider
+                      value={drapRegionRange}
+                      min={0}
+                      max={35}
+                      step={0.5}
+                      valueLabelDisplay="auto"
+                      onChange={(e, v) => dispatch(setDrapRegionRange(v))}
+                      sx={{
+                        mt: 0.5,
+                        mb: 0.5,
+                        width: "calc(100% - 40px)",
+                        mx: 2,
+                        "& .MuiSlider-track": {
+                          background: "unset",
+                          border: "none",
+                          boxShadow: "none",
+                        },
+                        "& .MuiSlider-rail": {
+                          background:
+                            "linear-gradient(90deg, #000000 0%, #7700ff 14%, #0000ff 28%, #00ffff 43%, #55ff00 57%, #ffff00 71%, #ff8000 85%, #ff0000 100%)",
+                        },
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "calc(100% - 40px)",
+                        mx: 2,
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
+                        Min:{" "}
+                        {Array.isArray(drapRegionRange)
+                          ? drapRegionRange[0]
+                          : drapRegionRange}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
+                        Max:{" "}
+                        {Array.isArray(drapRegionRange)
+                          ? drapRegionRange[1]
+                          : drapRegionRange}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                  <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                    <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
+                      Ovation Aurora Region
+                    </Typography>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
+                    >
+                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> Aurora cells between{" "}
+                      <b>
+                        {Array.isArray(auroraRegionRange)
+                          ? auroraRegionRange[0]
+                          : auroraRegionRange}
+                      </b>
+                      % and{" "}
+                      <b>
+                        {Array.isArray(auroraRegionRange)
+                          ? auroraRegionRange[1]
+                          : auroraRegionRange}
+                      </b>
+                      % probability.
+                    </Typography>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={showAurora}
+                          onChange={(e) =>
+                            dispatch(setShowAurora(e.target.checked))
+                          }
+                          sx={{ p: 0.5 }}
+                        />
+                      }
+                      label={
+                        <span style={{ fontSize: "0.92rem" }}>Show Ovation Aurora</span>
+                      }
+                      sx={{ mb: 0.5, px: 1.5 }}
+                    />
+                    <Slider
+                      value={auroraRegionRange}
+                      min={0}
+                      max={100}
+                      step={1}
+                      valueLabelDisplay="auto"
+                      onChange={(e, v) => dispatch(setAuroraRegionRange(v))}
+                      sx={{
+                        mt: 0.5,
+                        mb: 0.5,
+                        width: "calc(100% - 40px)",
+                        mx: 2,
+                        "& .MuiSlider-track": {
+                          background: "unset",
+                          border: "none",
+                          boxShadow: "none",
+                        },
+                        "& .MuiSlider-rail": {
+                          background:
+                            "linear-gradient(90deg, #000000 0%, #1eff00 10%, #fff700 50%, #ff0000 100%)",
+                        },
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        width: "calc(100% - 40px)",
+                        mx: 2,
+                        mb: 1,
+                      }}
+                    >
+                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
+                        Min:{" "}
+                        {Array.isArray(auroraRegionRange)
+                          ? auroraRegionRange[0]
+                          : auroraRegionRange}
+                      </Typography>
+                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
+                        Max:{" "}
+                        {Array.isArray(auroraRegionRange)
+                          ? auroraRegionRange[1]
+                          : auroraRegionRange}
+                      </Typography>
+                    </Box>
+                  </Paper>
+                </div>
               )}
             </div>
           </Paper>
