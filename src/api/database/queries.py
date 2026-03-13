@@ -82,3 +82,55 @@ FROM goes_proton_flux
 WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
 ORDER BY time_tag DESC
 """
+
+AURORA_QUERY = """
+WITH obs AS (
+    SELECT
+        observation_time,
+        forecast_time,
+        ST_X(location::geometry)::int AS lon,
+        ST_Y(location::geometry)::int AS lat,
+        aurora
+    FROM aurora_forecast
+    WHERE observation_time = $1
+),
+pts AS (
+    SELECT jsonb_build_array(lon, lat, aurora) AS p
+    FROM obs
+)
+SELECT jsonb_build_object(
+    'observation_time', (SELECT MAX(observation_time) FROM obs),
+    'forecast_time',    (SELECT MAX(forecast_time)    FROM obs),
+    'count',            (SELECT COUNT(*)              FROM obs),
+    'coordinates',      COALESCE(jsonb_agg(p), '[]'::jsonb)
+) AS payload
+FROM pts
+"""
+
+AURORA_LATEST_QUERY = """
+WITH latest_time AS (
+    SELECT MAX(observation_time) AS max_ts
+    FROM aurora_forecast
+),
+obs AS (
+    SELECT
+        a.observation_time,
+        a.forecast_time,
+        ST_X(a.location::geometry)::int AS lon,
+        ST_Y(a.location::geometry)::int AS lat,
+        a.aurora
+    FROM aurora_forecast a
+    JOIN latest_time lt ON a.observation_time = lt.max_ts
+),
+pts AS (
+    SELECT jsonb_build_array(lon, lat, aurora) AS p
+    FROM obs
+)
+SELECT jsonb_build_object(
+    'observation_time', (SELECT MAX(observation_time) FROM obs),
+    'forecast_time',    (SELECT MAX(forecast_time)    FROM obs),
+    'count',            (SELECT COUNT(*)              FROM obs),
+    'coordinates',      COALESCE(jsonb_agg(p), '[]'::jsonb)
+) AS payload
+FROM pts
+"""

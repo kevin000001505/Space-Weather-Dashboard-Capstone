@@ -77,6 +77,15 @@ class ProtonFluxListResponse(BaseModel):
     data: List[ProtonFluxResponse]
 
 
+class AuroraResponse(BaseModel):
+    observation_time: datetime
+    forecast_time: datetime
+    count: int
+    coordinates: List[List[int]]  # [lon, lat, aurora]
+    query_time_ms: Optional[float] = None
+    total_time_ms: Optional[float] = None
+
+
 class XRayResponse(BaseModel):
     time_tag: datetime
     satellite: int

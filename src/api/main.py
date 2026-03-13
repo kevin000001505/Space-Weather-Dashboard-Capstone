@@ -6,6 +6,8 @@ from utils.db_tools import get_connection, get_pool, close_all_connections
 from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     AIRPORTS_LATEST_QUERY,
+    AURORA_LATEST_QUERY,
+    AURORA_QUERY,
     FLIGHT_PATH_QUERY,
     KP_INDEX_QUERY,
     LATEST_DRAP_QUERY,
@@ -13,6 +15,7 @@ from database.queries import (
     PROTON_FLUX_QUERY,
 )
 from config import (
+    AuroraResponse,
     FlightStatesResponse,
     DRAPResponse,
     FlightPathResponse,
@@ -344,3 +347,70 @@ async def proton_flux(hours: int = Query(24, ge=1, le=168)):
     except Exception as e:
         logger.error(f"Error fetching proton flux: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/aurora/latest", response_model=AuroraResponse)
+async def aurora_latest():
+    """Retrieve the most recent aurora forecast."""
+    start_time = time.time()
+    try:
+        query_start = time.time()
+        async with get_connection() as conn:
+            payload = await conn.fetchval(AURORA_LATEST_QUERY)
+        query_time_ms = (time.time() - query_start) * 1000
+
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        if not payload or payload.get("count", 0) == 0:
+            raise HTTPException(status_code=404, detail="No aurora forecast data available")
+
+        total_time_ms = (time.time() - start_time) * 1000
+        payload["query_time_ms"] = round(query_time_ms, 2)
+        payload["total_time_ms"] = round(total_time_ms, 2)
+        return payload
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching latest aurora forecast: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/aurora/{utc_time}", response_model=AuroraResponse)
+async def aurora_by_time(utc_time: str):
+    """
+    Retrieve the aurora forecast for a specific observation time.
+
+    - **utc_time**: UTC timestamp in ISO 8601 format (e.g. `2026-03-13T06:17:00Z`)
+    """
+    from datetime import datetime, timezone
+    start_time = time.time()
+    try:
+        obs_time = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=422, detail=f"Invalid UTC time format: '{utc_time}'. Use ISO 8601, e.g. 2026-03-13T06:17:00Z")
+
+    try:
+        query_start = time.time()
+        async with get_connection() as conn:
+            payload = await conn.fetchval(AURORA_QUERY, obs_time)
+        query_time_ms = (time.time() - query_start) * 1000
+
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        if not payload or payload.get("count", 0) == 0:
+            raise HTTPException(status_code=404, detail=f"No aurora forecast data for {utc_time}")
+
+        total_time_ms = (time.time() - start_time) * 1000
+        payload["query_time_ms"] = round(query_time_ms, 2)
+        payload["total_time_ms"] = round(total_time_ms, 2)
+        return payload
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching aurora forecast for {utc_time}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
