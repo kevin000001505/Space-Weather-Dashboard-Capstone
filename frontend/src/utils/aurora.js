@@ -1,0 +1,75 @@
+// Aurora Implementation: Filled Polygon Cells
+// Ingests data directly from NOAA's OVATION Prime JSON
+
+export const getAuroraGeoJSON = (noaaJsonData) => {
+  if (!noaaJsonData || !noaaJsonData.coordinates) {
+    return { type: 'FeatureCollection', features: [] };
+  }
+
+  // 1. Filter and normalize coordinates
+  const validPoints = noaaJsonData.coordinates
+    .filter(([lon, lat, prob]) => prob > 0) // Only process cells with an actual chance of aurora
+    .map(([lon, lat, prob]) => {
+      // NOAA outputs Longitude from 0 to 360. 
+      // MapLibre/deck.gl expects -180 to 180, so we must wrap it.
+      const normalizedLon = lon > 180 ? lon - 360 : lon;
+      return { lat, lon: normalizedLon, prob };
+    });
+
+  // 2. NOAA's grid is uniformly 1x1 degree
+  const halfLat = 0.5;
+  const halfLon = 0.5;
+
+  // 3. Map to GeoJSON Polygons
+  const features = validPoints.map(({ lat, lon, prob }) => {
+    const west = lon - halfLon;
+    const east = lon + halfLon;
+    const south = lat - halfLat;
+    const north = lat + halfLat;
+
+    return {
+      type: 'Feature',
+      properties: {
+        probability: prob, // 0 to 100
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [west, south],
+          [east, south],
+          [east, north],
+          [west, north],
+          [west, south],
+        ]],
+      },
+    };
+  });
+
+  return {
+    type: 'FeatureCollection',
+    features,
+  };
+};
+
+export const getAuroraMapLayers = (isZooming) => {
+  return [
+    {
+      id: 'aurora-filled-cells',
+      type: 'fill',
+      source: 'aurora-cells',
+      paint: {
+        'fill-antialias': false,
+        'fill-color': [
+          'interpolate',
+          ['linear'],
+          ['get', 'probability'],    // NOAA gives us a 0-100 scale natively
+          0,   'rgba(0, 0, 0, 0)', // Transparent for 0%
+          10,  '#118800',          // Faint green
+          50,  '#55ff00',          // Bright green
+          80,  '#ff0000',          // Intense red (high probability/intensity)
+        ],
+        'fill-opacity': isZooming ? 0.2 : 0.6,
+      },
+    },
+  ];
+};

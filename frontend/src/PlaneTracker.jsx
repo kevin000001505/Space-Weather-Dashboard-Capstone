@@ -8,12 +8,11 @@ import Map, { Layer, Popup, Source, useControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // API imports
-import { fetchPlanes, fetchDRAP, fetchAirports } from './api/api';
+import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from './api/api';
 
 // Component imports
 import AltitudeLegend from './components/ui/AltitudeLegend';
 import SettingsPanel from './components/ui/SettingsPanel';
-import FilterPanel from './components/ui/FilterPanel';
 import StatsPanel from './components/ui/StatsPanel';
 
 // Redux action imports
@@ -28,30 +27,20 @@ import {
 } from './store/slices/uiSlice';
 
 // Utility imports
-import { getAltFt, getAltDisplay, getSpeedDisplay, formatNumber, formatCoord } from './utils/mapUtils';
+import { getAltFt, getAltM, getAltDisplay, getSpeedDisplay, formatNumber, formatCoord } from './utils/mapUtils';
 import { buildDeckLayers } from './utils/deckLayersConfig';
 
-// DRAP implementations
-import { 
-  createDRAPHeatmapLayers,
-  getDRAPHeatmapGeoJSON,
-  getDRAPHeatmapMapLayers
-} from './utils/drap-implementations/heatmap';
-import { 
-  createDRAPBitmapLayers,
-  getDRAPBitmapGeoJSON,
-  getDRAPBitmapMapLayers
-} from './utils/drap-implementations/bitmap';
+// DRAP imports
 import { 
   createDRAPFilledCellsLayers,
   getDRAPFilledCellsGeoJSON,
   getDRAPFilledCellsMapLayers
-} from './utils/drap-implementations/filled-cells';
-import { 
-  createDRAPContourLinesLayers,
-  getDRAPContourLinesGeoJSON,
-  getDRAPContourLinesMapLayers
-} from './utils/drap-implementations/contour-lines';
+} from './utils/drap';
+
+// Aurora imports
+import { getAuroraGeoJSON, getAuroraMapLayers } from './utils/aurora';
+
+// Flight details panel imports
 import FlightDetailsPanel from './components/ui/FlightDetailsPanel';
 
 const DeckGLOverlay = (props) => {
@@ -65,6 +54,7 @@ const PlaneTracker = () => {
   const { data: planes } = useSelector((state) => state.planes);
   const selectedFlightsPanels = useSelector(state => state.ui.selectedFlightsPanels);
   const { points: drapPoints } = useSelector((state) => state.drap);
+  const { data: auroraData } = useSelector((state) => state.aurora);
   const { data: airports } = useSelector((state) => state.airports);
   
   const flightPath = useSelector(state => state.flightPath.paths);
@@ -78,7 +68,7 @@ const PlaneTracker = () => {
     showAirports,
     showPlanes,
     showDRAP,
-    drapImplementation,
+    showAurora=true,
     viewState,
     isZooming,
     altitudeRange,
@@ -89,13 +79,11 @@ const PlaneTracker = () => {
   
   const zoomTimeoutRef = useRef(null);
 
-  const highThresh = useImperial ? 36000 : 11000;
-  const lowThresh = useImperial ? 30000 : 9000;
-
   useEffect(() => {
     // Fetch data on component mount
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
+    dispatch(fetchAurora());
     if (airports.length === 0) {
         dispatch(fetchAirports());
     }
@@ -104,45 +92,29 @@ const PlaneTracker = () => {
     const interval = setInterval(() => {
       dispatch(fetchPlanes());
       dispatch(fetchDRAP());
-    }, 120000);
+      dispatch(fetchAurora());
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [dispatch, airports.length]);
 
+  // Plane filtering logic
   const filteredPlanes = useMemo(() => {
-    const valid = [];
-    const high = [];
-    const med = [];
-    const low = [];
-
-    planes.forEach(p => {
-      if (!p.lat || !p.lon) return;
+    return planes.filter(p => {
+      if (!p.lat || !p.lon) return false;
       const altValue = useImperial ? getAltFt(p.geo_altitude) : p.geo_altitude;
-      if (altitudeRange && (altValue < altitudeRange[0] || altValue > altitudeRange[1])) return;
-      valid.push(p);
-      if (altValue > highThresh) high.push(p);
-      else if (altValue >= lowThresh && altValue <= highThresh) med.push(p);
-      else low.push(p);
+      if (altValue < altitudeRange[0] || altValue > altitudeRange[1]) return false;
+      return true;
     });
+  }, [planes, planeFilter, useImperial, altitudeRange]);
 
-    let activePlanes = valid;
-    if (planeFilter === 'high') activePlanes = high;
-    if (planeFilter === 'medium') activePlanes = med;
-    if (planeFilter === 'low') activePlanes = low;
-    if (planeFilter === 'none') activePlanes = [];
-
-    return activePlanes;
-  }, [planes, planeFilter, useImperial, highThresh, lowThresh, altitudeRange]);
-
+  // Airport filtering logic
   const filteredAirports = useMemo(() => {
     if (airportFilter.length === 0) return [];
     return airports.filter(a => {
       if (!airportFilter.includes(a.type)) return false;
-      // Use 'elevation_ft' from CSV, fallback to 0 if missing
-      let elevation = a.elevation_ft !== undefined ? parseFloat(a.elevation_ft) : (a.elevation !== undefined ? parseFloat(a.elevation) : 0);
-      if (isNaN(elevation)) elevation = 0;
-      const altValue = useImperial ? elevation : elevation * 0.3048;
-      if (airportAltitudeRange && (altValue < airportAltitudeRange[0] || altValue > airportAltitudeRange[1])) return false;
+      const altValue = useImperial ? a.elevation_ft : getAltM(a.elevation);
+      if (altValue < airportAltitudeRange[0] || altValue > airportAltitudeRange[1]) return false;
       return true;
     });
   }, [airports, airportFilter, airportAltitudeRange, useImperial]);
@@ -155,7 +127,7 @@ const PlaneTracker = () => {
     : filteredPlanes;
   const filteredAirportsIsolate = isolateMode ? [] : filteredAirports;
 
-  // Dynamic DRAP implementation selection
+  // Draw DRAP regions as filled cells
   const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
     if (!drapPoints || drapPoints.length === 0) {
       return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
@@ -165,42 +137,26 @@ const PlaneTracker = () => {
     const [minAmp, maxAmp] = drapRegionRange || [0, 35];
     const filteredDrapPoints = drapPoints.filter(([lat, lon, amp]) => amp >= minAmp && amp <= maxAmp);
 
-    try {
-      switch (drapImplementation) {
-        case 'heatmap':
-          return {
-            drapGeoJson: getDRAPHeatmapGeoJSON?.(filteredDrapPoints),
-            drapMapLayers: getDRAPHeatmapMapLayers?.(isZooming, darkMode),
-            drapDeckLayers: createDRAPHeatmapLayers(filteredDrapPoints, isZooming),
-          };
+    return {
+      drapGeoJson: getDRAPFilledCellsGeoJSON(filteredDrapPoints),
+      drapMapLayers: getDRAPFilledCellsMapLayers(isZooming, darkMode),
+      drapDeckLayers: [],
+    };
+  }, [drapPoints, isZooming, darkMode, drapRegionRange]);
 
-        case 'bitmap':
-          return {
-            drapGeoJson: getDRAPBitmapGeoJSON?.(filteredDrapPoints),
-            drapMapLayers: getDRAPBitmapMapLayers?.(isZooming, darkMode),
-            drapDeckLayers: createDRAPBitmapLayers(filteredDrapPoints, isZooming),
-          };
-
-        case 'filled-cells':
-          return {
-            drapGeoJson: getDRAPFilledCellsGeoJSON(filteredDrapPoints),
-            drapMapLayers: getDRAPFilledCellsMapLayers(isZooming, darkMode),
-            drapDeckLayers: [],
-          };
-
-        case 'contour-lines':
-        default:
-          return {
-            drapGeoJson: getDRAPContourLinesGeoJSON(filteredDrapPoints),
-            drapMapLayers: getDRAPContourLinesMapLayers(isZooming, darkMode),
-            drapDeckLayers: [],
-          };
-      }
-    } catch (error) {
-      console.error(`DRAP implementation failed: ${drapImplementation}`, error);
-      return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
+  // Draw Aurora regions as filled cells
+  const { auroraGeoJson, auroraMapLayers } = useMemo(() => {
+    if (!auroraData || !auroraData.coordinates) {
+      return { auroraGeoJson: null, auroraMapLayers: null };
     }
-  }, [drapPoints, drapImplementation, isZooming, darkMode, drapRegionRange]);
+
+    return {
+      auroraGeoJson: getAuroraGeoJSON(auroraData),
+      auroraMapLayers: getAuroraMapLayers(isZooming), 
+    };
+  }, [auroraData, isZooming]);
+
+  // Plane and Airport layers
   const deckLayers = useMemo(() => {
     const baseLayers = buildDeckLayers({
       filteredPlanes: filteredPlanesIsolate,
@@ -273,10 +229,19 @@ const PlaneTracker = () => {
         }
         onClick={() => dispatch(clearSelections())}
       >
-        {/* MapLibre-based DRAP implementations (filled-cells, contour-lines) */}
+        {/* MapLibre-based DRAP implementation*/}
         {showDRAP && drapGeoJson && drapMapLayers && drapGeoJson.features?.length > 0 && (
           <Source id="drap-cells" type="geojson" data={drapGeoJson}>
             {drapMapLayers.map((layer) => (
+              <Layer key={layer.id} {...layer} />
+            ))}
+          </Source>
+        )}
+
+        {/* MapLibre-based Aurora implementation */}
+        {showAurora && auroraGeoJson && auroraMapLayers && auroraGeoJson.features?.length > 0 && (
+          <Source id="aurora-cells" type="geojson" data={auroraGeoJson}>
+            {auroraMapLayers.map((layer) => (
               <Layer key={layer.id} {...layer} />
             ))}
           </Source>
@@ -304,7 +269,7 @@ const PlaneTracker = () => {
             <div style={{ padding: '8px', minWidth: '150px' }}>
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{selectedAirport.name}</h3>
               <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
-                <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code}<br/>
+                <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code || 'N/A'}<br/>
                 <strong>Type:</strong>
                 {selectedAirport.type.replace('_', ' ').split(' ').map(word => word.charAt(0)
                 .toUpperCase() + word.slice(1)).join(' ')}<br/>
@@ -355,12 +320,6 @@ const PlaneTracker = () => {
         }
       `}</style>
 
-      {/* Overlays */}
-      <FilterPanel />
-      <StatsPanel />
-      <SettingsPanel />
-      <AltitudeLegend />
-
       {/* Flight Details Panels */}
       {selectedFlightsPanels.map(flight => (
         <FlightDetailsPanel
@@ -372,6 +331,11 @@ const PlaneTracker = () => {
           }}
         />
       ))}
+
+      {/* Overlays */}
+      <StatsPanel />
+      <AltitudeLegend />
+      <SettingsPanel />
     </div>
   );
 };

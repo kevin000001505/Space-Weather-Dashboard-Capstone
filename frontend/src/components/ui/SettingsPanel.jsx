@@ -289,7 +289,7 @@ const SettingsPanel = () => {
               {settingsTabIndex === 1 && (
                 <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
                   <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
-                    Filter Airports
+                    Filter Planes
                   </Typography>
                   <FormControlLabel
                     control={

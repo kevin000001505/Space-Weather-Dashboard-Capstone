@@ -4,6 +4,7 @@ import drapReducer from './slices/drapSlice';
 import airportsReducer from './slices/airportsSlice';
 import uiReducer from './slices/uiSlice';
 import flightPathReducer from './slices/flightPathSlice';
+import auroraReducer from './slices/auroraSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,5 +13,6 @@ export const store = configureStore({
     airports: airportsReducer,
     ui: uiReducer,
     flightPath: flightPathReducer,
+    aurora: auroraReducer,
   },
 });
