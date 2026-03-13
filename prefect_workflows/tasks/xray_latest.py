@@ -2,135 +2,87 @@ from prefect import task, get_run_logger
 from database.db_tools import get_connection
 import requests
 import json
-from tasks.models import XrayRecord
-from tasks.queries import XRAY_STAGING_DDL, XRAY_STAGING_COLUMNS, XRAY_TRANSFORM_SQL
-
-solar_flare_url = (
-    "https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json"
-)
-solar_flare_url_backup = (
-    "https://services.swpc.noaa.gov/json/goes/secondary/xray-flares-latest.json"
+from tasks.models import XraySixHourRecord
+from tasks.queries import (
+    XRAY_6HOUR_STAGING_DDL,
+    XRAY_6HOUR_STAGING_COLUMNS,
+    XRAY_6HOUR_TRANSFORM_SQL,
 )
 
-
-def parse_xray_data(xray_data, logger: get_run_logger):
-    """Parse X-ray data into a format suitable for database insertion."""
-    parsed_data = []
-    for item in xray_data:
-        try:
-            # Create XrayRecord using Pydantic model for validation
-            xray_record = XrayRecord(
-                time_tag=item.get("time_tag"),
-                satellite=item.get("satellite"),
-                current_class=item.get("current_class"),
-                current_ratio=item.get("current_ratio"),
-                current_int_xrlong=item.get("current_int_xrlong"),
-                begin_time=item.get("begin_time"),
-                begin_class=item.get("begin_class"),
-                max_time=item.get("max_time"),
-                max_class=item.get("max_class"),
-                max_xrlong=item.get("max_xrlong"),
-                end_time=item.get("end_time"),
-                end_class=item.get("end_class"),
-                max_ratio_time=item.get("max_ratio_time"),
-                max_ratio=item.get("max_ratio"),
-            )
-            logger.info(f"Parsed X-ray record: {xray_record}")
-            parsed_data.append(xray_record.to_tuple())
-        except Exception as e:
-            logger.warning(f"Failed to parse X-ray record: {e}")
-            continue
-
-    return parsed_data
+XRAY_6HOUR_URL = "https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"
+XRAY_6HOUR_URL_BACKUP = "https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"
 
 
-@task(log_prints=True, retries=3, retry_delay_seconds=5)
-async def extract_xray_data():
-    """Extract X-ray data from API."""
-    xray_data = None
-    logger = get_run_logger()
+def _fetch_json(url: str) -> list:
+    """Fetch JSON list from a URL with basic fallback parsing."""
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
     try:
-        response = requests.get(solar_flare_url)
-        response.raise_for_status()
-
-        # Try normal parsing first
-        xray_data = response.json()
+        return response.json()
     except requests.exceptions.JSONDecodeError:
-        # Fallback: try to extract the first JSON array/object
         text = response.text
         start = text.find("[")
         end = text.rfind("]")
-        if start == -1:
-            xray_data = json.loads("[" + text)
+        if start != -1 and end != -1:
+            return json.loads(text[start : end + 1])
+        raise
 
-        if end == -1:
-            xray_data = json.loads(text + "]")
 
-        if start == -1 and end == -1:
-            xray_data = json.loads(f"[{text}]")
+def parse_xray_6hour_data(xray_data: list, logger) -> list[tuple]:
+    """Parse 6-hour X-ray flux records into tuples for DB insertion."""
+    parsed = []
+    for item in xray_data:
+        try:
+            record = XraySixHourRecord(
+                time_tag=item["time_tag"],
+                satellite=item["satellite"],
+                flux=item["flux"],
+                observed_flux=item["observed_flux"],
+                electron_correction=item["electron_correction"],
+                electron_contamination=item.get("electron_contaminaton", False),
+                energy=item["energy"],
+            )
+            parsed.append(record.to_tuple())
+        except Exception as e:
+            logger.warning(f"Skipping invalid X-ray 6-hour record: {e}")
+    return parsed
+
+
+@task(log_prints=True, retries=3, retry_delay_seconds=5)
+async def extract_xray_6hour_data():
+    """Extract 6-hour X-ray flux data from NOAA GOES primary (with secondary fallback)."""
+    logger = get_run_logger()
+
+    try:
+        xray_data = _fetch_json(XRAY_6HOUR_URL)
+        logger.info(f"Primary source returned {len(xray_data)} records")
     except Exception as e:
-        logger.debug(f"Response text: {response.text}")
-        raise ValueError(f"Backup data source failed: {e}")
+        logger.warning(f"Primary source failed ({e}), trying backup...")
+        try:
+            xray_data = _fetch_json(XRAY_6HOUR_URL_BACKUP)
+            logger.info(f"Backup source returned {len(xray_data)} records")
+        except Exception as e2:
+            raise ValueError(f"Both X-ray 6-hour sources failed: {e2}") from e2
 
-    if xray_data is None or not isinstance(xray_data, list):
-        logger.info("Start backup plan to secondary satellite data source.")
-        xray_data = extract_xray_data_backup()
+    if not isinstance(xray_data, list) or not xray_data:
+        logger.warning("No X-ray 6-hour data returned from API")
+        return []
 
-    else:
-        logger.info(
-            f"✓ X-ray data request successful! Retrieved {len(xray_data)} records"
-        )
+    parsed = parse_xray_6hour_data(xray_data, logger)
 
-    parsed_xray_data = parse_xray_data(xray_data, logger)
-
-    if not parsed_xray_data:
-        logger.warning("No valid X-ray records to insert")
+    if not parsed:
+        logger.warning("No valid X-ray 6-hour records to insert")
         return xray_data
 
     async with get_connection() as conn:
         async with conn.transaction():
-            await conn.execute(XRAY_STAGING_DDL)
+            await conn.execute(XRAY_6HOUR_STAGING_DDL)
             await conn.copy_records_to_table(
-                "goes_xray_events_staging",
-                records=parsed_xray_data,
-                columns=XRAY_STAGING_COLUMNS,
+                "goes_xray_6hour_staging",
+                records=parsed,
+                columns=XRAY_6HOUR_STAGING_COLUMNS,
             )
-            await conn.execute(XRAY_TRANSFORM_SQL)
-        logger.info(
-            f"✓ X-ray data inserted successfully! {len(parsed_xray_data)} records"
-        )
+            await conn.execute(XRAY_6HOUR_TRANSFORM_SQL)
 
-    return xray_data
-
-
-def extract_xray_data_backup():
-    """Extract X-ray data from backup API."""
-    logger = get_run_logger()
-    response = requests.get(solar_flare_url_backup)
-    response.raise_for_status()
-
-    try:
-        response = requests.get(solar_flare_url_backup)
-        response.raise_for_status()
-
-        # Try normal parsing first
-        xray_data = response.json()
-    except requests.exceptions.JSONDecodeError:
-        # Fallback: try to extract the first JSON array/object
-        text = response.text
-        start = text.find("[")
-        end = text.rfind("]")
-        if start == -1:
-            xray_data = json.loads("[" + text)
-
-        if end == -1:
-            xray_data = json.loads(text + "]")
-
-        if start == -1 and end == -1:
-            xray_data = json.loads(f"[{text}]")
-
-    except Exception as e:
-        logger.debug(f"Response text: {response.text}")
-        raise ValueError(f"Backup data source failed: {e}")
-
+    logger.info(f"X-ray 6-hour data inserted: {len(parsed)} records")
     return xray_data

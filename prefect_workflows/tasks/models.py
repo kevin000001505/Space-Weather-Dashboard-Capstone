@@ -171,53 +171,6 @@ class DrapRecord(BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
-class XrayRecord(BaseModel):
-    """X-ray flux record for database insertion."""
-
-    time_tag: datetime = Field(description="Observation timestamp")
-    satellite: int = Field(description="GOES satellite number")
-    current_class: Optional[str] = Field(
-        default=None, description="Current X-ray class"
-    )
-    current_ratio: Optional[float] = Field(
-        default=None, ge=0, description="Current ratio"
-    )
-    current_int_xrlong: Optional[float] = Field(
-        default=None, ge=0, description="Current integrated X-ray long"
-    )
-    begin_time: Optional[datetime] = Field(default=None, description="Event begin time")
-    begin_class: Optional[str] = Field(default=None, description="Begin X-ray class")
-    max_time: Optional[datetime] = Field(default=None, description="Maximum time")
-    max_class: Optional[str] = Field(default=None, description="Maximum X-ray class")
-    max_xrlong: Optional[float] = Field(default=None, description="Maximum X-ray long")
-    end_time: Optional[datetime] = Field(default=None, description="Event end time")
-    end_class: Optional[str] = Field(default=None, description="End X-ray class")
-    max_ratio_time: Optional[datetime] = Field(
-        default=None, description="Maximum ratio time"
-    )
-    max_ratio: Optional[float] = Field(default=None, ge=0, description="Maximum ratio")
-
-    def to_tuple(self) -> tuple:
-        """Convert to tuple for asyncpg executemany."""
-        return (
-            self.time_tag,
-            self.satellite,
-            self.current_class,
-            self.current_ratio,
-            self.current_int_xrlong,
-            self.begin_time,
-            self.begin_class,
-            self.max_time,
-            self.max_class,
-            self.max_xrlong,
-            self.end_time,
-            self.end_class,
-            self.max_ratio_time,
-            self.max_ratio,
-        )
-
-    model_config = ConfigDict(validate_assignment=True, extra="forbid")
-
 
 class ProtonFluxPlot(BaseModel):
     """Proton flux plot record for database insertion."""
@@ -249,6 +202,32 @@ class ProtonFluxPlot(BaseModel):
         )
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+
+class XraySixHourRecord(BaseModel):
+    """X-ray 6-hour flux record for database insertion."""
+
+    time_tag: datetime = Field(description="Observation timestamp")
+    satellite: int = Field(description="GOES satellite number")
+    flux: float = Field(description="Corrected X-ray flux (W/m²)")
+    observed_flux: float = Field(description="Observed X-ray flux (W/m²)")
+    electron_correction: float = Field(description="Electron correction applied (W/m²)")
+    electron_contamination: bool = Field(description="Electron contamination flag")
+    energy: str = Field(description="Energy band (e.g. '0.1-0.8nm')")
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg copy_records_to_table."""
+        return (
+            self.time_tag,
+            self.satellite,
+            self.flux,
+            self.observed_flux,
+            self.electron_correction,
+            self.electron_contamination,
+            self.energy,
+        )
+
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
 class KPIndexRecord(BaseModel):
