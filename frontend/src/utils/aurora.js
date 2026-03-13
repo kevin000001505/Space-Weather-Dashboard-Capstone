@@ -64,8 +64,8 @@ export const getAuroraMapLayers = (isZooming) => {
           ['linear'],
           ['get', 'probability'],    // NOAA gives us a 0-100 scale natively
           0,   'rgba(0, 0, 0, 0)', // Transparent for 0%
-          10,  '#118800',          // Faint green
-          50,  '#55ff00',          // Bright green
+          10,  '#1eff00',          // Bright green
+          50,  '#fff700',          // Bright yellow
           80,  '#ff0000',          // Intense red (high probability/intensity)
         ],
         'fill-opacity': isZooming ? 0.2 : 0.6,

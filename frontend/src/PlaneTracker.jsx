@@ -68,12 +68,13 @@ const PlaneTracker = () => {
     showAirports,
     showPlanes,
     showDRAP,
-    showAurora=true,
+    showAurora,
     viewState,
     isZooming,
     altitudeRange,
     airportAltitudeRange,
     drapRegionRange,
+    auroraRegionRange,
     isolateMode,
   } = useSelector((state) => state.ui);
   
@@ -150,11 +151,19 @@ const PlaneTracker = () => {
       return { auroraGeoJson: null, auroraMapLayers: null };
     }
 
+    // Filter Aurora points by amplitude range
+    const [minAmp, maxAmp] = auroraRegionRange || [0, 100];
+    const filteredAuroraPoints = auroraData.coordinates.filter(([lon, lat, pct]) => pct >= minAmp && pct <= maxAmp);
+
     return {
-      auroraGeoJson: getAuroraGeoJSON(auroraData),
+      auroraGeoJson: getAuroraGeoJSON({
+        "Observation Time": auroraData['Observation Time'],
+        "Forecast Time": auroraData['Forecast Time'],
+        coordinates: filteredAuroraPoints
+      }),
       auroraMapLayers: getAuroraMapLayers(isZooming), 
     };
-  }, [auroraData, isZooming]);
+  }, [auroraData, auroraRegionRange, isZooming]);
 
   // Plane and Airport layers
   const deckLayers = useMemo(() => {
