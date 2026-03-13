@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from utils.db_tools import get_connection, get_pool, close_all_connections
 from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
+    ALERT_QUERY,
     AIRPORTS_LATEST_QUERY,
     AURORA_LATEST_QUERY,
     AURORA_QUERY,
@@ -28,6 +29,8 @@ from config import (
     XRayListResponse,
     ProtonFluxResponse,
     ProtonFluxListResponse,
+    AlertResponse,
+    AlertListResponse,
 )
 import logging
 import json
@@ -414,3 +417,22 @@ async def aurora_by_time(utc_time: str):
         logger.error(f"Error fetching aurora forecast for {utc_time}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
+
+@app.get("/api/v1/alert", response_model=AlertListResponse)
+async def get_alerts(days: int = Query(1, ge=1, le=30)):
+    """Retrieve alert records with only time and message.
+
+    - **days**: Number of days to include ending today (default: 1, today only)
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(ALERT_QUERY, days)
+        return AlertListResponse(data=[
+            AlertResponse(
+                time=row["issue_datetime"],
+                message=row["alert_messages"],
+            ) for row in rows
+        ])
+    except Exception as e:
+        logger.error(f"Error fetching alerts: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

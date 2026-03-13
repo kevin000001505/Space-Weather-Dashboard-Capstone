@@ -134,3 +134,12 @@ SELECT jsonb_build_object(
 ) AS payload
 FROM pts
 """
+
+ALERT_QUERY = """
+SELECT
+    issue_datetime,
+    alert_messages
+FROM alerts
+WHERE issue_datetime >= date_trunc('day', NOW()) - (($1 - 1) * INTERVAL '1 day')
+ORDER BY issue_datetime DESC
+"""

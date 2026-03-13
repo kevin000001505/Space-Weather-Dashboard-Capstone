@@ -98,3 +98,12 @@ class XRayResponse(BaseModel):
 
 class XRayListResponse(BaseModel):
     xray_fluxes: List[XRayResponse]
+
+
+class AlertResponse(BaseModel):
+    time: datetime
+    message: str
+
+
+class AlertListResponse(BaseModel):
+    data: List[AlertResponse]
