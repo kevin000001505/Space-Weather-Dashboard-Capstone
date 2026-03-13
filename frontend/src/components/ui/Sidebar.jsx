@@ -14,16 +14,23 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import CloseIcon from "@mui/icons-material/Close";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../store/slices/planesSlice";
+import { useNavigate } from "react-router-dom";
 
 const drawerWidth = 280;
 
 export const Sidebar = () => {
   const dispatch = useDispatch();
   const isSidebarOpen = useSelector(state => state.planes.isSidebarOpen);
+  const navigate = useNavigate();
 
   const handleSidebar = (value) => {
     dispatch(toggleSidebar(value));
   };
+
+  const menuItems = [
+    { text: "Dashboard", icon: <HomeIcon />, path: "/" },
+    { text: "Analytics", icon: <DashboardIcon />, path: "/charts" }
+  ];
 
   const drawerContent = (
     <Box sx={{ width: drawerWidth }} role="presentation">
@@ -34,12 +41,14 @@ export const Sidebar = () => {
       </Box>
 
       <List>
-        {[
-          { text: "Dashboard", icon: <HomeIcon /> },
-          { text: "Charts", icon: <DashboardIcon /> }
-        ].map((item, index) => (
+        {menuItems.map((item, index) => (
           <ListItem key={index} disablePadding>
-            <ListItemButton>
+            <ListItemButton
+              onClick={() => {
+                navigate(item.path);
+                handleSidebar(false);
+              }}
+            >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>

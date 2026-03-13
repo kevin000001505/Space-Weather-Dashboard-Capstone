@@ -1,4 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
+import { toast } from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -74,7 +75,61 @@ export const fetchFlightPath = createAsyncThunk(
       const response = await fetch(`${API_BASE_URL}/flight-path/${flightId}`);
       if (!response.ok) throw new Error('Failed to fetch flight path');
       const data = await response.json();
+      if (data && data.path_geojson.coordinates.length <= 1) {
+        toast.error(`No flight path exists for ${data?.callsign?.toUpperCase() ?? flightId.toUpperCase()}`, {
+          style: {
+            borderRadius: '10px',
+            background: '#fc3636',
+            color: '#fff',
+          }
+        });
+      }
       return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// Charts API calls
+export const fetchKpIndex = createAsyncThunk(
+  'charts/fetchKpIndex',
+  async (hours = 144, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/kp-index?hours=${hours}`);
+      if (!response.ok) throw new Error('Failed to fetch Kp index');
+      const data = await response.json();
+      return data.indices;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchXrayFlux = createAsyncThunk(
+  'charts/fetchXrayFlux',
+  async (hours = 24, { rejectWithValue }) => {
+    try {
+      const response1 = await fetch(`https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json`);
+      const response2 = await fetch(`https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json`);
+      if (!response1.ok || !response2.ok) throw new Error('Failed to fetch X-ray flux');
+      const data1 = await response1.json();
+      const data2 = await response2.json();
+      return [...data1, ...data2];
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const fetchProtonFlux = createAsyncThunk(
+  'charts/fetchProtonFlux',
+  async (hours = 24, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/proton-flux?hours=${hours}`);
+      if (!response.ok) throw new Error('Failed to fetch proton flux');
+      const data = await response.json();
+      return data.data;
     } catch (error) {
       return rejectWithValue(error.message);
     }

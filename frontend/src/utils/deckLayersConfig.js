@@ -88,9 +88,13 @@ export const buildDeckLayers = ({
   // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
     if (object) {
+      const exists = selectedFlightsPanels.some(f => f.icao24 === object.icao24);
       addFlightPanel(object);
-      // Optionally fetch flight path or set selection
+      if (exists) {
+        dispatch({ type: 'flightPath/removeFlightPath', payload: object.icao24 });
+      } else {
         dispatch(fetchFlightPath(object.icao24));
+      }
       return true;
     }
   };
