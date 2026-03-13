@@ -418,46 +418,50 @@ ON CONFLICT (ident) DO UPDATE SET
     updated_at         = CURRENT_TIMESTAMP
 """
 
-# --- goes_xray_events ---
-XRAY_STAGING_DDL = """
-CREATE TEMP TABLE goes_xray_events_staging (
-    time_tag            TIMESTAMPTZ,
-    satellite           INTEGER,
-    current_class       TEXT,
-    current_ratio       DOUBLE PRECISION,
-    current_int_xrlong  DOUBLE PRECISION,
-    begin_time          TIMESTAMPTZ,
-    begin_class         TEXT,
-    max_time            TIMESTAMPTZ,
-    max_class           TEXT,
-    max_xrlong          DOUBLE PRECISION,
-    end_time            TIMESTAMPTZ,
-    end_class           TEXT,
-    max_ratio_time      TIMESTAMPTZ,
-    max_ratio           DOUBLE PRECISION
+# --- goes_xray_6hour ---
+XRAY_6HOUR_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS goes_xray_6hour (
+  time_tag               timestamptz      NOT NULL,
+  satellite              integer          NOT NULL,
+  flux                   double precision NOT NULL,
+  observed_flux          double precision NOT NULL,
+  electron_correction    double precision NOT NULL,
+  electron_contamination boolean          NOT NULL,
+  energy                 text             NOT NULL,
+
+  CONSTRAINT goes_xray_6hour_pkey PRIMARY KEY (time_tag, satellite, energy)
+);
+
+CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_time_tag ON goes_xray_6hour (time_tag);
+CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_satellite ON goes_xray_6hour (satellite);
+"""
+
+XRAY_6HOUR_STAGING_DDL = """
+CREATE TEMP TABLE goes_xray_6hour_staging (
+    time_tag               TIMESTAMPTZ,
+    satellite              INTEGER,
+    flux                   DOUBLE PRECISION,
+    observed_flux          DOUBLE PRECISION,
+    electron_correction    DOUBLE PRECISION,
+    electron_contamination BOOLEAN,
+    energy                 TEXT
 ) ON COMMIT DROP
 """
 
-XRAY_STAGING_COLUMNS = [
-    "time_tag", "satellite", "current_class", "current_ratio",
-    "current_int_xrlong", "begin_time", "begin_class", "max_time",
-    "max_class", "max_xrlong", "end_time", "end_class",
-    "max_ratio_time", "max_ratio",
+XRAY_6HOUR_STAGING_COLUMNS = [
+    "time_tag", "satellite", "flux", "observed_flux",
+    "electron_correction", "electron_contamination", "energy",
 ]
 
-XRAY_TRANSFORM_SQL = """
-INSERT INTO goes_xray_events
-    (time_tag, satellite, current_class, current_ratio,
-     current_int_xrlong, begin_time, begin_class, max_time,
-     max_class, max_xrlong, end_time, end_class,
-     max_ratio_time, max_ratio)
+XRAY_6HOUR_TRANSFORM_SQL = """
+INSERT INTO goes_xray_6hour
+    (time_tag, satellite, flux, observed_flux,
+     electron_correction, electron_contamination, energy)
 SELECT
-    time_tag, satellite, current_class, current_ratio,
-    current_int_xrlong, begin_time, begin_class, max_time,
-    max_class, max_xrlong, end_time, end_class,
-    max_ratio_time, max_ratio
-FROM goes_xray_events_staging
-ON CONFLICT (time_tag, satellite) DO NOTHING
+    time_tag, satellite, flux, observed_flux,
+    electron_correction, electron_contamination, energy
+FROM goes_xray_6hour_staging
+ON CONFLICT (time_tag, satellite, energy) DO NOTHING
 """
 
 # --- goes_proton_flux ---

@@ -13,6 +13,7 @@ from tasks.queries import (
     LATEST_X_RAY_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
+    XRAY_6HOUR_CREATE_TABLE_SQL,
 )
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
@@ -130,6 +131,21 @@ async def initial_alert_db(conn: PoolConnectionProxy):
 
     except Exception as e:
         logger.error(f"Failed to initialize alerts table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_xray_6hour_db(conn: PoolConnectionProxy):
+    """Task to initialize the goes_xray_6hour table."""
+    logger = _logger()
+    try:
+        logger.info("Ensuring goes_xray_6hour table exists...")
+        await ensure_table_exists(
+            conn, "goes_xray_6hour", create_sql=XRAY_6HOUR_CREATE_TABLE_SQL
+        )
+        logger.info("goes_xray_6hour table is ready!")
+    except Exception as e:
+        logger.error(f"Failed to initialize goes_xray_6hour table: {e}")
         raise
 
 

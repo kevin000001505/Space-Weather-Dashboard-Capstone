@@ -10,6 +10,7 @@ from tasks.db import (
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
+    initial_xray_6hour_db,
 )
 
 _fallback = logging.getLogger(__name__)
@@ -51,6 +52,7 @@ async def initialize_db_flow():
             await initial_proton_flux_plot_db(conn)
             await initial_kp_index_db(conn)
             await initial_alert_db(conn)
+            await initial_xray_6hour_db(conn)
             logger.info("Database initialization completed successfully!")
 
     except Exception as e:
@@ -72,6 +74,7 @@ if __name__ == "__main__":
             await initial_proton_flux_plot_db.fn(conn)
             await initial_kp_index_db.fn(conn)
             await initial_alert_db.fn(conn)
+            await initial_xray_6hour_db.fn(conn)
         finally:
             await conn.close()
 
