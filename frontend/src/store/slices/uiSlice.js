@@ -34,7 +34,6 @@ const initialState = {
   drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
   isolateMode: false, // Isolate mode: only show selected planes and paths
 };
-
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
@@ -133,6 +132,9 @@ const uiSlice = createSlice({
     },
     setDrapRegionRange: (state, action) => {
       state.drapRegionRange = action.payload;
+    },
+        setShowDate: (state, action) => {
+      state.showDate = action.payload;
     },
   },
 });
