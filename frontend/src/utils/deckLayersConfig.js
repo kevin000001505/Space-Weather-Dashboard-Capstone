@@ -42,6 +42,32 @@ const AIRPORT_ICONS = Object.fromEntries(
 
 const DEFAULT_AIRPORT_ICON = AIRPORT_ICONS.small_airport;
 
+const normalizePathCoordinates = (coordinates) => {
+  if (!coordinates || coordinates.length === 0) return coordinates;
+
+  const normalized = [...coordinates];
+  let prevLon = normalized[0][0];
+
+  for (let i = 1; i < normalized.length; i++) {
+    // Clone the coordinate array to avoid mutating Redux state
+    let coord = [...normalized[i]]; 
+    let lon = coord[0];
+
+    // If the longitude jumps more than half the globe, adjust it
+    if (lon - prevLon > 180) {
+      lon -= 360;
+    } else if (lon - prevLon < -180) {
+      lon += 360;
+    }
+
+    coord[0] = lon;
+    normalized[i] = coord;
+    prevLon = lon; // Track the adjusted longitude for the next point
+  }
+
+  return normalized;
+};
+
 export const buildDeckLayers = ({
   filteredPlanes,
   filteredAirports,
@@ -59,6 +85,7 @@ export const buildDeckLayers = ({
   addFlightPanel,
   selectedFlightsPanels,
 }) => {
+  // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
     if (object) {
       addFlightPanel(object);
@@ -83,6 +110,7 @@ export const buildDeckLayers = ({
     }
   };
 
+  // Handlers for airport interactions
   const handleAirportClick = ({ object }) => {
     if (object) {
       setTimeout(() => {
@@ -92,7 +120,6 @@ export const buildDeckLayers = ({
       return true;
     }
   };
-
   const handleAirportHover = ({ object }) => {
     if (object) {
       setSelectedAirport(object);
@@ -124,6 +151,7 @@ export const buildDeckLayers = ({
           return isZooming ? [color[0], color[1], color[2], 25] : color;
         },
         pickable: true,
+        wrapLongitude: true,
         onClick: handleAirportClick,
         onHover: handleAirportHover,
         updateTriggers: {
@@ -131,11 +159,13 @@ export const buildDeckLayers = ({
           getSize: selectedAirport,
         },
       }),
+
+    // Flight Paths Layer
     ...Object.entries(flightPath || {}).map(([icao24, pathData]) => (
       pathData && pathData.path_geojson && pathData.path_geojson.coordinates &&
       new PathLayer({
         id: `flight-path-pathlayer-${icao24}`,
-        data: [pathData.path_geojson],
+        data: [{ ...pathData.path_geojson, coordinates: normalizePathCoordinates(pathData.path_geojson.coordinates) }],
         getPath: d => d.coordinates,
         getColor: [0, 128, 255, 200],
         getWidth: 4,
@@ -146,12 +176,14 @@ export const buildDeckLayers = ({
         pickable: false,
       })
     )).filter(Boolean),
+
     // Planes Icon Layer
     showPlanes &&
       new IconLayer({
         id: "planes-base",
         data: filteredPlanes,
         pickable: true,
+        wrapLongitude: true,
         iconAtlas: PLANE_ATLAS,
         iconMapping: {
           plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
@@ -172,8 +204,6 @@ export const buildDeckLayers = ({
           getColor: [useImperial, isZooming],
         },
       }),
-
-    // Removed Selected Airport Highlight
 
     // Selected Plane Outline
     showPlanes &&
@@ -214,7 +244,8 @@ export const buildDeckLayers = ({
           getColor: [useImperial],
         },
       }),
-    // Callsign label for selected planes
+
+      // Callsign label for selected planes
     showPlanes && selectedFlightsPanels && selectedFlightsPanels.length > 0 &&
       new TextLayer({
         id: 'selected-plane-callsign-labels',

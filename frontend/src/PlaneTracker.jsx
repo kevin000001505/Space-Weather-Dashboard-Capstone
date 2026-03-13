@@ -156,11 +156,7 @@ const PlaneTracker = () => {
     const filteredAuroraPoints = auroraData.coordinates.filter(([lon, lat, pct]) => pct >= minAmp && pct <= maxAmp);
 
     return {
-      auroraGeoJson: getAuroraGeoJSON({
-        "Observation Time": auroraData['Observation Time'],
-        "Forecast Time": auroraData['Forecast Time'],
-        coordinates: filteredAuroraPoints
-      }),
+      auroraGeoJson: getAuroraGeoJSON({ ...auroraData, coordinates: filteredAuroraPoints }),
       auroraMapLayers: getAuroraMapLayers(isZooming), 
     };
   }, [auroraData, auroraRegionRange, isZooming]);

@@ -13,7 +13,7 @@ EXCLUDED_FLOWS = {
     "proton_flux_plot.py",
     "alert.py",
     "flights_capture.py",
-    "auroa_extract.py",
+    "aurora_extract.py",
 }
 
 
