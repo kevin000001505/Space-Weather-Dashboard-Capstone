@@ -17,6 +17,15 @@ deployments:
     schedules:
       - interval: 60
         timezone: UTC
+  
+  - name: Aurora Extract
+    entrypoint: flows/aurora_extract.py:aurora_extract_flow
+    description: "Fetches live aurora data from NOAA every minute"
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - interval: 60
+        timezone: UTC
 
   - name: Proton Flux Plot Extract
     entrypoint: flows/proton_flux_plot.py:ingest_proton_flux_plot_flow

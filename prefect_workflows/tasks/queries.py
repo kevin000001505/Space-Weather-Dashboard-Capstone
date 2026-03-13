@@ -418,6 +418,45 @@ ON CONFLICT (ident) DO UPDATE SET
     updated_at         = CURRENT_TIMESTAMP
 """
 
+# --- aurora_forecast ---
+AURORA_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS aurora_forecast (
+    observation_time TIMESTAMPTZ      NOT NULL,
+    forecast_time    TIMESTAMPTZ      NOT NULL,
+    location         GEOGRAPHY(Point, 4326) NOT NULL,
+    aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
+    PRIMARY KEY (observation_time, location)
+);
+
+CREATE INDEX IF NOT EXISTS ix_aurora_forecast_obs_time ON aurora_forecast (observation_time);
+CREATE INDEX IF NOT EXISTS ix_aurora_forecast_location ON aurora_forecast USING GIST (location);
+"""
+
+AURORA_STAGING_DDL = """
+CREATE TEMP TABLE aurora_forecast_staging (
+    observation_time TIMESTAMPTZ      NOT NULL,
+    forecast_time    TIMESTAMPTZ      NOT NULL,
+    longitude        DOUBLE PRECISION NOT NULL,
+    latitude         DOUBLE PRECISION NOT NULL,
+    aurora           INTEGER          NOT NULL
+) ON COMMIT DROP
+"""
+
+AURORA_STAGING_COLUMNS = [
+    "observation_time", "forecast_time", "longitude", "latitude", "aurora",
+]
+
+AURORA_TRANSFORM_SQL = """
+INSERT INTO aurora_forecast (observation_time, forecast_time, location, aurora)
+SELECT
+    observation_time,
+    forecast_time,
+    ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
+    aurora
+FROM aurora_forecast_staging
+ON CONFLICT (observation_time, location) DO NOTHING
+"""
+
 # --- goes_xray_6hour ---
 XRAY_6HOUR_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS goes_xray_6hour (

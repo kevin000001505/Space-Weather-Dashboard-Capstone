@@ -8,6 +8,7 @@ from database.db_tools import (
 from tasks.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
+    AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     KP_INDEX_CREATE_TABLE_SQL,
     LATEST_X_RAY_CREATE_TABLE_SQL,
@@ -131,6 +132,21 @@ async def initial_alert_db(conn: PoolConnectionProxy):
 
     except Exception as e:
         logger.error(f"Failed to initialize alerts table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_aurora_db(conn: PoolConnectionProxy):
+    """Task to initialize the aurora_forecast table."""
+    logger = _logger()
+    try:
+        logger.info("Ensuring aurora_forecast table exists...")
+        await ensure_table_exists(
+            conn, "aurora_forecast", create_sql=AURORA_CREATE_TABLE_SQL
+        )
+        logger.info("aurora_forecast table is ready!")
+    except Exception as e:
+        logger.error(f"Failed to initialize aurora_forecast table: {e}")
         raise
 
 

@@ -204,6 +204,36 @@ class ProtonFluxPlot(BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
+class AuroraRecord(BaseModel):
+    """Aurora forecast record for database insertion."""
+
+    observation_time: datetime = Field(description="Observation timestamp (UTC)")
+    forecast_time: datetime = Field(description="Forecast timestamp (UTC)")
+    longitude: float = Field(ge=-180, le=180, description="Longitude (-180 to 180)")
+    latitude: float = Field(ge=-90, le=90, description="Latitude")
+    aurora: int = Field(ge=0, le=100, description="Aurora probability (0-100)")
+
+    @field_validator("longitude", mode="before")
+    @classmethod
+    def normalize_longitude(cls, v: float) -> float:
+        """Normalize 0-359 longitude from NOAA API to -180/180 range."""
+        if v > 180:
+            return v - 360
+        return v
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg copy_records_to_table."""
+        return (
+            self.observation_time,
+            self.forecast_time,
+            self.longitude,
+            self.latitude,
+            self.aurora,
+        )
+
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
+
 class XraySixHourRecord(BaseModel):
     """X-ray 6-hour flux record for database insertion."""
 
