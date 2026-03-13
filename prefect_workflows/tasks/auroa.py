@@ -38,6 +38,8 @@ async def load_aurora_data(data: dict) -> None:
     records = []
     skipped = 0
     for coord in coordinates:
+        if coord[2] == 0:
+            continue
         try:
             record = AuroraRecord(
                 observation_time=observation_time,
