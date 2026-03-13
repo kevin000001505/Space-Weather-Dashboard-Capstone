@@ -1,6 +1,6 @@
 from prefect import flow, get_run_logger
 from prefect.variables import Variable
-from prefect_workflows.tasks.aurora import fetch_aurora_data, load_aurora_data
+from tasks.aurora import fetch_aurora_data, load_aurora_data
 
 
 @flow(
