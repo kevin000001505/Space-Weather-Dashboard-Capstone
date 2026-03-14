@@ -204,6 +204,23 @@ const XrayFluxChart = () => {
                     color: darkMode ? "#e0e0e0" : "#333",
                   },
                 },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      const value = context.parsed.y;
+                      let flareClass = "";
+                      if (value >= 1e-4) flareClass = "X";
+                      else if (value >= 1e-5) flareClass = "M";
+                      else if (value >= 1e-6) flareClass = "C";
+                      else if (value >= 1e-7) flareClass = "B";
+                      else if (value >= 1e-8) flareClass = "A";
+                      else flareClass = "<A";
+
+                      const sci = value ? value.toExponential(2) : value;
+                      return `${context.dataset.label}: ${sci} W/m² (Flare Class: ${flareClass})`;
+                    },
+                  },
+                },
                 zoom: {
                   pan: {
                     enabled: true,
@@ -310,103 +327,80 @@ const XrayFluxChart = () => {
                 padding: 10,
               },
               backgroundColor: darkMode ? "#23272e" : "#fff",
-
-              plugins: {
-                ...((typeof options !== "undefined" && options.plugins) || {}),
-                tooltip: {
-                  callbacks: {
-                    label: function (context) {
-                      const value = context.parsed.y;
-                      let flareClass = "";
-                      if (value >= 1e-4) flareClass = "X";
-                      else if (value >= 1e-5) flareClass = "M";
-                      else if (value >= 1e-6) flareClass = "C";
-                      else if (value >= 1e-7) flareClass = "B";
-                      else if (value >= 1e-8) flareClass = "A";
-                      else flareClass = "<A";
-
-                      const sci = value ? value.toExponential(2) : value;
-                      return `${context.dataset.label}: ${sci} W/m² (Flare Class: ${flareClass})`;
-                    },
+              annotations: {
+                flareA: {
+                  type: "line",
+                  yMin: 1e-8,
+                  yMax: 1e-8,
+                  borderColor: "#e0e0e0",
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                  label: {
+                    display: true,
+                    position: "end",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    font: { weight: "bold" },
+                    backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
-                annotation: {
-                  annotations: {
-                    flareA: {
-                      type: "line",
-                      yMin: 1e-8,
-                      yMax: 1e-8,
-                      borderColor: "#888",
-                      borderWidth: 1,
-                      borderDash: [4, 4],
-                      label: {
-                        display: true,
-                        position: "end",
-                        color: darkMode ? "#e0e0e0" : "#333",
-                        font: { weight: "bold" },
-                        backgroundColor: "rgba(0,0,0,0)",
-                      },
-                    },
-                    flareB: {
-                      type: "line",
-                      yMin: 1e-7,
-                      yMax: 1e-7,
-                      borderColor: "#888",
-                      borderWidth: 1,
-                      borderDash: [4, 4],
-                      label: {
-                        display: true,
-                        position: "end",
-                        color: darkMode ? "#e0e0e0" : "#333",
-                        font: { weight: "bold" },
-                        backgroundColor: "rgba(0,0,0,0)",
-                      },
-                    },
-                    flareC: {
-                      type: "line",
-                      yMin: 1e-6,
-                      yMax: 1e-6,
-                      borderColor: "#888",
-                      borderWidth: 1,
-                      borderDash: [4, 4],
-                      label: {
-                        display: true,
-                        position: "end",
-                        color: darkMode ? "#e0e0e0" : "#333",
-                        font: { weight: "bold" },
-                        backgroundColor: "rgba(0,0,0,0)",
-                      },
-                    },
-                    flareM: {
-                      type: "line",
-                      yMin: 1e-5,
-                      yMax: 1e-5,
-                      borderColor: "#888",
-                      borderWidth: 1,
-                      borderDash: [4, 4],
-                      label: {
-                        display: true,
-                        position: "end",
-                        color: darkMode ? "#e0e0e0" : "#333",
-                        font: { weight: "bold" },
-                        backgroundColor: "rgba(0,0,0,0)",
-                      },
-                    },
-                    flareX: {
-                      type: "line",
-                      yMin: 1e-4,
-                      yMax: 1e-4,
-                      borderColor: "#888",
-                      borderWidth: 1,
-                      borderDash: [4, 4],
-                      label: {
-                        display: true,
-                        position: "end",
-                        color: darkMode ? "#e0e0e0" : "#333",
-                        font: { weight: "bold" },
-                        backgroundColor: "rgba(0,0,0,0)",
-                      },
-                    },
+                flareB: {
+                  type: "line",
+                  yMin: 1e-7,
+                  yMax: 1e-7,
+                  borderColor: "#e0e0e0",
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                  label: {
+                    display: true,
+                    position: "end",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    font: { weight: "bold" },
+                    backgroundColor: "rgba(0,0,0,0)",
+                  },
+                },
+                flareC: {
+                  type: "line",
+                  yMin: 1e-6,
+                  yMax: 1e-6,
+                  borderColor: "#e0e0e0",
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                  label: {
+                    display: true,
+                    position: "end",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    font: { weight: "bold" },
+                    backgroundColor: "rgba(0,0,0,0)",
+                  },
+                },
+                flareM: {
+                  type: "line",
+                  yMin: 1e-5,
+                  yMax: 1e-5,
+                  borderColor: "#e0e0e0",
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                  label: {
+                    display: true,
+                    position: "end",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    font: { weight: "bold" },
+                    backgroundColor: "rgba(0,0,0,0)",
+                  },
+                },
+                flareX: {
+                  type: "line",
+                  yMin: 1e-4,
+                  yMax: 1e-4,
+                  borderColor: "#e0e0e0",
+                  borderWidth: 1,
+                  borderDash: [4, 4],
+                  label: {
+                    display: true,
+                    position: "end",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    font: { weight: "bold" },
+                    backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
               },

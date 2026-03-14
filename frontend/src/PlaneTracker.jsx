@@ -42,6 +42,7 @@ import { getAuroraGeoJSON, getAuroraMapLayers } from './utils/aurora';
 
 // Flight details panel imports
 import FlightDetailsPanel from './components/ui/FlightDetailsPanel';
+import SearchBar from './components/ui/SearchBar';
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -76,6 +77,7 @@ const PlaneTracker = () => {
     drapRegionRange,
     auroraRegionRange,
     isolateMode,
+    showAltitudeLegend,
   } = useSelector((state) => state.ui);
   
   const zoomTimeoutRef = useRef(null);
@@ -338,9 +340,25 @@ const PlaneTracker = () => {
       ))}
 
       {/* Overlays */}
+
       <StatsPanel />
-      <AltitudeLegend />
+      {showAltitudeLegend && <AltitudeLegend />}
       <SettingsPanel />
+
+      <div style={{
+        backgroundColor: 'var(--ui-bg)',
+        padding: '10px',
+        borderRadius: '4px',
+        boxShadow: 'var(--ui-shadow)',
+        position: 'absolute',
+        top: "10px",
+        left: "20px",
+        zIndex: 1,
+        fontSize: '12px',
+        color: 'var(--ui-text)',  
+        }}>
+          <SearchBar />
+      </div>
     </div>
   );
 };

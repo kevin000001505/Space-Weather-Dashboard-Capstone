@@ -37,8 +37,8 @@ import Chip from "@mui/material/Chip";
 import { Rnd } from "react-rnd";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import { toggleIsolateMode } from '../../store/slices/uiSlice';
-import Tooltip from '@mui/material/Tooltip';
+import { toggleIsolateMode } from "../../store/slices/uiSlice";
+import Tooltip from "@mui/material/Tooltip";
 
 const SettingsPanel = () => {
   const dispatch = useDispatch();
@@ -129,7 +129,7 @@ const SettingsPanel = () => {
   // Helper to get centered modal position
   const getCenteredPosition = () => {
     if (typeof window === "undefined") return { x: 0, y: 0 };
-    const width = 900;
+    const width = 450;
     const height = 400;
     const x = Math.max((window.innerWidth - width) / 2, 0);
     const y = Math.max((window.innerHeight - height) / 2, 0);
@@ -142,7 +142,7 @@ const SettingsPanel = () => {
         <Rnd
           default={{
             ...getCenteredPosition(),
-            width: 900,
+            width: 450,
             height: 400,
           }}
           minWidth={350}
@@ -174,6 +174,8 @@ const SettingsPanel = () => {
               top: 0,
               fontSize: "0.92rem",
               boxSizing: "border-box",
+              backgroundColor: darkMode ? "#181a1b" : "#f7f7fa",
+              color: darkMode ? "#f7f7fa" : "#181a1b",
             }}
           >
             <IconButton
@@ -213,7 +215,13 @@ const SettingsPanel = () => {
               value={settingsTabIndex}
               onChange={(e, v) => dispatch(setSettingsTabIndex(v))}
               aria-label="settings tabs"
-              sx={{ fontSize: "0.92rem", minHeight: "32px" }}
+              sx={{
+                fontSize: "0.92rem",
+                minHeight: "32px",
+                color: darkMode ? "#f7f7fa" : "#181a1b",
+              }}
+              textColor={darkMode ? "inherit" : "primary"}
+              indicatorColor={darkMode ? "secondary" : "primary"}
             >
               <Tab
                 label="General"
@@ -234,7 +242,17 @@ const SettingsPanel = () => {
             </Tabs>
             <div style={{ marginTop: "10px" }}>
               {settingsTabIndex === 0 && (
-                <Paper elevation={2} sx={{ p: 3, mb: 2, fontSize: "0.92rem" }}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 3,
+                    mb: 2,
+                    fontSize: "0.92rem",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    backgroundColor: darkMode ? "#23272e" : "#fff",
+                    boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                  }}
+                >
                   <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
                     General Settings
                   </Typography>
@@ -242,33 +260,59 @@ const SettingsPanel = () => {
                     control={
                       <Checkbox
                         checked={useImperial}
-                        onChange={() => dispatch(setUseImperial(!useImperial))}
+                        onChange={() => {
+                          const newImperial = !useImperial;
+                          dispatch(setUseImperial(newImperial));
+                          // Set altitude range to match new units
+                          if (newImperial) {
+                            dispatch(setAltitudeRange([0, 50000]));
+                          } else {
+                            dispatch(setAltitudeRange([0, 15000]));
+                          }
+                        }}
                         sx={{ p: 0.5 }}
                       />
                     }
-                    label={<span style={{ fontSize: "0.92rem" }}>Use Imperial Units</span>}
+                    label={
+                      <span style={{ fontSize: "0.92rem" }}>
+                        Use Imperial Units{" "}
+                        {useImperial ? "(ft, knots)" : "(m, m/s)"}
+                      </span>
+                    }
                     sx={{ mb: 0.5 }}
                   />
                   <FormControlLabel
                     control={
                       <Checkbox
                         checked={showAltitudeLegend}
-                        onChange={() => dispatch(setShowAltitudeLegend(!showAltitudeLegend))}
+                        onChange={() =>
+                          dispatch(setShowAltitudeLegend(!showAltitudeLegend))
+                        }
                         sx={{ p: 0.5 }}
                       />
                     }
-                    label={<span style={{ fontSize: "0.92rem" }}>Show Altitude Legend</span>}
+                    label={
+                      <span style={{ fontSize: "0.92rem" }}>
+                        Show Altitude Legend
+                      </span>
+                    }
                     sx={{ mb: 0.5 }}
                   />
                   <FormControlLabel
                     control={
                       <Checkbox
                         checked={showIconLegend}
-                        onChange={() => dispatch(setShowIconLegend(!showIconLegend))}
+                        onChange={() =>
+                          dispatch(setShowIconLegend(!showIconLegend))
+                        }
                         sx={{ p: 0.5 }}
                       />
                     }
-                    label={<span style={{ fontSize: "0.92rem" }}>Show Icon Legend</span>}
+                    label={
+                      <span style={{ fontSize: "0.92rem" }}>
+                        Show Icon Legend
+                      </span>
+                    }
                     sx={{ mb: 0.5 }}
                   />
                   <FormControlLabel
@@ -279,19 +323,25 @@ const SettingsPanel = () => {
                         color="primary"
                       />
                     }
-                    label={<span style={{ fontSize: "0.92rem" }}>Dark Mode</span>}
+                    label={
+                      <span style={{ fontSize: "0.92rem" }}>Dark Mode</span>
+                    }
                     sx={{ mb: 1 }}
                   />
-                  <Typography
-                    variant="body2"
-                    sx={{ mt: 0.5, fontSize: "0.92rem" }}
-                  >
-                    Active units: {useImperial ? "(ft, knots)" : "(m, m/s)"}
-                  </Typography>
                 </Paper>
               )}
               {settingsTabIndex === 1 && (
-                <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    fontSize: "0.92rem",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    backgroundColor: darkMode ? "#23272e" : "#fff",
+                    boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                  }}
+                >
                   <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
                     Filter Airports
                   </Typography>
@@ -310,16 +360,19 @@ const SettingsPanel = () => {
                     }
                     sx={{ mb: 0.5, p: 0.5 }}
                   />
-                  <Typography variant="subtitle1" sx={{ mb: 1, fontSize: "1rem" }}>
-                    <b>Altitude</b> - Showing <b>{filteredPlanesCount}</b> planes between{" "}
-                    <b>{altitudeRange[0]}</b> and <b>{altitudeRange[1]}</b>{" "}
-                    {useImperial ? "ft" : "m"}.
+                  <Typography
+                    variant="subtitle1"
+                    sx={{ mb: 1, fontSize: "1rem" }}
+                  >
+                    <b>Altitude</b> - Showing <b>{filteredPlanesCount}</b>{" "}
+                    planes between <b>{altitudeRange[0]}</b> and{" "}
+                    <b>{altitudeRange[1]}</b> {useImperial ? "ft" : "m"}.
                   </Typography>
                   <Slider
                     value={altitudeRange}
                     min={0}
                     max={useImperial ? 50000 : 15000}
-                    step={useImperial ? 5000 : 1000}
+                    step={useImperial ? 1000 : 300}
                     marks={[
                       { value: 0, label: "0" },
                       {
@@ -343,16 +396,30 @@ const SettingsPanel = () => {
                         background:
                           "linear-gradient(90deg, #ff0000 0%, #ff8000 14%, #ffff00 28%, #55ff00 43%, #00ffff 57%, #0000ff 71%, #7700ff 85%, #000000 100%)",
                       },
+                      "& .MuiSlider-markLabel": {
+                        color: darkMode ? "#e0e0e0" : "#333",
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                      },
                     }}
                   />
                 </Paper>
               )}
               {settingsTabIndex === 2 && (
-                <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                <Paper
+                  elevation={2}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    fontSize: "0.92rem",
+                    color: darkMode ? "#e0e0e0" : "#333",
+                    backgroundColor: darkMode ? "#23272e" : "#fff",
+                    boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                  }}
+                >
                   <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
                     Filter Airports
                   </Typography>
-                  
+
                   <FormControlLabel
                     control={
                       <Checkbox
@@ -376,7 +443,13 @@ const SettingsPanel = () => {
                   >
                     <InputLabel
                       id="airport-type-select-label"
-                      sx={{ fontSize: "0.92rem", background: "white", px: 0.5 }}
+                      sx={{
+                        fontSize: "0.92rem",
+                        background: "white",
+                        px: 0.5,
+                        color: darkMode ? "#e0e0e0" : "#333",
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                      }}
                     >
                       Airport Types
                     </InputLabel>
@@ -465,13 +538,13 @@ const SettingsPanel = () => {
                       ))}
                     </Select>
                   </FormControl>
-                  
+
                   <Typography
                     variant="subtitle1"
                     sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
                   >
-                    <b>Altitude</b> - Showing <b>{filteredAirportsCount}</b> airports between{" "}
-                    <b>{airportAltitudeRange[0]}</b> and{" "}
+                    <b>Altitude</b> - Showing <b>{filteredAirportsCount}</b>{" "}
+                    airports between <b>{airportAltitudeRange[0]}</b> and{" "}
                     <b>{airportAltitudeRange[1]}</b> {useImperial ? "ft" : "m"}.
                   </Typography>
                   <Slider
@@ -505,14 +578,20 @@ const SettingsPanel = () => {
                             { val: 0, color: [242, 114, 39] },
                             { val: 2000, color: [245, 145, 40] },
                             { val: 4000, color: [242, 197, 49] },
-                            { val: 10000, color: [104, 202, 85] }
+                            { val: 10000, color: [104, 202, 85] },
                           ];
                           const percent = (v) => (v / 10000) * 100;
-                          return `linear-gradient(90deg, ${stops.map((s, i) => {
-                            const rgb = `rgb(${s.color.join(",")})`;
-                            return `${rgb} ${percent(s.val)}%`;
-                          }).join(", ")})`;
+                          return `linear-gradient(90deg, ${stops
+                            .map((s, i) => {
+                              const rgb = `rgb(${s.color.join(",")})`;
+                              return `${rgb} ${percent(s.val)}%`;
+                            })
+                            .join(", ")})`;
                         })(),
+                      },
+                      "& .MuiSlider-markLabel": {
+                        color: darkMode ? "#e0e0e0" : "#333",
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
                       },
                     }}
                   />
@@ -520,7 +599,17 @@ const SettingsPanel = () => {
               )}
               {settingsTabIndex === 3 && (
                 <div>
-                  <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 2,
+                      mb: 1,
+                      fontSize: "0.92rem",
+                      color: darkMode ? "#e0e0e0" : "#333",
+                      backgroundColor: darkMode ? "#23272e" : "#fff",
+                      boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                    }}
+                  >
                     <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
                       DRAP Region
                     </Typography>
@@ -528,7 +617,8 @@ const SettingsPanel = () => {
                       variant="subtitle1"
                       sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
                     >
-                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> DRAP cells between{" "}
+                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> DRAP
+                      cells between{" "}
                       <b>
                         {Array.isArray(drapRegionRange)
                           ? drapRegionRange[0]
@@ -562,6 +652,13 @@ const SettingsPanel = () => {
                       min={0}
                       max={35}
                       step={0.5}
+                      marks={[
+                        { value: 0, label: "0 dB" },
+                        {
+                          value: 35,
+                          label: "35 dB",
+                        },
+                      ]}
                       valueLabelDisplay="auto"
                       onChange={(e, v) => dispatch(setDrapRegionRange(v))}
                       sx={{
@@ -578,32 +675,24 @@ const SettingsPanel = () => {
                           background:
                             "linear-gradient(90deg, #000000 0%, #7700ff 14%, #0000ff 28%, #00ffff 43%, #55ff00 57%, #ffff00 71%, #ff8000 85%, #ff0000 100%)",
                         },
+                        "& .MuiSlider-markLabel": {
+                          color: darkMode ? "#e0e0e0" : "#333",
+                          backgroundColor: darkMode ? "#23272e" : "#fff",
+                        },
                       }}
                     />
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        width: "calc(100% - 40px)",
-                        mx: 2,
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                        Min:{" "}
-                        {Array.isArray(drapRegionRange)
-                          ? drapRegionRange[0]
-                          : drapRegionRange}
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                        Max:{" "}
-                        {Array.isArray(drapRegionRange)
-                          ? drapRegionRange[1]
-                          : drapRegionRange}
-                      </Typography>
-                    </Box>
                   </Paper>
-                  <Paper elevation={2} sx={{ p: 2, mb: 1, fontSize: "0.92rem" }}>
+                  <Paper
+                    elevation={2}
+                    sx={{
+                      p: 2,
+                      mb: 1,
+                      fontSize: "0.92rem",
+                      color: darkMode ? "#e0e0e0" : "#333",
+                      backgroundColor: darkMode ? "#23272e" : "#fff",
+                      boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                    }}
+                  >
                     <Typography variant="h6" sx={{ mb: 1, fontSize: "1rem" }}>
                       Ovation Aurora Region
                     </Typography>
@@ -611,7 +700,8 @@ const SettingsPanel = () => {
                       variant="subtitle1"
                       sx={{ mt: 1, mb: 0.5, fontSize: "0.92rem" }}
                     >
-                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b> Aurora cells between{" "}
+                      <b>Amplitude</b> - Showing <b>{filteredDRAPCount}</b>{" "}
+                      Aurora cells between{" "}
                       <b>
                         {Array.isArray(auroraRegionRange)
                           ? auroraRegionRange[0]
@@ -636,7 +726,9 @@ const SettingsPanel = () => {
                         />
                       }
                       label={
-                        <span style={{ fontSize: "0.92rem" }}>Show Ovation Aurora</span>
+                        <span style={{ fontSize: "0.92rem" }}>
+                          Show Ovation Aurora
+                        </span>
                       }
                       sx={{ mb: 0.5, px: 1.5 }}
                     />
@@ -645,6 +737,13 @@ const SettingsPanel = () => {
                       min={0}
                       max={100}
                       step={1}
+                      marks={[
+                        { value: 0, label: "0%" },
+                        {
+                          value: 100,
+                          label: "100%",
+                        },
+                      ]}
                       valueLabelDisplay="auto"
                       onChange={(e, v) => dispatch(setAuroraRegionRange(v))}
                       sx={{
@@ -661,37 +760,18 @@ const SettingsPanel = () => {
                           background:
                             "linear-gradient(90deg, #000000 0%, #1eff00 10%, #fff700 50%, #ff0000 100%)",
                         },
+                        "& .MuiSlider-markLabel": {
+                          color: darkMode ? "#e0e0e0" : "#333",
+                          backgroundColor: darkMode ? "#23272e" : "#fff",
+                        },
                       }}
                     />
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        width: "calc(100% - 40px)",
-                        mx: 2,
-                        mb: 1,
-                      }}
-                    >
-                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                        Min:{" "}
-                        {Array.isArray(auroraRegionRange)
-                          ? auroraRegionRange[0]
-                          : auroraRegionRange}
-                      </Typography>
-                      <Typography variant="caption" sx={{ fontSize: "0.92rem" }}>
-                        Max:{" "}
-                        {Array.isArray(auroraRegionRange)
-                          ? auroraRegionRange[1]
-                          : auroraRegionRange}
-                      </Typography>
-                    </Box>
                   </Paper>
                 </div>
               )}
             </div>
           </Paper>
         </Rnd>
-        
       )}
       <div
         style={{
@@ -706,7 +786,10 @@ const SettingsPanel = () => {
         }}
       >
         <div style={{ display: "flex", gap: "5px" }}>
-          <Tooltip title="Show Only Selected Planes and their Path" placement="bottom">
+          <Tooltip
+            title="Show Only Selected Planes and their Path"
+            placement="bottom"
+          >
             <IconButton
               onClick={() => dispatch(toggleIsolateMode())}
               style={btnStyle}
