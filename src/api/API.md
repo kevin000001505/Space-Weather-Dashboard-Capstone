@@ -107,8 +107,8 @@ Returns currently active airborne flights from the last 20 minutes.
 | `total_time_ms` | float | No | Total endpoint execution time |
 | `flights[].icao24` | string | No | ICAO 24-bit transponder address |
 | `flights[].callsign` | string | Yes | Flight callsign |
-| `flights[].lat` | float | Yes | Latitude (3 decimal places) |
-| `flights[].lon` | float | Yes | Longitude (3 decimal places) |
+| `flights[].lat` | float | Yes | Latitude |
+| `flights[].lon` | float | Yes | Longitude |
 | `flights[].geo_altitude` | float | Yes | GPS altitude in meters |
 | `flights[].velocity` | float | Yes | Ground speed in m/s |
 | `flights[].heading` | float | Yes | True heading in degrees |
@@ -129,6 +129,7 @@ Returns the recorded flight path for a specific aircraft as a GeoJSON LineString
 {
   "icao24": "a1b2c3",
   "callsign": "UAL123",
+  "number_of_points": 2,
   "path_geojson": {
     "type": "LineString",
     "coordinates": [
@@ -143,6 +144,7 @@ Returns the recorded flight path for a specific aircraft as a GeoJSON LineString
 |-------|------|----------|-------------|
 | `icao24` | string | No | ICAO transponder address |
 | `callsign` | string | Yes | Flight callsign |
+| `number_of_points` | int | No | Number of coordinate points in the path |
 | `path_geojson` | object | No | GeoJSON LineString of the flight path |
 
 ---
@@ -186,7 +188,14 @@ Returns Kp geomagnetic index readings over a time window. Updated every 3 hours.
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `hours` | int | No | 24 | 1–168 | Look-back window in hours |
+| `start` | datetime (ISO 8601) | No | 3 days before `end` | — | Start of time range (e.g. `2026-03-11T00:00:00Z`) |
+| `end` | datetime (ISO 8601) | No | now | — | End of time range (e.g. `2026-03-14T00:00:00Z`) |
+
+**Time window rules:**
+- Neither provided → last 3 days up to now
+- Only `end` → 3 days before `end` up to `end`
+- Only `start` → `start` up to now
+- Both provided → exact range; minimum span is **3 hours**
 
 **Response** — `KpIndexListResponse`
 ```json
@@ -212,12 +221,19 @@ Returns Kp geomagnetic index readings over a time window. Updated every 3 hours.
 ---
 
 ### `GET /api/v1/xray`
-Returns GOES X-ray solar flare event records over a time window.
+Returns GOES X-ray solar flux measurements over a time window.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `hours` | int | No | 24 | 1–168 | Look-back window in hours |
+| `start` | datetime (ISO 8601) | No | 3 days before `end` | — | Start of time range (e.g. `2026-03-11T00:00:00Z`) |
+| `end` | datetime (ISO 8601) | No | now | — | End of time range (e.g. `2026-03-14T00:00:00Z`) |
+
+**Time window rules:**
+- Neither provided → last 3 days up to now
+- Only `end` → 3 days before `end` up to `end`
+- Only `start` → `start` up to now
+- Both provided → exact range; minimum span is **1 hour**
 
 **Response** — `XRayListResponse`
 ```json
@@ -226,18 +242,11 @@ Returns GOES X-ray solar flare event records over a time window.
     {
       "time_tag": "2026-03-08T10:00:00Z",
       "satellite": 16,
-      "current_class": "C1.2",
-      "current_ratio": 1.2,
-      "current_int_xrlong": 0.000034,
-      "begin_time": "2026-03-08T09:45:00Z",
-      "begin_class": "B9.8",
-      "max_time": "2026-03-08T09:58:00Z",
-      "max_class": "C1.2",
-      "max_xrlong": 0.000041,
-      "end_time": "2026-03-08T10:05:00Z",
-      "end_class": "C1.0",
-      "max_ratio_time": "2026-03-08T09:58:00Z",
-      "max_ratio": 1.5
+      "flux": 1.23e-6,
+      "observed_flux": 1.20e-6,
+      "electron_correction": 0.03e-6,
+      "electron_contamination": false,
+      "energy": "0.1-0.8nm"
     }
   ]
 }
@@ -245,20 +254,13 @@ Returns GOES X-ray solar flare event records over a time window.
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
-| `time_tag` | datetime | No | Record timestamp |
+| `time_tag` | datetime | No | Observation timestamp (UTC) |
 | `satellite` | int | No | GOES satellite number (e.g. 16, 18) |
-| `current_class` | string | Yes | Current X-ray flare class (e.g. `C1.2`, `M5.0`) |
-| `current_ratio` | float | Yes | Ratio of current flux to background |
-| `current_int_xrlong` | float | Yes | Current integrated long-channel X-ray flux |
-| `begin_time` | datetime | Yes | Flare start time |
-| `begin_class` | string | Yes | Flare class at start |
-| `max_time` | datetime | Yes | Time of peak flux |
-| `max_class` | string | Yes | Flare class at peak |
-| `max_xrlong` | float | Yes | Peak long-channel X-ray flux |
-| `end_time` | datetime | Yes | Flare end time |
-| `end_class` | string | Yes | Flare class at end |
-| `max_ratio_time` | datetime | Yes | Time of peak flux ratio |
-| `max_ratio` | float | Yes | Peak flux ratio |
+| `flux` | float | No | X-ray flux value (W/m²) |
+| `observed_flux` | float | No | Raw observed flux before correction (W/m²) |
+| `electron_correction` | float | No | Electron contamination correction applied |
+| `electron_contamination` | bool | No | Whether electron contamination was detected |
+| `energy` | string | No | Energy channel (e.g. `0.1-0.8nm`) |
 
 ---
 
@@ -268,7 +270,14 @@ Returns GOES solar proton flux readings across multiple energy channels over a t
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `hours` | int | No | 24 | 1–168 | Look-back window in hours |
+| `start` | datetime (ISO 8601) | No | 3 days before `end` | — | Start of time range (e.g. `2026-03-11T00:00:00Z`) |
+| `end` | datetime (ISO 8601) | No | now | — | End of time range (e.g. `2026-03-14T00:00:00Z`) |
+
+**Time window rules:**
+- Neither provided → last 3 days up to now
+- Only `end` → 3 days before `end` up to `end`
+- Only `start` → `start` up to now
+- Both provided → exact range; minimum span is **1 hour**
 
 **Response** — `ProtonFluxListResponse`
 ```json
@@ -297,6 +306,67 @@ Returns GOES solar proton flux readings across multiple energy channels over a t
 
 ---
 
+### `GET /api/v1/aurora`
+Returns aurora forecast data for a specific observation time.
+
+**Query Parameters**
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `utc_time` | string (ISO 8601) | **Yes** | — | — | Observation time in UTC (e.g. `2026-03-13T06:17:00Z`) |
+
+**Response** — `AuroraResponse`
+```json
+{
+  "observation_time": "2026-03-13T06:00:00Z",
+  "forecast_time": "2026-03-13T06:17:00Z",
+  "count": 18840,
+  "coordinates": [
+    [-180, 90, 0],
+    [-179, 90, 2]
+  ],
+  "query_time_ms": 22.1,
+  "total_time_ms": 25.4
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `observation_time` | datetime | No | Observation time of the aurora snapshot (UTC) |
+| `forecast_time` | datetime | No | Forecast issue time (UTC) |
+| `count` | int | No | Number of coordinate points |
+| `coordinates` | `[[lon, int, aurora]]` | No | Each element is `[longitude, latitude, aurora intensity]` |
+| `query_time_ms` | float | Yes | SQL query execution time |
+| `total_time_ms` | float | Yes | Total endpoint execution time |
+
+---
+
+### `GET /api/v1/alert`
+Returns space weather alert records.
+
+**Query Parameters**
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `days` | int | No | 1 | 1–30 | Number of past days to include (ending today) |
+
+**Response** — `AlertListResponse`
+```json
+{
+  "data": [
+    {
+      "time": "2026-03-13T18:00:00Z",
+      "message": "ALERT: Geomagnetic K-index of 5..."
+    }
+  ]
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `data[].time` | datetime | No | Alert issue time (UTC) |
+| `data[].message` | string | No | Full alert message text |
+
+---
+
 ## Error Responses
 
 All endpoints return standard error objects on failure:
@@ -304,8 +374,9 @@ All endpoints return standard error objects on failure:
 | Status | Meaning |
 |--------|---------|
 | `404` | No data found for the given parameters |
+| `422` | Invalid or missing parameters (e.g. `utc_time` not provided, time range too short, `end` ≤ `start`) |
 | `500` | Internal database or server error |
 
 ```json
-{ "detail": "No {type} data available" }
+{ "detail": "Description of the error" }
 ```

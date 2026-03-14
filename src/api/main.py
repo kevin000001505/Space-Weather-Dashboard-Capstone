@@ -1,5 +1,7 @@
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import ORJSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from utils.db_tools import get_connection, get_pool, close_all_connections
@@ -7,13 +9,12 @@ from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     ALERT_QUERY,
     AIRPORTS_LATEST_QUERY,
-    AURORA_LATEST_QUERY,
     AURORA_QUERY,
     FLIGHT_PATH_QUERY,
-    KP_INDEX_QUERY,
+    KP_INDEX_RANGE_QUERY,
     LATEST_DRAP_QUERY,
-    XRAY_FLUX_QUERY,
-    PROTON_FLUX_QUERY,
+    XRAY_FLUX_RANGE_QUERY,
+    PROTON_FLUX_RANGE_QUERY,
 )
 from config import (
     AuroraResponse,
@@ -40,6 +41,58 @@ import time
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:00:00Z")
+
+def _iso_days_ago(days: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:00:00Z")
+
+def _normalize_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _resolve_time_window(
+    start: Optional[datetime],
+    end: Optional[datetime],
+    min_time: Optional[int] = 1,
+    default_days: int = 3,
+) -> tuple[datetime, datetime]:
+
+    now = datetime.now(timezone.utc)  
+
+    if start is None and end is None:
+        # Default: last 3 days to now
+        return now - timedelta(days=default_days), now
+
+    if start is None:
+        # Only end provided: 3 days before end → end
+        end_utc = _normalize_utc(end)
+        return end_utc - timedelta(days=default_days), end_utc
+
+    if end is None:
+        # Only start provided: start → now
+        return _normalize_utc(start), now
+
+    # Both provided: full validation
+    start_utc = _normalize_utc(start)
+    end_utc = _normalize_utc(end)
+
+    if end_utc <= start_utc:
+        raise HTTPException(
+            status_code=422,
+            detail="'end' must be greater than 'start'.",
+        )
+
+    if (end_utc - start_utc).total_seconds() < 3600 * min_time:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Minimum time range is {min_time} hour.",
+        )
+
+    return start_utc, end_utc
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -57,7 +110,6 @@ app = FastAPI(
     description="API for accessing space weather data and flight information",
     version="1.0.0",
     lifespan=lifespan,
-    default_response_class=ORJSONResponse,
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -237,18 +289,35 @@ async def latest_drap():
 
 
 @app.get("/api/v1/kp-index", response_model=KpIndexListResponse)
-async def kp_index(hours: int = Query(24, ge=1, le=168)):
+async def kp_index(
+    start: Optional[datetime] = Query(
+        default=None,
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        openapi_examples={
+            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
+            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+        },
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="End of time range (ISO 8601 UTC). Defaults to now.",
+        openapi_examples={
+            "now": {"summary": "Current time", "value": _iso_now()},
+        },
+    ),
+):
     """
-    Retrieve the Kp index value from the past specified hours.
+    Retrieve Kp index data for either:
+    1) A custom start/end time range.
 
-    - **hours**: Number of past hours to look back for the latest Kp index (default: 3)
+    - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     try:
+        start_utc, end_utc = _resolve_time_window(start, end, 3)
+
         async with get_connection() as conn:
-            rows = await conn.fetch(
-                KP_INDEX_QUERY,
-                hours,
-            )
+            if start_utc and end_utc:
+                rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No Kp index data available")
@@ -274,18 +343,34 @@ async def kp_index(hours: int = Query(24, ge=1, le=168)):
 
 
 @app.get("/api/v1/xray", response_model=XRayListResponse)
-async def xray_flux(hours: int = Query(24, ge=1, le=168)):
+async def xray_flux(
+    start: Optional[datetime] = Query(
+        default=None,
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        openapi_examples={
+            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
+            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+        },
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="End of time range (ISO 8601 UTC). Defaults to now.",
+        openapi_examples={
+            "now": {"summary": "Current time", "value": _iso_now()},
+        },
+    ),
+):
     """
     Retrieve the latest X-ray flux data from the past specified hours.
 
-    - **hours**: Number of past hours to look back for the latest X-ray flux (default: 3)
+    - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     try:
+        start_utc, end_utc = _resolve_time_window(start, end)
+
         async with get_connection() as conn:
-            rows = await conn.fetch(
-                XRAY_FLUX_QUERY,
-                hours,
-            )
+            if start_utc and end_utc:
+                rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No X-ray flux data available")
@@ -314,18 +399,33 @@ async def xray_flux(hours: int = Query(24, ge=1, le=168)):
 
 
 @app.get("/api/v1/proton-flux", response_model=ProtonFluxListResponse)
-async def proton_flux(hours: int = Query(24, ge=1, le=168)):
+async def proton_flux(
+    start: Optional[datetime] = Query(
+        default=None,
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        openapi_examples={
+            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
+            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+        },
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="End of time range (ISO 8601 UTC). Defaults to now.",
+        openapi_examples={
+            "now": {"summary": "Current time", "value": _iso_now()},
+        },
+    ),
+):
     """
     Retrieve proton flux data from the past specified hours.
 
-    - **hours**: Number of past hours to look back (default: 24)
+    - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     try:
+        start_utc, end_utc = _resolve_time_window(start, end)
         async with get_connection() as conn:
-            rows = await conn.fetch(
-                PROTON_FLUX_QUERY,
-                hours,
-            )
+            if start_utc and end_utc:
+                rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No proton flux data available")
@@ -352,20 +452,50 @@ async def proton_flux(hours: int = Query(24, ge=1, le=168)):
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/aurora/latest", response_model=AuroraResponse)
-async def aurora_latest():
-    """Retrieve the most recent aurora forecast."""
+@app.get("/api/v1/aurora", response_model=AuroraResponse)
+async def aurora(
+    utc_time: Optional[str] = Query(
+        default=None,
+        description="Observation time in ISO 8601 UTC format (required).",
+        openapi_examples={
+            "recent": {"summary": "Recent observation", "value": _iso_now()},
+            "earlier": {"summary": "Earlier observation", "value": _iso_days_ago(1)},
+        },
+    ),
+):
+    """Retrieve aurora forecast data.
+
+    - With **utc_time** (ISO 8601 UTC): returns data for that observation time.
+    """
     start_time = time.time()
+
     try:
         query_start = time.time()
         async with get_connection() as conn:
-            payload = await conn.fetchval(AURORA_LATEST_QUERY)
+            if utc_time:
+                try:
+                    obs_time = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
+                except ValueError:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"Invalid UTC time format: '{utc_time}'. Use ISO 8601, e.g. 2026-03-13T06:17:00Z",
+                    )
+
+                payload = await conn.fetchval(AURORA_QUERY, obs_time)
+            else:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Aurora must provide time"
+                )
+
         query_time_ms = (time.time() - query_start) * 1000
 
         if isinstance(payload, str):
             payload = json.loads(payload)
 
         if not payload or payload.get("count", 0) == 0:
+            if utc_time:
+                raise HTTPException(status_code=404, detail=f"No aurora forecast data for {utc_time}")
             raise HTTPException(status_code=404, detail="No aurora forecast data available")
 
         total_time_ms = (time.time() - start_time) * 1000
@@ -376,50 +506,15 @@ async def aurora_latest():
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching latest aurora forecast: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
-@app.get("/api/v1/aurora/{utc_time}", response_model=AuroraResponse)
-async def aurora_by_time(utc_time: str):
-    """
-    Retrieve the aurora forecast for a specific observation time.
-
-    - **utc_time**: UTC timestamp in ISO 8601 format (e.g. `2026-03-13T06:17:00Z`)
-    """
-    from datetime import datetime, timezone
-    start_time = time.time()
-    try:
-        obs_time = datetime.fromisoformat(utc_time.replace("Z", "+00:00")).astimezone(timezone.utc)
-    except ValueError:
-        raise HTTPException(status_code=422, detail=f"Invalid UTC time format: '{utc_time}'. Use ISO 8601, e.g. 2026-03-13T06:17:00Z")
-
-    try:
-        query_start = time.time()
-        async with get_connection() as conn:
-            payload = await conn.fetchval(AURORA_QUERY, obs_time)
-        query_time_ms = (time.time() - query_start) * 1000
-
-        if isinstance(payload, str):
-            payload = json.loads(payload)
-
-        if not payload or payload.get("count", 0) == 0:
-            raise HTTPException(status_code=404, detail=f"No aurora forecast data for {utc_time}")
-
-        total_time_ms = (time.time() - start_time) * 1000
-        payload["query_time_ms"] = round(query_time_ms, 2)
-        payload["total_time_ms"] = round(total_time_ms, 2)
-        return payload
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching aurora forecast for {utc_time}: {str(e)}")
+        if utc_time:
+            logger.error(f"Error fetching aurora forecast for {utc_time}: {str(e)}")
+        else:
+            logger.error(f"Error fetching latest aurora forecast: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @app.get("/api/v1/alert", response_model=AlertListResponse)
-async def get_alerts(days: int = Query(1, ge=1, le=30)):
+async def get_alerts(days: int = Query(default=1, ge=1, le=30)):
     """Retrieve alert records with only time and message.
 
     - **days**: Number of days to include ending today (default: 1, today only)

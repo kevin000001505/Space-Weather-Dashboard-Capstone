@@ -62,24 +62,25 @@ LATEST_DRAP_QUERY = """
     FROM pts;
 """
 
-KP_INDEX_QUERY = """
+KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count
 FROM kp_index
-WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+WHERE time_tag >= $1 AND time_tag <= $2
 ORDER BY time_tag DESC
 """
 
-XRAY_FLUX_QUERY = """
+
+XRAY_FLUX_RANGE_QUERY = """
 SELECT time_tag, satellite, flux, observed_flux, electron_correction, electron_contamination, energy
 FROM goes_xray_6hour
-WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+WHERE time_tag >= $1 AND time_tag <= $2
 ORDER BY time_tag DESC
 """
 
-PROTON_FLUX_QUERY = """
+PROTON_FLUX_RANGE_QUERY = """
 SELECT time_tag, satellite, flux_10_mev, flux_50_mev, flux_100_mev, flux_500_mev
 FROM goes_proton_flux
-WHERE time_tag >= NOW() - ($1 * INTERVAL '1 hour')
+WHERE time_tag >= $1 AND time_tag <= $2
 ORDER BY time_tag DESC
 """
 
@@ -107,33 +108,6 @@ SELECT jsonb_build_object(
 FROM pts
 """
 
-AURORA_LATEST_QUERY = """
-WITH latest_time AS (
-    SELECT MAX(observation_time) AS max_ts
-    FROM aurora_forecast
-),
-obs AS (
-    SELECT
-        a.observation_time,
-        a.forecast_time,
-        ST_X(a.location::geometry)::int AS lon,
-        ST_Y(a.location::geometry)::int AS lat,
-        a.aurora
-    FROM aurora_forecast a
-    JOIN latest_time lt ON a.observation_time = lt.max_ts
-),
-pts AS (
-    SELECT jsonb_build_array(lon, lat, aurora) AS p
-    FROM obs
-)
-SELECT jsonb_build_object(
-    'observation_time', (SELECT MAX(observation_time) FROM obs),
-    'forecast_time',    (SELECT MAX(forecast_time)    FROM obs),
-    'count',            (SELECT COUNT(*)              FROM obs),
-    'coordinates',      COALESCE(jsonb_agg(p), '[]'::jsonb)
-) AS payload
-FROM pts
-"""
 
 ALERT_QUERY = """
 SELECT
