@@ -57,7 +57,8 @@ export const getStops = (useImperial) => {
       { val: 10000, color: [104, 202, 85] },
       { val: 20000, color: [83, 185, 235] },
       { val: 30000, color: [82, 86, 236] },
-      { val: 40000, color: [194, 53, 221] }
+      { val: 40000, color: [194, 53, 221] },
+      { val: 50000, color: [194, 53, 221] } 
     ];
   } else {
     // Metric equivalents
@@ -68,7 +69,8 @@ export const getStops = (useImperial) => {
       { val: 3000, color: [104, 202, 85] },
       { val: 6000, color: [83, 185, 235] },
       { val: 9000, color: [82, 86, 236] },
-      { val: 12000, color: [194, 53, 221] }
+      { val: 12000, color: [194, 53, 221] },
+      { val: 15000, color: [194, 53, 221] } 
     ];
   }
 };

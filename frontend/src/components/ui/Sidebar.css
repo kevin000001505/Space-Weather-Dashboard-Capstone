@@ -1,0 +1,68 @@
+/* Sidebar CSS variables for light/dark mode */
+:root {
+  --sidebar-bg-dark: linear-gradient(135deg, #232526 0%, #414345 100%);
+  --sidebar-bg-light: linear-gradient(135deg, #f7fafc 0%, #e3e8ee 100%);
+  --sidebar-color-dark: #fff;
+  --sidebar-color-light: #232526;
+  --sidebar-icon-dark: #90caf9;
+  --sidebar-icon-light: #1976d2;
+  --sidebar-hover-dark: rgba(255,255,255,0.08);
+  --sidebar-hover-light: rgba(25, 118, 210, 0.08);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --sidebar-bg: var(--sidebar-bg-light);
+    --sidebar-color: var(--sidebar-color-light);
+    --sidebar-icon: var(--sidebar-icon-light);
+    --sidebar-hover: var(--sidebar-hover-light);
+  }
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sidebar-bg: var(--sidebar-bg-dark);
+    --sidebar-color: var(--sidebar-color-dark);
+    --sidebar-icon: var(--sidebar-icon-dark);
+    --sidebar-hover: var(--sidebar-hover-dark);
+  }
+}
+
+.sidebar-drawer {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-color);
+  height: 100%;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 16px 16px 0 16px;
+}
+
+.sidebar-list {
+  margin-top: 24px;
+}
+
+.sidebar-list .MuiListItemButton-root {
+  border-radius: 8px;
+  margin: 4px 12px;
+  transition: background 0.2s;
+}
+
+.sidebar-list .MuiListItemButton-root:hover {
+  background: var(--sidebar-hover);
+}
+
+.sidebar-list .MuiListItemIcon-root {
+  color: var(--sidebar-icon);
+}
+
+.sidebar-list .MuiListItemText-primary {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
