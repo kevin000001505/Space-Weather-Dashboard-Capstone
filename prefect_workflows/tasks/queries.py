@@ -285,11 +285,11 @@ DO UPDATE SET
         WHEN EXCLUDED.lat IS NULL OR EXCLUDED.lon IS NULL THEN
             activate_flight.path_geom
 
-        -- State D: >30 min gap + within 1000000m -> likely landed & back, reset
+        -- State D: >30 min gap + within 2000000m -> likely landed & back, reset
         WHEN EXCLUDED.on_ground = FALSE
             AND EXCLUDED.time_pos IS NOT NULL
             AND (EXCLUDED.time_pos - activate_flight.time_pos) > INTERVAL '30 minutes'
-            AND ST_Distance(activate_flight.geom::geography, EXCLUDED.geom::geography) <= 1000000 THEN
+            AND ST_Distance(activate_flight.geom::geography, EXCLUDED.geom::geography) <= 2000000 THEN
             ST_Multi(EXCLUDED.geom)
 
         -- State E: Normal flying / taxiing -> append point
