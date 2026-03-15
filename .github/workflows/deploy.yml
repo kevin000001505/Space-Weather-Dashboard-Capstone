@@ -180,6 +180,9 @@ jobs:
           mkdir -p ./secrets
           echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
 
+      - name: Stop and remove old containers and volumes
+        run: docker compose down
+
       - name: Build and Deploy Containers
         env:
           DOCKER_BUILDKIT: 1
