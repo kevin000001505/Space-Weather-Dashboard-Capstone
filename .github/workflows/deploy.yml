@@ -184,10 +184,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
         run: |
-          docker compose build --parallel   # builds all images simultaneously (fine)
-          docker compose up -d --no-build --remove-orphans || true  # starts in depends_on order (db → prefect-init → prefect-worker)
-      
-
+          docker compose up -d --build --remove-orphans
 
       - name: System Cleanup
         run: |

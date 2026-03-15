@@ -53,7 +53,8 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
 
     # Extract just the columns we need and convert to a native Python list of lists
     # .astype(float) ensures we don't pass weird numpy datatypes to the JSON serializer
-    points = df_long[['latitude', 'longitude', 'absorption']].astype(float).values.tolist()
+    print (df_long)
+    points = df_long[['Latitude', 'Longitude', 'Absorption']].astype(float).values.tolist()
     
     payload = {
         "timestamp": formatted_time,
