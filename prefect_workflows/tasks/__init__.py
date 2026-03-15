@@ -5,6 +5,7 @@ from tasks.flights import (
     insert_batch,
     cleanup_db,
     clean_records,
+    broadcast_active_flights_to_redis,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "insert_batch",
     "cleanup_db",
     "clean_records",
+    "broadcast_active_flights_to_redis",
 ]

@@ -1,34 +1,39 @@
 import asyncpg
+from typing import AsyncIterator, cast
 from contextlib import asynccontextmanager
 import os
+from asyncio import Lock
 
 # Singleton pool instance
 _pool = None
+_pool_lock = Lock()
 
 
 async def get_pool():
     """Get or create the connection pool."""
     global _pool
     if _pool is None:
-        _pool = await asyncpg.create_pool(
-            host="postgis",
-            port=5432,
-            user=os.getenv("DEVELOPER_USER"),
-            password=os.getenv("DEVELOPER_PASSWORD"),
-            database=os.getenv("DEVELOPER_DB"),
-            min_size=2,
-            max_size=10,
-            command_timeout=60,
-        )
+        async with _pool_lock:
+            if _pool is None:  # Double-checked locking
+                _pool = await asyncpg.create_pool(
+                    host="postgis",
+                    port=5432,
+                    user=os.getenv("DEVELOPER_USER"),
+                    password=os.getenv("DEVELOPER_PASSWORD"),
+                    database=os.getenv("DEVELOPER_DB"),
+                    min_size=2,
+                    max_size=10,
+                    command_timeout=60,
+                )
     return _pool
 
 
 @asynccontextmanager
-async def get_connection():
+async def get_connection() -> AsyncIterator[asyncpg.Connection]:
     """Get a connection from the pool."""
     pool = await get_pool()
     async with pool.acquire() as conn:
-        yield conn
+        yield cast(asyncpg.Connection, conn)
 
 async def ensure_table_exists(table_name: str) -> bool:
     """

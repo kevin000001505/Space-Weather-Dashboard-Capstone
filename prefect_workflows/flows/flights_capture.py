@@ -6,6 +6,7 @@ from tasks import (
     clean_records,
     insert_batch,
     cleanup_db,
+    broadcast_active_flights_to_redis,
 )
 
 
@@ -16,6 +17,8 @@ async def ingest_flow():
     records = clean_records(df)
     await insert_batch(records)
 
+    if records:
+        await broadcast_active_flights_to_redis()
 
 @flow(name="Daily Maintenance", log_prints=True)
 async def maintenance_flow():

@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
+  liveStreamMode: true,
   useImperial: true,
   showAltitudeLegend: true,
   showIconLegend: true,
@@ -38,6 +39,9 @@ const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
+    setLiveStreamMode: (state, action) => {
+      state.liveStreamMode = action.payload;
+    },
     toggleIsolateMode: (state) => {
       state.isolateMode = !state.isolateMode;
     },
@@ -140,6 +144,7 @@ const uiSlice = createSlice({
 });
 
 export const {
+  setLiveStreamMode,
   setUseImperial,
   setShowAltitudeLegend,
   setShowIconLegend,

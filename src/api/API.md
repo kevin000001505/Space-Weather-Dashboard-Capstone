@@ -26,7 +26,7 @@ Simple liveness probe.
 
 ## Airports
 
-### `GET /api/v1/airports/latest`
+### `GET /api/v1/airports`
 Returns all airports from the database.
 
 **Query Parameters**

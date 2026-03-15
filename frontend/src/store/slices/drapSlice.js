@@ -10,7 +10,11 @@ const drapSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    injectLiveDRAP: (state, action) => {
+      state.data = action.payload.drap; 
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchDRAP.pending, (state) => {
@@ -30,4 +34,5 @@ const drapSlice = createSlice({
   }
 });
 
+export const { injectLiveDRAP } = drapSlice.actions;
 export default drapSlice.reducer;

@@ -3,6 +3,7 @@ import { Rnd } from 'react-rnd';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import { useDispatch } from 'react-redux';
+import { getAltDisplay, getSpeedDisplay, formatCoord } from '../../utils/mapUtils';
 
 const getCenteredPosition = (width = 250, height = 180) => {
   const x = 20;
@@ -11,7 +12,7 @@ const getCenteredPosition = (width = 250, height = 180) => {
   return { x, y };
 };
 
-const FlightDetailsPanel = ({ flight, onClose, children }) => {
+const FlightDetailsPanel = ({ flight, onClose, children, useImperial }) => {
     const dispatch = useDispatch();
   return (
     <Rnd
@@ -71,10 +72,10 @@ const FlightDetailsPanel = ({ flight, onClose, children }) => {
         </h4>
         <div style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--ui-text)' }}>
           <strong>ICAO24:</strong> {flight.icao24?.toUpperCase() || 'N/A'}<br/>
-          <strong>Altitude:</strong> {flight.geo_altitude ?? 'N/A'}<br/>
-          <strong>Speed:</strong> {flight.velocity ?? 'N/A'}<br/>
-          <strong>Heading:</strong> {flight.heading ?? 'N/A'}<br/>
-          <strong>Position:</strong> {flight.lat ?? 'N/A'}, {flight.lon ?? 'N/A'}<br/>
+          <strong>Altitude:</strong> {getAltDisplay(flight.geo_altitude, false, useImperial)}<br/>
+          <strong>Speed:</strong> {getSpeedDisplay(flight.velocity, false, useImperial)}<br/>
+          <strong>Heading:</strong> {formatCoord(flight.heading)}<br/>
+          <strong>Position:</strong> {formatCoord(flight.lat)}, {formatCoord(flight.lon)}<br/>
         </div>
         {/* Show flight path info if available */}
         {typeof flightPath !== 'undefined' && flightPath && flightPath.path_geojson && (

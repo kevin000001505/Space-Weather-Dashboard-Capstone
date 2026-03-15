@@ -1,7 +1,9 @@
+import asyncio
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Request, Query
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from utils.db_tools import get_connection, get_pool, close_all_connections
@@ -33,10 +35,9 @@ from config import (
     AlertResponse,
     AlertListResponse,
 )
-import logging
-import json
+import shared.redis as redis_config # Pull from the shared volume
+import logging, json, time
 from contextlib import asynccontextmanager
-import time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,18 +63,20 @@ def _resolve_time_window(
 
     now = datetime.now(timezone.utc)  
 
-    if start is None and end is None:
-        # Default: last 3 days to now
-        return now - timedelta(days=default_days), now
-
     if start is None:
-        # Only end provided: 3 days before end → end
-        end_utc = _normalize_utc(end)
-        return end_utc - timedelta(days=default_days), end_utc
-
-    if end is None:
-        # Only start provided: start → now
-        return _normalize_utc(start), now
+        if end is None:
+            # Default: last 3 days to now
+            return now - timedelta(days=default_days), now
+        
+        else:
+            # Only end provided: 3 days before end → end
+            end_utc = _normalize_utc(end)
+            return end_utc - timedelta(days=default_days), end_utc
+    
+    else:
+        if end is None:
+            # Only start provided: start → now
+            return _normalize_utc(start), now
 
     # Both provided: full validation
     start_utc = _normalize_utc(start)
@@ -85,7 +88,7 @@ def _resolve_time_window(
             detail="'end' must be greater than 'start'.",
         )
 
-    if (end_utc - start_utc).total_seconds() < 3600 * min_time:
+    if min_time and (end_utc - start_utc).total_seconds() < 3600 * min_time:
         raise HTTPException(
             status_code=422,
             detail=f"Minimum time range is {min_time} hour.",
@@ -94,13 +97,30 @@ def _resolve_time_window(
     return start_utc, end_utc
 
 
+async def redis_heartbeat_loop():
+    """Background task that pulses Redis every 15 seconds."""
+    client = redis_config.get_redis_client()
+    try:
+        while True:
+            await asyncio.sleep(15)
+            # The payload doesn't matter, we just need to wake up the socket
+            await client.publish(redis_config.HEARTBEAT_CHANNEL, "ping")
+    except asyncio.CancelledError:
+        pass
+    finally:
+        await client.aclose()
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
     await get_pool()
     logger.info("Database connection pool initialized")
+
+    heartbeat_task = asyncio.create_task(redis_heartbeat_loop())
+
     yield
 
+    heartbeat_task.cancel()
     await close_all_connections()
     logger.info("Database connection pool closed")
 
@@ -133,7 +153,93 @@ async def health_check():
     return {"status": "healthy"}
 
 
-@app.get("/api/v1/airports/latest", response_model=AirportsResponse)
+@app.get("/api/v1/stream/live")
+async def live_dashboard_stream(request: Request):
+    redis_client = redis_config.get_redis_client()
+    
+    async def event_generator():
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe(
+            redis_config.FLIGHTS_CHANNEL,
+            redis_config.AURORA_CHANNEL,
+            redis_config.DRAP_CHANNEL,
+            redis_config.XRAY_CHANNEL,
+            redis_config.PROTONFLUX_CHANNEL,
+            redis_config.KPINDEX_CHANNEL,
+            redis_config.ALERTS_CHANNEL,
+            redis_config.HEARTBEAT_CHANNEL,  # For keeping the connection alive
+        )
+        
+        try:
+            # Block until Redis pushes a message.
+            async for message in pubsub.listen():
+                
+                # If the user closed their browser tab, kill the generator
+                if await request.is_disconnected():
+                    break
+                    
+                # The first message is always a 'subscribe' confirmation, ignore it
+                if message["type"] != "message":
+                    continue
+                    
+                channel = message["channel"]
+                
+                match channel:
+                    case redis_config.FLIGHTS_CHANNEL:
+                        latest_data = await redis_client.get(redis_config.FLIGHTS_CACHE_KEY)
+                        if latest_data:
+                            yield f"event: planes\ndata: {latest_data}\n\n"
+                    
+                    case redis_config.AURORA_CHANNEL:
+                        latest_aurora = await redis_client.get(redis_config.AURORA_CACHE_KEY)
+                        if latest_aurora:
+                            yield f"event: aurora\ndata: {latest_aurora}\n\n"
+
+                    case redis_config.DRAP_CHANNEL:
+                        latest_drap = await redis_client.get(redis_config.DRAP_CACHE_KEY)
+                        if latest_drap:
+                            yield f"event: drap\ndata: {latest_drap}\n\n"
+                            
+                    case redis_config.XRAY_CHANNEL:
+                        latest_xray = await redis_client.get(redis_config.XRAY_CACHE_KEY)
+                        if latest_xray:
+                            yield f"event: xray\ndata: {latest_xray}\n\n"
+                            
+                    case redis_config.PROTONFLUX_CHANNEL:
+                        latest_protonflux = await redis_client.get(redis_config.PROTONFLUX_CACHE_KEY)
+                        if latest_protonflux:
+                            yield f"event: protonflux\ndata: {latest_protonflux}\n\n"
+                            
+                    case redis_config.KPINDEX_CHANNEL:
+                        latest_kpindex = await redis_client.get(redis_config.KPINDEX_CACHE_KEY)
+                        if latest_kpindex:
+                            yield f"event: kpindex\ndata: {latest_kpindex}\n\n"
+                            
+                    case redis_config.ALERTS_CHANNEL:
+                        latest_alerts = await redis_client.get(redis_config.ALERTS_CACHE_KEY)
+                        if latest_alerts:
+                            yield f"event: alerts\ndata: {latest_alerts}\n\n"
+
+                    case _:
+                        yield ": heartbeat\n\n"
+                        
+        finally:
+            await pubsub.unsubscribe()
+            await pubsub.close()
+            await redis_client.aclose()
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@app.get("/api/v1/airports", response_model=AirportsResponse)
 async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
     async with get_connection() as conn:
         try:
@@ -316,8 +422,7 @@ async def kp_index(
         start_utc, end_utc = _resolve_time_window(start, end, 3)
 
         async with get_connection() as conn:
-            if start_utc and end_utc:
-                rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
+            rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No Kp index data available")
@@ -369,8 +474,7 @@ async def xray_flux(
         start_utc, end_utc = _resolve_time_window(start, end)
 
         async with get_connection() as conn:
-            if start_utc and end_utc:
-                rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
+            rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No X-ray flux data available")
@@ -424,8 +528,7 @@ async def proton_flux(
     try:
         start_utc, end_utc = _resolve_time_window(start, end)
         async with get_connection() as conn:
-            if start_utc and end_utc:
-                rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
+            rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
 
         if not rows:
             raise HTTPException(status_code=404, detail="No proton flux data available")
@@ -471,6 +574,26 @@ async def aurora(
 
     try:
         query_start = time.time()
+        # Option A: No time provided? Grab from Redis
+        if not utc_time:
+            redis_client = redis_config.get_redis_client()
+            cached_data = await redis_client.get(redis_config.AURORA_CACHE_KEY)
+            await redis_client.aclose()
+            
+            if cached_data:
+                raw_data = json.loads(cached_data)
+                query_time_ms = (time.time() - query_start) * 1000
+                payload = {
+                    "observation_time": raw_data.get("Observation Time"),
+                    "forecast_time": raw_data.get("Forecast Time"),
+                    "count": len(raw_data.get("coordinates", [])),
+                    "coordinates": raw_data.get("coordinates", []),
+                    "query_time_ms": round(query_time_ms, 2),
+                    "total_time_ms": round(query_time_ms, 2),
+                }
+                return payload
+
+        # Option B: Historical time provided (or Redis was empty). Hit Postgres.
         async with get_connection() as conn:
             if utc_time:
                 try:
@@ -483,10 +606,8 @@ async def aurora(
 
                 payload = await conn.fetchval(AURORA_QUERY, obs_time)
             else:
-                raise HTTPException(
-                    status_code=422,
-                    detail="Aurora must provide time"
-                )
+                # Default to latest if no time provided
+                payload = await conn.fetchval(AURORA_QUERY, None)
 
         query_time_ms = (time.time() - query_start) * 1000
 

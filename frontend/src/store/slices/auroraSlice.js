@@ -8,7 +8,11 @@ const auroraSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    injectLiveAurora: (state, action) => {
+      state.data = action.payload.aurora; 
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAurora.pending, (state) => {
@@ -26,4 +30,5 @@ const auroraSlice = createSlice({
   }
 });
 
+export const { injectLiveAurora } = auroraSlice.actions;
 export default auroraSlice.reducer;

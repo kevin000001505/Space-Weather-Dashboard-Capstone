@@ -85,7 +85,29 @@ ORDER BY time_tag DESC
 """
 
 AURORA_QUERY = """
-WITH obs AS (
+WITH target_time AS (
+    SELECT COALESCE(
+        -- 1. If a time is provided, find the closest neighbor using the B-Tree index
+        (
+            SELECT observation_time
+            FROM (
+                (SELECT observation_time FROM aurora_forecast 
+                 WHERE $1::timestamptz IS NOT NULL AND observation_time >= $1::timestamptz 
+                 ORDER BY observation_time ASC LIMIT 1)
+                UNION ALL
+                (SELECT observation_time FROM aurora_forecast 
+                 WHERE $1::timestamptz IS NOT NULL AND observation_time < $1::timestamptz 
+                 ORDER BY observation_time DESC LIMIT 1)
+            ) nearest
+            ORDER BY abs(EXTRACT(epoch FROM (observation_time - $1::timestamptz))) ASC
+            LIMIT 1
+        ),
+        -- 2. If no time is provided ($1 is NULL), fall back to the absolute latest
+        (SELECT MAX(observation_time) FROM aurora_forecast)
+    ) AS obs_time
+),
+obs AS (
+    -- 3. Now extract the full grid ONLY for that single, closest matching time
     SELECT
         observation_time,
         forecast_time,
@@ -93,7 +115,7 @@ WITH obs AS (
         ST_Y(location::geometry)::int AS lat,
         aurora
     FROM aurora_forecast
-    WHERE observation_time = $1
+    WHERE observation_time = (SELECT obs_time FROM target_time)
 ),
 pts AS (
     SELECT jsonb_build_array(lon, lat, aurora) AS p

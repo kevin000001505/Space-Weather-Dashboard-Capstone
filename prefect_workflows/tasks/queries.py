@@ -1,4 +1,4 @@
-"""SQL queries for creating tables, indexes, and performing upserts for the space weather data pipeline."""
+"""SQL queries for creating tables, indexes, performing upserts, and latest queries to insert into redis for the space weather data pipeline."""
 
 CLEANUP_OLD_FLIGHT_DATA_QUERY = """
 DELETE FROM flight_states WHERE time < $1
@@ -564,4 +564,19 @@ INSERT INTO alerts (alert_id, issue_datetime, alert_messages)
 SELECT alert_id, issue_datetime, alert_messages
 FROM alerts_staging
 ON CONFLICT (alert_id) DO NOTHING
+"""
+
+
+ACTIVATE_FLIGHT_STATES_QUERY = """
+    SELECT 
+        icao24,
+        callsign,
+        ROUND(lat::numeric, 4)::REAL AS lat,
+        ROUND(lon::numeric, 4)::REAL AS lon,
+        ROUND(geo_altitude::numeric, 4)::REAL AS geo_altitude,
+        ROUND(velocity::numeric, 4)::REAL AS velocity,
+        ROUND(heading::numeric, 4)::REAL AS heading,
+        on_ground
+    FROM activate_flight
+    WHERE on_ground = FALSE AND time_pos >= NOW() - INTERVAL '20 minutes';
 """

@@ -18,7 +18,7 @@ from tasks.queries import (
 )
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
-from asyncpg.pool import PoolConnectionProxy
+from asyncpg import Connection
 
 _fallback = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def _logger():
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_drap_db(conn: PoolConnectionProxy):
+async def initial_drap_db(conn: Connection):
     """Task to initialize the DRAP region table."""
     logger = _logger()
     try:
@@ -46,7 +46,7 @@ async def initial_drap_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_activate_flight_db(conn: PoolConnectionProxy):
+async def initial_activate_flight_db(conn: Connection):
     """Task to initialize the activate_flight table."""
     logger = _logger()
     try:
@@ -60,7 +60,7 @@ async def initial_activate_flight_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_airport_db(conn: PoolConnectionProxy):
+async def initial_airport_db(conn: Connection):
     """Task to initialize the airports table."""
     logger = _logger()
     try:
@@ -74,7 +74,7 @@ async def initial_airport_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_latest_xray_db(conn: PoolConnectionProxy):
+async def initial_latest_xray_db(conn: Connection):
     """Task to initialize the xray table."""
     logger = _logger()
     try:
@@ -90,7 +90,7 @@ async def initial_latest_xray_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
+async def initial_proton_flux_plot_db(conn: Connection):
     """Task to initialize the proton flux plot table."""
     logger = _logger()
     try:
@@ -106,7 +106,7 @@ async def initial_proton_flux_plot_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_kp_index_db(conn: PoolConnectionProxy):
+async def initial_kp_index_db(conn: Connection):
     """Task to initialize the Kp index table."""
     logger = _logger()
     try:
@@ -122,7 +122,7 @@ async def initial_kp_index_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_alert_db(conn: PoolConnectionProxy):
+async def initial_alert_db(conn: Connection):
     """Task to initialize the alert table."""
     logger = _logger()
     try:
@@ -136,7 +136,7 @@ async def initial_alert_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_aurora_db(conn: PoolConnectionProxy):
+async def initial_aurora_db(conn: Connection):
     """Task to initialize the aurora_forecast table."""
     logger = _logger()
     try:
@@ -151,7 +151,7 @@ async def initial_aurora_db(conn: PoolConnectionProxy):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_xray_6hour_db(conn: PoolConnectionProxy):
+async def initial_xray_6hour_db(conn: Connection):
     """Task to initialize the goes_xray_6hour table."""
     logger = _logger()
     try:
@@ -167,7 +167,7 @@ async def initial_xray_6hour_db(conn: PoolConnectionProxy):
 
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)
-async def cleanup_old_drap_data(conn: PoolConnectionProxy, older_than_days: int = 1):
+async def cleanup_old_drap_data(conn: Connection, older_than_days: int = 1):
     """Task to clean up old DRAP data."""
     logger = _logger()
     try:

@@ -71,6 +71,7 @@ services:
       retries: 5
     networks:
       - prefect_network
+      - data_network
 
   prefect-server:
     image: prefecthq/prefect:3-latest
@@ -122,6 +123,7 @@ services:
       DEVELOPER_USER: ${DEVELOPER_USER}
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
+      PYTHONPATH: /opt/prefect-app:/opt
     command:
       - bash
       - -c
@@ -164,6 +166,7 @@ services:
       DEVELOPER_USER: ${DEVELOPER_USER}
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
+      PYTHONPATH: /opt/prefect-app:/opt
     command:
       - bash
       - -c
@@ -197,6 +200,7 @@ services:
       DEVELOPER_USER: ${DEVELOPER_USER}
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD}
       DEVELOPER_DB: ${DEVELOPER_DB}
+      PYTHONPATH: /opt/prefect-app:/opt
     command:
       - bash
       - -c

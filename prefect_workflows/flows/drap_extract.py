@@ -1,6 +1,6 @@
 from prefect import flow, get_run_logger
 from prefect.variables import Variable
-from tasks.drap import extract_data, load_data
+from tasks.drap import broadcast_drap_to_redis, extract_data, load_data
 
 
 @flow(
@@ -18,10 +18,15 @@ async def rap_extract_flow():
 
     if last_seen == current_updated:
         logger.info("No new data available. Last updated at: %s", last_seen)
-    else:
-        logger.info("New data detected. Loading...")
-        await load_data(df_long)
-        await Variable.set("data_last_updated", current_updated, overwrite=True)
-        logger.info("Metadata: %s", metadata)
-        logger.info("Wide DataFrame:\n%s", df_wide.head())
-        logger.info("Long DataFrame:\n%s", df_long.head())
+        return
+
+    logger.info("New data detected. Loading...")
+    await load_data(df_long)
+
+    logger.info("Broadcasting new D-RAP data to redis...")
+    await broadcast_drap_to_redis(df_long, current_updated)
+
+    await Variable.set("data_last_updated", current_updated, overwrite=True)
+    logger.info("Metadata: %s", metadata)
+    logger.info("Wide DataFrame:\n%s", df_wide.head())
+    logger.info("Long DataFrame:\n%s", df_long.head())

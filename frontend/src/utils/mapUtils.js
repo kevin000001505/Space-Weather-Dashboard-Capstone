@@ -9,8 +9,7 @@ export const formatNumber = (val, decimals = 0, suffix = '') => {
 // Helper for coordinates
 export const formatCoord = (val) => {
   if (val === null || val === undefined) return 'N/A';
-  const num = parseFloat(val);
-  return isNaN(num) ? 'N/A' : num.toFixed(4);
+  return formatNumber(val, 4, '°');
 };
 
 // Metric to Imperial

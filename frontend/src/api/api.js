@@ -37,9 +37,13 @@ export const fetchDRAP = createAsyncThunk(
 
 export const fetchAurora = createAsyncThunk(
   'aurora/fetchAurora',
-  async (_, { rejectWithValue }) => {
+  async (utc_time = null, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/aurora/latest`);
+      const url = utc_time 
+        ? `${API_BASE_URL}/aurora?utc_time=${utc_time}` 
+        : `${API_BASE_URL}/aurora`;
+      const response = await fetch(url);
+
       if (!response.ok) {
         throw new Error('Failed to fetch Aurora data');
       }
@@ -55,7 +59,7 @@ export const fetchAirports = createAsyncThunk(
   'airports/fetchAirports',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/airports/latest`);
+      const response = await fetch(`${API_BASE_URL}/airports`);
       if (!response.ok) {
         throw new Error('Failed to fetch airport data');
       }
@@ -110,12 +114,10 @@ export const fetchXrayFlux = createAsyncThunk(
   'charts/fetchXrayFlux',
   async (hours = 24, { rejectWithValue }) => {
     try {
-      const response1 = await fetch(`https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json`);
-      const response2 = await fetch(`https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json`);
-      if (!response1.ok || !response2.ok) throw new Error('Failed to fetch X-ray flux');
-      const data1 = await response1.json();
-      const data2 = await response2.json();
-      return [...data1, ...data2];
+      const response = await fetch(`${API_BASE_URL}/xray?hours=${hours}`);
+      if (!response.ok) throw new Error('Failed to fetch X-ray flux');
+      const data = await response.json();
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }

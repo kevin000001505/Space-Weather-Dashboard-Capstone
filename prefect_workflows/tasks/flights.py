@@ -1,5 +1,7 @@
 """Flight data ingestion and maintenance tasks."""
 
+import json
+import redis.asyncio as redis
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from database.db_tools import get_connection
@@ -16,6 +18,14 @@ from tasks.queries import (
     ACTIVATE_FLIGHT_STAGING_DDL,
     ACTIVATE_FLIGHT_STAGING_COLUMNS,
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
+    ACTIVATE_FLIGHT_STATES_QUERY,
+)
+# Pull from the shared volume
+from shared.redis import (
+    get_redis_client,
+    FLIGHTS_CACHE_KEY,
+    FLIGHTS_CHANNEL,
+    DEFAULT_TTL
 )
 
 
@@ -71,7 +81,7 @@ def clean_row(row) -> FlightStateRecord:
     )
 
 
-def clean_records(df):
+def clean_records(df: pd.DataFrame) -> list[FlightStateRecord]:
     """
     Clean and validate flight records from DataFrame.
 
@@ -97,7 +107,7 @@ def clean_records(df):
 
 
 @task(retries=3, retry_delay_seconds=10, name="Fetch Flights from OpenSky")
-def fetch_flights():
+def fetch_flights() -> pd.DataFrame:
     """
     Sync task running pyopensky.
     """
@@ -113,7 +123,7 @@ def fetch_flights():
 
 
 @task(name="Insert Flight States")
-async def insert_batch(records):
+async def insert_batch(records: list[FlightStateRecord]) -> None:
     """Insert flight records into both tables using COPY + server-side transform."""
     logger = get_run_logger()
     logger.info(f"Inserting {len(records)} records.")
@@ -144,9 +154,52 @@ async def insert_batch(records):
 
     logger.info(f"Finished inserting {len(records)} records.")
 
+@task(name="Broadcast Active Flights to Redis")
+async def broadcast_active_flights_to_redis() -> None:
+    """Pull the latest active flights state from Postgres and push to Redis."""
+    logger = get_run_logger()
+    
+    # Fetch the true, calculated state from the database
+    async with get_connection() as conn:
+        rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
+        
+    # Format it for the frontend
+    flights_data = []
+    for r in rows:
+        flights_data.append({
+            "icao24": r["icao24"],
+            "callsign": r["callsign"],
+            "lat": r["lat"],
+            "lon": r["lon"],
+            "geo_altitude": r["geo_altitude"],
+            "velocity": r["velocity"],
+            "heading": r["heading"],
+            "on_ground": r["on_ground"]
+        })
+        
+    payload = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "count": len(flights_data),
+        "flights": flights_data
+    }
+    
+    # Cache and Broadcast
+    try:
+        client = get_redis_client()
+        
+        # ex=300 sets a 5-minute Time-To-Live so old data clears if ingestion fails
+        await client.set(FLIGHTS_CACHE_KEY, json.dumps(payload), ex=DEFAULT_TTL)
+        await client.publish(FLIGHTS_CHANNEL, "new_data")
+        
+        await client.aclose()
+        logger.info(f"Broadcasted {len(flights_data)} post-processed flights to Redis.")
+        
+    except Exception as e:
+        logger.error(f"Failed to broadcast to Redis: {e}")
+
 
 @task(name="Cleanup Old Flight Data")
-async def cleanup_db():
+async def cleanup_db() -> None:
     """Clean up old flight state records based on retention policy."""
     logger = get_run_logger()
 

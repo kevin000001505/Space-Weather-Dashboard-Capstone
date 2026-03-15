@@ -1,5 +1,5 @@
 //Base imports
-import { useEffect, useMemo, useRef } from 'react';
+import { use, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 // MapLibre imports
@@ -9,6 +9,9 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 // API imports
 import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from './api/api';
+
+// SSE Hook import
+import { useLiveStream } from './hooks/useLiveStream';
 
 // Component imports
 import AltitudeLegend from './components/ui/AltitudeLegend';
@@ -27,7 +30,7 @@ import {
 } from './store/slices/uiSlice';
 
 // Utility imports
-import { getAltFt, getAltM, getAltDisplay, getSpeedDisplay, formatNumber, formatCoord } from './utils/mapUtils';
+import { getAltFt, getAltM, getAltDisplay, getSpeedDisplay, formatCoord } from './utils/mapUtils';
 import { buildDeckLayers } from './utils/deckLayersConfig';
 
 // DRAP imports
@@ -78,28 +81,20 @@ const PlaneTracker = () => {
     auroraRegionRange,
     isolateMode,
     showAltitudeLegend,
+    liveStreamMode,
   } = useSelector((state) => state.ui);
   
   const zoomTimeoutRef = useRef(null);
 
+  useLiveStream(liveStreamMode); // Custom hook to handle live stream data
+
   useEffect(() => {
-    // Fetch data on component mount
+    // Fetch data on component mount once, then rely on live stream updates
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
-    if (airports.length === 0) {
-        dispatch(fetchAirports());
-    }
-
-    // Set up interval to refresh data every 2 minutes
-    const interval = setInterval(() => {
-      dispatch(fetchPlanes());
-      dispatch(fetchDRAP());
-      dispatch(fetchAurora());
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, [dispatch, airports.length]);
+    dispatch(fetchAirports());
+  }, [dispatch]);
 
   // Plane filtering logic
   const filteredPlanes = useMemo(() => {
@@ -303,8 +298,8 @@ const PlaneTracker = () => {
                 <strong>ICAO24:</strong> {selectedPlane.icao24.toUpperCase()}<br/>
                 <strong>Altitude:</strong> {getAltDisplay(selectedPlane.geo_altitude, false, useImperial)}<br/>
                 <strong>Speed:</strong> {getSpeedDisplay(selectedPlane.velocity, false, useImperial)}<br/>
-                <strong>Heading:</strong> {formatNumber(selectedPlane.heading, 0, '°')}<br/>
-                <strong>Position:</strong> {formatCoord(selectedPlane.lat)}°, {formatCoord(selectedPlane.lon)}°
+                <strong>Heading:</strong> {formatCoord(selectedPlane.heading)}<br/>
+                <strong>Position:</strong> {formatCoord(selectedPlane.lat)}, {formatCoord(selectedPlane.lon)}
               </div>
             </div>
           </Popup>
@@ -336,6 +331,7 @@ const PlaneTracker = () => {
             dispatch(removeFlightPanel(flight.icao24));
             dispatch({ type: 'flightPath/removeFlightPath', payload: flight.icao24 });
           }}
+          useImperial={useImperial}
         />
       ))}
 

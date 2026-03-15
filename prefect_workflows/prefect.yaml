@@ -3,11 +3,16 @@ pull:
       directory: /opt/prefect-app
 
 deployments:
+
+  # --- Initialization Flow ---
+
   - name: db_initial
     entrypoint: flows/db_maintain.py:initialize_db_flow
     description: "Initializes the database with necessary tables and indexes"
     work_pool:
       name: NOAA-pool
+
+  # --- Data Extraction Flows ---
 
   - name: DRAP Extract
     entrypoint: flows/drap_extract.py:rap_extract_flow
@@ -15,7 +20,7 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - interval: 60
+      - cron: "* * * * *"
         timezone: UTC
   
   - name: Aurora Extract
@@ -24,7 +29,7 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - interval: 60
+      - cron: "* * * * *"
         timezone: UTC
 
   - name: Proton Flux Plot Extract
@@ -33,7 +38,7 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - interval: 300
+      - cron: "*/5 * * * *"
         timezone: UTC
 
   - name: Kp Index Extract
@@ -47,19 +52,11 @@ deployments:
 
   - name: Alert Extract
     entrypoint: flows/alert.py:alerts_extract_flow
-    description: "Fetches live alerts data from NOAA every 3 hours"
+    description: "Fetches live alerts data from NOAA every minute"
     work_pool:
       name: NOAA-pool
     schedules:
-      - interval: 60
-        timezone: UTC
-
-  - name: DRAP Cleanup
-    entrypoint: flows/db_maintain.py:db_maintenance_flow
-    work_pool:
-      name: NOAA-pool
-    schedules:
-      - interval: 86400
+      - cron: "* * * * *"
         timezone: UTC
 
   - name: X-ray Extract
@@ -68,15 +65,35 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - interval: 60
+      - cron: "* * * * *"
         timezone: UTC
 
   - name: opensky-ingester
     entrypoint: flows/flights_capture.py:ingest_flow
+    description: "Fetches live flight data from OpenSky API every minute"
     work_pool:
       name: flight-pool
     schedules:
-      - interval: 120
+      - cron: "*/2 * * * *" # To be changed to every minute later
+        timezone: UTC
+
+  - name: airport-data-refresh
+    entrypoint: flows/airports_extract.py:airports_extract_flow
+    description: "Refreshes airport data from the source every day"
+    work_pool:
+      name: flight-pool
+    schedules:
+      - cron: "0 0 * * *"
+        timezone: UTC
+
+  # --- Data Maintenance Flows ---
+
+  - name: DRAP Cleanup
+    entrypoint: flows/db_maintain.py:db_maintenance_flow
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - cron: "0 0 * * *"
         timezone: UTC
 
   - name: flightdata-daily-maintenance
@@ -85,12 +102,4 @@ deployments:
       name: flight-pool
     schedules:
       - cron: "0 0 * * *"
-        timezone: UTC
-
-  - name: airport-data-refresh
-    entrypoint: flows/airports_extract.py:airports_extract_flow
-    work_pool:
-      name: flight-pool
-    schedules:
-      - interval: 86400
         timezone: UTC

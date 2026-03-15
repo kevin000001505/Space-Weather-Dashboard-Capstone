@@ -1,8 +1,19 @@
+import json
 from prefect import task, get_run_logger
 from database.db_tools import get_connection
 import requests
 from tasks.models import AuroraRecord
-from tasks.queries import AURORA_STAGING_DDL, AURORA_STAGING_COLUMNS, AURORA_TRANSFORM_SQL
+from tasks.queries import (
+    AURORA_STAGING_DDL,
+    AURORA_STAGING_COLUMNS,
+    AURORA_TRANSFORM_SQL
+)
+from shared.redis import (
+    get_redis_client,
+    AURORA_CACHE_KEY,
+    AURORA_CHANNEL,
+    MEDIUM_TTL
+)
 
 AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 
@@ -72,3 +83,25 @@ async def load_aurora_data(data: dict) -> None:
             await conn.execute(AURORA_TRANSFORM_SQL)
 
     logger.info(f"Aurora forecast inserted: {len(records)} records")
+
+@task(name="Broadcast Aurora to Redis")
+async def broadcast_aurora_to_redis(data: dict) -> None:
+    """Push the raw NOAA dictionary straight from memory to Redis."""
+    logger = get_run_logger()
+    
+    if not data or not data.get("coordinates"):
+        logger.warning("No Aurora data to broadcast.")
+        return
+
+    try:
+        client = get_redis_client()
+        
+        # Dump the exact dictionary directly into the cache
+        await client.set(AURORA_CACHE_KEY, json.dumps(data), ex=MEDIUM_TTL)
+        await client.publish(AURORA_CHANNEL, "new_data")
+        
+        await client.aclose()
+        logger.info(f"Broadcasted Aurora grid directly from memory to Redis.")
+        
+    except Exception as e:
+        logger.error(f"Failed to broadcast Aurora to Redis: {e}")
