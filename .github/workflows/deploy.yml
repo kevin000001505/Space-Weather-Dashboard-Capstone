@@ -65,6 +65,8 @@ jobs:
         run: |
           # Placeholder for future FastAPI test implementation
           echo "pytest tests/api/"
+        env:
+          PYTHONPATH: "."
 
   test-flows:
     name: Run Flows Tests
@@ -124,12 +126,13 @@ jobs:
       - name: Run db_maintain.py
         run: python prefect_workflows/flows/db_maintain.py
         env:
-          PYTHONPATH: prefect_workflows
+          PYTHONPATH: "prefect_workflows:."
           DATABASE_URL: postgresql://developer:${{ secrets.DEVELOPER_PASSWORD }}@localhost:5432/app
 
       - name: Execute Flows Tests
         run: pytest tests/tests_prefect_workflows/ -v
         env:
+          PYTHONPATH: "."
           DEVELOPER_USER: developer
           DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
           DEVELOPER_DB: app
