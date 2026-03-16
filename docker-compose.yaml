@@ -11,6 +11,7 @@ services:
       - prefect-server
       - fastapi
       - frontend
+      - pgadmin
     networks:
       - web_network
 
@@ -58,6 +59,21 @@ services:
     networks:
       - postgis_external  # must be first so port publishing works (data_network is internal)
       - data_network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: mypassword
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgis
+    restart: unless-stopped
+    networks:
+      - data_network
+      - web_network
 
   redis:
     image: redis:7
@@ -246,6 +262,8 @@ volumes:
   postgis_data:
     driver: local
   redis_data:
+    driver: local
+  pgadmin_data:
     driver: local
 
 networks:

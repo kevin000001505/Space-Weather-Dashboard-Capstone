@@ -54,8 +54,6 @@ CREATE TABLE IF NOT EXISTS airports (
     ident VARCHAR(10) NOT NULL UNIQUE,
     type VARCHAR(50),
     name VARCHAR(255),
-    latitude_deg DOUBLE PRECISION,
-    longitude_deg DOUBLE PRECISION,
     elevation_ft REAL,
     continent VARCHAR(2),
     country_name VARCHAR(100),
@@ -72,7 +70,6 @@ CREATE TABLE IF NOT EXISTS airports (
     home_link VARCHAR(255),
     wikipedia_link VARCHAR(255),
     keywords VARCHAR(500),
-    score INTEGER,
     last_updated TIMESTAMPTZ,
     geom GEOMETRY(POINT, 4326),
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -364,7 +361,6 @@ CREATE TEMP TABLE airports_staging (
     home_link           VARCHAR(255),
     wikipedia_link      VARCHAR(255),
     keywords            VARCHAR(500),
-    score               INTEGER,
     last_updated        TIMESTAMPTZ
 ) ON COMMIT DROP
 """
@@ -374,29 +370,27 @@ AIRPORTS_STAGING_COLUMNS = [
     "elevation_ft", "continent", "country_name", "iso_country",
     "region_name", "iso_region", "local_region", "municipality",
     "scheduled_service", "gps_code", "icao_code", "iata_code",
-    "local_code", "home_link", "wikipedia_link", "keywords",
-    "score", "last_updated",
+    "local_code", "home_link", "wikipedia_link", "keywords", "last_updated",
 ]
 
 AIRPORTS_TRANSFORM_SQL = """
 INSERT INTO airports
-    (ident, type, name, latitude_deg, longitude_deg, elevation_ft,
+    (ident, type, name, elevation_ft,
      continent, country_name, iso_country, region_name, iso_region,
      local_region, municipality, scheduled_service, gps_code,
      icao_code, iata_code, local_code, home_link, wikipedia_link,
-     keywords, score, last_updated)
+     keywords, last_updated, geom)
 SELECT
-    ident, type, name, latitude_deg, longitude_deg, elevation_ft,
+    ident, type, name, elevation_ft,
     continent, country_name, iso_country, region_name, iso_region,
     local_region, municipality, scheduled_service, gps_code,
     icao_code, iata_code, local_code, home_link, wikipedia_link,
-    keywords, score, last_updated
+    keywords, last_updated,
+    ST_SetSRID(ST_MakePoint(longitude_deg, latitude_deg), 4326) AS geom
 FROM airports_staging
 ON CONFLICT (ident) DO UPDATE SET
     type               = EXCLUDED.type,
     name               = EXCLUDED.name,
-    latitude_deg       = EXCLUDED.latitude_deg,
-    longitude_deg      = EXCLUDED.longitude_deg,
     elevation_ft       = EXCLUDED.elevation_ft,
     continent          = EXCLUDED.continent,
     country_name       = EXCLUDED.country_name,
@@ -413,8 +407,8 @@ ON CONFLICT (ident) DO UPDATE SET
     home_link          = EXCLUDED.home_link,
     wikipedia_link     = EXCLUDED.wikipedia_link,
     keywords           = EXCLUDED.keywords,
-    score              = EXCLUDED.score,
     last_updated       = EXCLUDED.last_updated,
+    geom               = EXCLUDED.geom,
     updated_at         = CURRENT_TIMESTAMP
 """
 
