@@ -8,7 +8,7 @@ from unittest.mock import patch
 from tasks.db import (
     initial_drap_db,
     initial_activate_flight_db,
-    initial_airport_db,
+    initial_airports_db,
     initial_latest_xray_db,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
@@ -85,7 +85,7 @@ class TestInitialDrapDb:
 class TestInitialAirportDb:
     @pytest.mark.asyncio
     async def test_creates_table(self, conn):
-        await initial_airport_db.fn(conn)
+        await initial_airports_db.fn(conn)
         assert await table_exists(conn, "airports")
 
 

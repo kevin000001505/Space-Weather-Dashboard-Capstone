@@ -1,7 +1,123 @@
 AIRPORTS_LATEST_QUERY = """
     SELECT 
-        name, iata_code, gps_code, type, municipality, iso_country, elevation_ft, ST_Y(geom) AS latitude_deg, ST_X(geom) AS longitude_deg
+        ident, name, iata_code, gps_code, type, municipality, iso_country, elevation_ft, ST_Y(geom) AS latitude_deg, ST_X(geom) AS longitude_deg
     FROM airports
+"""
+
+
+AIRPORT_QUERY = """
+WITH airport_runways AS (
+    SELECT airport_ident, jsonb_agg(
+        jsonb_build_object(
+            'id', id,
+            'length_ft', length_ft,
+            'width_ft', width_ft,
+            'surface', surface,
+            'lighted', lighted,
+            'closed', closed,
+            'le_ident', le_ident,
+            'le_elevation_ft', le_elevation_ft,
+            'le_heading_degt', le_heading_degt,
+            'le_displaced_threshold_ft', le_displaced_threshold_ft,
+            'le_geom', ST_AsGeoJSON(le_geom)::jsonb,
+            'he_ident', he_ident,
+            'he_elevation_ft', he_elevation_ft,
+            'he_heading_degt', he_heading_degt,
+            'he_displaced_threshold_ft', he_displaced_threshold_ft,
+            'he_geom', ST_AsGeoJSON(he_geom)::jsonb
+        )
+    ) AS runways
+    FROM runways
+    WHERE airport_ident = $1
+    GROUP BY airport_ident
+),
+airport_freqs AS (
+    SELECT airport_ident, jsonb_agg(
+        jsonb_build_object(
+            'id', id,
+            'type', type,
+            'description', description,
+            'frequency_mhz', frequency_mhz
+        )
+    ) AS frequencies
+    FROM airport_frequencies
+    WHERE airport_ident = $1
+    GROUP BY airport_ident
+),
+airport_navs AS (
+    SELECT associated_airport, jsonb_agg(
+        jsonb_build_object(
+            'id', id,
+            'filename', filename,
+            'ident', ident,
+            'name', name,
+            'type', type,
+            'frequency_khz', frequency_khz,
+            'elevation_ft', elevation_ft,
+            'iso_country', iso_country,
+            'dme_frequency_khz', dme_frequency_khz,
+            'dme_channel', dme_channel,
+            'dme_elevation_ft', dme_elevation_ft,
+            'slaved_variation_deg', slaved_variation_deg,
+            'magnetic_variation_deg', magnetic_variation_deg,
+            'usagetype', usagetype,
+            'power', power,
+            'associated_airport', associated_airport,
+            'geom', ST_AsGeoJSON(geom)::jsonb,
+            'dme_geom', ST_AsGeoJSON(dme_geom)::jsonb
+        )
+    ) AS navaids
+    FROM navaids
+    WHERE associated_airport = $1
+    GROUP BY associated_airport
+),
+airport_comms AS (
+    SELECT airport_ident, jsonb_agg(
+        jsonb_build_object(
+            'id', id,
+            'subject', subject,
+            'body', body,
+            'author', author,
+            'date', date
+        )
+    ) AS comments
+    FROM airport_comments
+    WHERE airport_ident = $1
+    GROUP BY airport_ident
+)
+SELECT
+    a.id,
+    a.ident,
+    a.type,
+    a.name,
+    a.elevation_ft,
+    a.continent,
+    a.iso_country,
+    a.iso_region,
+    a.municipality,
+    a.scheduled_service,
+    a.icao_code,
+    a.iata_code,
+    a.gps_code,
+    a.local_code,
+    a.home_link,
+    a.wikipedia_link,
+    a.keywords,
+    ST_AsGeoJSON(a.geom)::jsonb AS geom,
+    c.name AS country_name,
+    r.name AS region_name,
+    COALESCE(rw.runways, '[]'::jsonb) AS runways,
+    COALESCE(f.frequencies, '[]'::jsonb) AS frequencies,
+    COALESCE(n.navaids, '[]'::jsonb) AS navaids,
+    COALESCE(ac.comments, '[]'::jsonb) AS comments
+FROM airports a
+LEFT JOIN countries c ON a.iso_country = c.code
+LEFT JOIN regions r ON a.iso_region = r.code
+LEFT JOIN airport_runways rw ON a.ident = rw.airport_ident
+LEFT JOIN airport_freqs f ON a.ident = f.airport_ident
+LEFT JOIN airport_navs n ON a.ident = n.associated_airport
+LEFT JOIN airport_comms ac ON a.ident = ac.airport_ident
+WHERE a.ident = $1
 """
 
 

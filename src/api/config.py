@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -38,6 +38,7 @@ class FlightStatesResponse(BaseModel):
 
 
 class Airport(BaseModel):
+    ident: str
     name: str
     iata_code: Optional[str] = None
     gps_code: Optional[str] = None
@@ -51,6 +52,90 @@ class Airport(BaseModel):
 
 class AirportsResponse(BaseModel):
     airports: List[Airport]
+
+
+class RunwayModel(BaseModel):
+    id: int
+    length_ft: Optional[int] = None
+    width_ft: Optional[int] = None
+    surface: Optional[str] = None
+    lighted: Optional[bool] = None
+    closed: Optional[bool] = None
+    
+    # Low End
+    le_ident: Optional[str] = None
+    le_elevation_ft: Optional[int] = None
+    le_heading_degt: Optional[float] = None
+    le_displaced_threshold_ft: Optional[int] = None
+    le_geom: Optional[Dict[str, Any]] = None
+    
+    # High End
+    he_ident: Optional[str] = None
+    he_elevation_ft: Optional[int] = None
+    he_heading_degt: Optional[float] = None
+    he_displaced_threshold_ft: Optional[int] = None
+    he_geom: Optional[Dict[str, Any]] = None
+
+class FrequencyModel(BaseModel):
+    id: int
+    type: Optional[str] = None
+    description: Optional[str] = None
+    frequency_mhz: Optional[float] = None
+
+class NavaidModel(BaseModel):
+    id: int
+    filename: Optional[str] = None
+    ident: Optional[str] = None
+    name: Optional[str] = None
+    type: Optional[str] = None
+    frequency_khz: Optional[int] = None
+    elevation_ft: Optional[int] = None
+    iso_country: Optional[str] = None
+    dme_frequency_khz: Optional[int] = None
+    dme_channel: Optional[str] = None
+    dme_elevation_ft: Optional[int] = None
+    slaved_variation_deg: Optional[float] = None
+    magnetic_variation_deg: Optional[float] = None
+    usagetype: Optional[str] = None
+    power: Optional[str] = None
+    associated_airport: Optional[str] = None
+    geom: Optional[Dict[str, Any]] = None
+    dme_geom: Optional[Dict[str, Any]] = None
+
+class CommentModel(BaseModel):
+    id: int
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    author: Optional[str] = None
+    date: Optional[datetime] = None
+
+class AirportDetailResponse(BaseModel):
+    id: int
+    ident: str
+    type: Optional[str] = None
+    name: str
+    elevation_ft: Optional[float] = None
+    continent: Optional[str] = None
+    iso_country: Optional[str] = None
+    iso_region: Optional[str] = None
+    municipality: Optional[str] = None
+    scheduled_service: Optional[bool] = None
+    icao_code: Optional[str] = None
+    iata_code: Optional[str] = None
+    gps_code: Optional[str] = None
+    local_code: Optional[str] = None
+    home_link: Optional[str] = None
+    wikipedia_link: Optional[str] = None
+    keywords: Optional[str] = None
+    geom: Optional[Dict[str, Any]] = None
+    
+    country_name: Optional[str] = None
+    region_name: Optional[str] = None
+    
+    runways: List[RunwayModel] = []
+    frequencies: List[FrequencyModel] = []
+    navaids: List[NavaidModel] = []
+    comments: List[CommentModel] = []
 
 
 class KpIndexResponse(BaseModel):

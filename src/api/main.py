@@ -11,6 +11,7 @@ from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     ALERT_QUERY,
     AIRPORTS_LATEST_QUERY,
+    AIRPORT_QUERY,
     AURORA_QUERY,
     FLIGHT_PATH_QUERY,
     KP_INDEX_RANGE_QUERY,
@@ -26,6 +27,7 @@ from config import (
     ActivateFlightState,
     Airport,
     AirportsResponse,
+    AirportDetailResponse,
     KpIndexResponse,
     KpIndexListResponse,
     XRayResponse,
@@ -269,6 +271,7 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
             for row in rows:
                 airports.append(
                     Airport(
+                        ident=row["ident"],
                         name=row["name"],
                         iata_code=row["iata_code"],
                         gps_code=row["gps_code"],
@@ -302,6 +305,35 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
     finally:
         # Crucial: Always close the connection back to the pool
         await redis_client.aclose()
+
+
+@app.get("/api/v1/airport/{ident}", response_model=AirportDetailResponse)
+async def get_airport_details(ident: str):
+    async with get_connection() as conn:
+        try:
+            # Using ident.upper() ensures we match the uppercase data in the DB
+            row = await conn.fetchrow(AIRPORT_QUERY, ident.upper())
+            
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Airport {ident} not found")
+
+            # Convert the asyncpg Record into a mutable dictionary
+            airport_data = dict(row)
+
+            # Parse the JSONB strings back into native Python objects
+            json_fields = ['geom', 'runways', 'frequencies', 'navaids', 'comments']
+            for field in json_fields:
+                val = airport_data.get(field)
+                if isinstance(val, str):
+                    airport_data[field] = json.loads(val)
+
+            return AirportDetailResponse(**airport_data)
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error fetching airport details for {ident}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @app.get("/api/v1/flight-path/{icao24}", response_model=FlightPathResponse)

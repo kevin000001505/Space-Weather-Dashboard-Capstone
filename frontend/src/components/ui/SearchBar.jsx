@@ -26,23 +26,21 @@ const SearchBar = () => {
     const timer = setTimeout(() => {
       const lowerQuery = query.toLowerCase();
       
-      // Search Planes (limit to 5)
+      // Search Planes
       const planeMatches = planes
         .filter(p =>
           (p.callsign && p.callsign.toLowerCase().includes(lowerQuery)) ||
           (p.icao24 && p.icao24.toLowerCase().includes(lowerQuery))
         )
-        .slice(0, 5)
         .map(p => ({ type: 'plane', data: p }));
 
-      // Search Airports (limit to 5)
+      // Search Airports
       const airportMatches = airports
         .filter(a =>
-          (a.name && a.name.toLowerCase().includes(lowerQuery)) ||
           (a.iata_code && a.iata_code.toLowerCase().includes(lowerQuery)) ||
+          (a.name && a.name.toLowerCase().includes(lowerQuery)) ||
           (a.municipality && a.municipality.toLowerCase().includes(lowerQuery))
         )
-        .slice(0, 5)
         .map(a => ({ type: 'airport', data: a }));
 
       dispatch(setSearchResults([...planeMatches, ...airportMatches]));
@@ -52,7 +50,7 @@ const SearchBar = () => {
     return () => clearTimeout(timer);
   }, [airports, dispatch, planes, query]);
 
-  const handleSelect = (item) => {
+  const handleSelect = async (item) => {
     if (item.type === 'plane') {
       const plane = item.data;
       if (plane.lat && plane.lon) {
@@ -80,6 +78,18 @@ const SearchBar = () => {
         zoom: 10,
         transitionDuration: 1500,
       }));
+
+      try {
+        const response = await fetch(`/api/v1/airport/${airport.ident}`);
+        if (response.ok) {
+          const details = await response.json();
+          console.log('Fetched Airport Details:', details);
+        } else {
+          console.error(`Failed to fetch details for ${airport.ident}. Status:`, response.status);
+        }
+      } catch (error) {
+        console.error('Network error fetching airport details:', error);
+      }
     }
 
     dispatch(setSearchQuery(''));
