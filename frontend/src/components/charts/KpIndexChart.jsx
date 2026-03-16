@@ -1,98 +1,53 @@
 // Add import for datalabels plugin
-import ChartDataLabels from "chartjs-plugin-datalabels";
 import React from "react";
-import { Bar } from "react-chartjs-2";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import { useSelector } from "react-redux";
-
+import { Line } from "react-chartjs-2";
+import { Card, CardContent, Box } from "@mui/material";
+import { useSelector, useDispatch } from "react-redux";
+import annotationPlugin from "chartjs-plugin-annotation";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
+import { sortByTimeTag } from "./helpers";
+import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
+import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 
-import { useDispatch } from "react-redux";
-import { setSelectedTimezone } from "../../store/slices/chartsSlice";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+Chart.register(annotationPlugin, zoomPlugin);
 
-Chart.register(zoomPlugin);
+import { G_LEVELS, KP_COLORS, MAJOR_TIMEZONES } from "./constants";
+const kpGLevelBackgroundPlugin = chartBackgroundBandsPlugin(G_LEVELS, {
+  id: "kpGLevelBackground",
+  font: "bold 16px sans-serif",
+  textAlign: "right",
+  labelPosition: "left",
+  labelOffset: 25,
+  alpha: 0.25,
+});
 const KpIndexChart = () => {
   const kpIndex = useSelector((state) => state.charts?.kpIndex);
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const showDate = useSelector((state) => state.charts.showDate);
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
   const dispatch = useDispatch();
-  let prevDay = null;
-  let dayChangeIndices = [];
-  const sortedKpIndex = kpIndex
-    ? [...kpIndex].sort((a, b) => new Date(a.time_tag) - new Date(b.time_tag))
-    : [];
-  const kpLabels = sortedKpIndex.map((item, idx) => {
-    const date = new Date(item.time_tag);
-    const day = date.getDate();
-    if (prevDay !== null && day !== prevDay) {
-      dayChangeIndices.push(idx);
-    }
-    prevDay = day;
-    let month, dayNum, hour;
-    if (selectedTimezone === "local") {
-      month = date.toLocaleString("en-US", { month: "short" });
-      dayNum = date.getDate();
-      hour = date.toLocaleString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } else {
-      month = date.toLocaleString("en-US", {
-        month: "short",
-        timeZone: selectedTimezone,
-      });
-      dayNum = date.toLocaleString("en-US", {
-        day: "numeric",
-        timeZone: selectedTimezone,
-      });
-      hour = date.toLocaleString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-        timeZone: selectedTimezone,
-      });
-    }
-    return showDate ? `${month} ${dayNum}' ${hour}` : `${hour}`;
-  });
+  const sortedKpIndex = sortByTimeTag(kpIndex);
+  // Label formatting logic using helper
+  let prevDateStr = null;
+  // Use ISO date strings for data.labels (for time scale and label box)
+  const kpLabels = sortedKpIndex.map((item) => item.time_tag);
   const kpData = sortedKpIndex.map((item) => item.kp);
   // Kp scale colors
-  const kpColors = [
-    "#8bc34a", // Kp < 5
-    "#ffeb3b", // Kp = 5 (G1)
-    "#ffc107", // Kp = 6 (G2)
-    "#ff9800", // Kp = 7 (G3)
-    "#f44336", // Kp = 8, 9 (G4)
-    "#b71c1c", // Kp = 9o (G5)
-  ];
+
+  const kpLineColor = "#ff9800";
+  const aRunningLineColor = "#1976d2";
 
   function getKpColor(kp) {
-    if (kp < 5) return kpColors[0];
-    if (kp === 5) return kpColors[1];
-    if (kp === 6) return kpColors[2];
-    if (kp === 7) return kpColors[3];
-    if (kp === 8 || kp === 9) return kpColors[4];
-    if (kp >= 9.0) return kpColors[5];
-    return kpColors[0];
+    if (kp < 5) return KP_COLORS[0];
+    if (kp >= 5) return KP_COLORS[1];
+    if (kp >= 6) return KP_COLORS[2];
+    if (kp >= 7) return KP_COLORS[3];
+    if (kp >= 8) return KP_COLORS[4];
+    if (kp >= 9.0) return KP_COLORS[5];
+    return KP_COLORS[0];
   }
-
-  const barColors = kpData.map(getKpColor);
 
   const kpChartData = {
     labels: kpLabels,
@@ -100,36 +55,87 @@ const KpIndexChart = () => {
       {
         label: "Kp Index",
         data: kpData,
-        backgroundColor: barColors,
-        borderColor: barColors,
-        borderWidth: 1,
+        borderColor: kpLineColor,
+        backgroundColor: "rgba(255, 152, 0, 0.2)",
+        fill: false,
+        tension: 0.4,
+        pointRadius: 0,
+        pointBackgroundColor: kpData.map(getKpColor),
+        pointBorderColor: kpData.map(getKpColor),
       },
+      // Ap Index is omitted from datasets, but will be shown in the label box
     ],
-    plugins: {
-      annotation: {
-        annotations: dayChangeIndices.map((idx) => ({
-          type: "line",
-          scaleID: "x",
-          value: kpLabels[idx],
-          borderColor: darkMode ? "#ff5252" : "red",
-          borderWidth: 2,
-          label: {
-            display: true,
-            content: "Day Change",
-            color: darkMode ? "#b71c1c" : "red",
-            position: "start",
-          },
-        })),
-      },
-    },
   };
 
   const chartRef = React.useRef();
+  // Track mouse position for persistent label box
+  const mousePosRef = React.useRef({ x: null, y: null, inside: false });
+  // Always create a new instance of the persistent label box plugin for this chart
+  const persistentLabelBoxPlugin = React.useMemo(
+    () =>
+      persistentLabelBoxPluginFactory({
+        mousePosRef,
+        getLabelLines: ({ chart, nearestIndex }) => {
+          // Always use the value and date from sortedKpIndex[nearestIndex]
+          const point = sortedKpIndex[nearestIndex];
+          let label = "";
+          if (point && point.time_tag) {
+            const date = new Date(point.time_tag);
+            // Show date as 'Mon DD, HH:MM AM/PM' in the selected timezone
+            const month = date.toLocaleString("en-US", {
+              month: "short",
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            const day = date.toLocaleString("en-US", {
+              day: "2-digit",
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            const time = date.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            label = `${month} ${day}, ${time}`;
+          }
+          const lines = [];
+          lines.push({ type: "time", text: label });
+          // Kp Index
+          lines.push({
+            type: "dataset",
+            color: kpLineColor,
+            label: "Kp Index",
+            value:
+              point && point.kp !== undefined && point.kp !== null
+                ? point.kp
+                : "",
+            units: "",
+          });
+          // Ap Index
+          lines.push({
+            type: "dataset",
+            color: aRunningLineColor,
+            label: "Ap Index",
+            value:
+              point && point.a_running !== undefined && point.a_running !== null
+                ? point.a_running
+                : "",
+            units: "",
+          });
+          return lines;
+        },
+      }),
+    [mousePosRef, sortedKpIndex, selectedTimezone],
+  );
+
   return (
-  // Chart ref for reset zoom
+    // Chart ref for reset zoom
     <Card
       sx={{
-        height: 540,
+        height: 900,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -137,37 +143,16 @@ const KpIndexChart = () => {
       <CardContent
         sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ color: darkMode ? "#e0e0e0" : "#333" }}
-          >
-            PLANETARY K-INDEX
-          </Typography>
-          <Tooltip title="Reset Zoom">
-            <IconButton
-              aria-label="reset zoom"
-              onClick={() => {
-                if (chartRef.current) {
-                  chartRef.current.resetZoom();
-                }
-              }}
-              sx={{ color: darkMode ? '#e0e0e0' : '#333' }}
-            >
-              <RestartAltIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
         <Box
           sx={{
             height: "80%",
             backgroundColor: darkMode ? "#23272e" : "#fff",
             borderRadius: 2,
             p: 1,
-        }}
+          }}
         >
-          <Bar
+          <Line
+            key={`kpchart-${kpLabels.length}-${selectedTimezone}`}
             ref={chartRef}
             data={kpChartData}
             options={{
@@ -179,30 +164,59 @@ const KpIndexChart = () => {
                     color: darkMode ? "#e0e0e0" : "#333",
                   },
                 },
-                datalabels: {
-                  anchor: "end",
-                  align: "end",
-                  color: darkMode ? "#e0e0e0" : "#333",
-                  font: {
-                    weight: "bold",
-                  },
-                  formatter: function (value) {
-                    return value;
-                  },
-                },
-                zoom: {
-                  pan: {
-                    enabled: true,
-                    mode: "xy",
-                  },
-                  zoom: {
-                    wheel: {
-                      enabled: true,
-                    },
-                    pinch: {
-                      enabled: true,
-                    },
-                    mode: "xy",
+                annotation: {
+                  annotations: {
+                    ...(() => {
+                      const dateLines = {};
+                      let prevDateStr = null;
+                      kpChartData.labels.forEach((label, idx) => {
+                        const date = new Date(sortedKpIndex[idx]?.time_tag);
+                        const currDateStr =
+                          selectedTimezone === "local"
+                            ? date.toLocaleString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                              })
+                            : date.toLocaleString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                                timeZone: selectedTimezone,
+                              });
+                        if (
+                          prevDateStr !== null &&
+                          currDateStr !== prevDateStr
+                        ) {
+                          dateLines[`dateLine${idx}`] = {
+                            type: "line",
+                            xMin: idx - 0.5,
+                            xMax: idx - 0.5,
+                            borderColor: darkMode ? "#90caf9" : "#1976d2",
+                            borderWidth: 2,
+                            borderDash: [2, 6],
+                            shadowColor: darkMode
+                              ? "rgba(144,202,249,0.5)"
+                              : "rgba(25,118,210,0.3)",
+                            shadowBlur: 8,
+                            label: {
+                              display: true,
+                              content: currDateStr,
+                              position: "end",
+                              color: darkMode ? "#23272e" : "#fff",
+                              font: { weight: "bold", size: 12 },
+                              backgroundColor: darkMode ? "#90caf9" : "#1976d2",
+                              borderRadius: 8,
+                              padding: 4,
+                              yAdjust: 0,
+                              xAdjust: 0,
+                              rotation: 0,
+                              borderWidth: 0,
+                            },
+                          };
+                        }
+                        prevDateStr = currDateStr;
+                      });
+                      return dateLines;
+                    })(),
                   },
                 },
               },
@@ -210,25 +224,33 @@ const KpIndexChart = () => {
                 x: {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
-                  },
-                  grid: {
-                    color: darkMode ? "#444" : "#e0e0e0",
+                    callback: function (value, index, ticks) {
+                      // Use kpLabels[index] for correct ISO string, like XrayFluxChart
+                      const iso = kpLabels[index];
+                      if (!iso) return "";
+                      const date = new Date(iso);
+                      if (selectedTimezone === "local") {
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                      } else {
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                          timeZone: selectedTimezone,
+                        });
+                      }
+                    },
                   },
                   title: {
                     display: true,
                     text: `Time (${(() => {
-                      const tzMap = {
-                        'local': 'Local Time',
-                        'UTC': 'UTC (GMT+0)',
-                        'America/New_York': 'US/Eastern (GMT-5)',
-                        'America/Chicago': 'US/Central (GMT-6)',
-                        'America/Denver': 'US/Mountain (GMT-7)',
-                        'America/Los_Angeles': 'US/Pacific (GMT-8)',
-                        'Europe/London': 'Europe/London (GMT+0)',
-                        'Europe/Paris': 'Europe/Paris (GMT+1)',
-                        'Asia/Tokyo': 'Asia/Tokyo (GMT+9)',
-                        'Australia/Sydney': 'Australia/Sydney (GMT+10)',
-                      };
+                      const tzMap = Object.fromEntries(
+                        MAJOR_TIMEZONES.map((tz) => [tz.value, tz.label]),
+                      );
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
                     color: darkMode ? "#e0e0e0" : "#333",
@@ -236,6 +258,7 @@ const KpIndexChart = () => {
                   },
                 },
                 y: {
+                  position: "left",
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
                   },
@@ -248,6 +271,8 @@ const KpIndexChart = () => {
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { weight: "bold", size: 16 },
                   },
+                  min: 0,
+                  max: 10,
                 },
               },
               layout: {
@@ -255,126 +280,32 @@ const KpIndexChart = () => {
               },
               backgroundColor: darkMode ? "#23272e" : "#fff",
             }}
-            plugins={[ChartDataLabels]}
+            plugins={[
+              kpGLevelBackgroundPlugin,
+              annotationPlugin,
+              persistentLabelBoxPlugin,
+            ]}
+            onElementsClick={undefined}
+            getDatasetAtEvent={undefined}
+            onPointerMove={(event) => {
+              // react-chartjs-2 v5+ chartRef.current is a wrapper, get .canvas and .chart
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              const rect = chart.canvas.getBoundingClientRect();
+              const x = event.clientX - rect.left;
+              const y = event.clientY - rect.top;
+              mousePosRef.current = { x, y, inside: true };
+              chart.update("none");
+            }}
+            onPointerOut={() => {
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              mousePosRef.current = { x: null, y: null, inside: false };
+              chart.update("none");
+            }}
           />
-        </Box>
-        {/* Kp Scale Legend */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            mt: 2,
-          }}
-        >
-          {/* Kp < 5 */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#8bc34a",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#333", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp &lt; 5
-            </Typography>
-          </Box>
-          {/* Kp = 5 (G1) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#ffeb3b",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#333", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp = 5 (G1)
-            </Typography>
-          </Box>
-          {/* Kp = 6 (G2) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#ffc107",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#333", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp = 6 (G2)
-            </Typography>
-          </Box>
-          {/* Kp = 7 (G3) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#ff9800",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#333", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp = 7 (G3)
-            </Typography>
-          </Box>
-          {/* Kp = 8, 9 (G4) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#f44336",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#333", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp = 8, 9 (G4)
-            </Typography>
-          </Box>
-          {/* Kp = 9o (G5) */}
-          <Box
-            sx={{
-              width: 100,
-              height: 40,
-              backgroundColor: "#b71c1c",
-              border: "1px solid #888",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Typography
-              sx={{ color: "#fff", fontWeight: "bold", fontSize: 14 }}
-            >
-              Kp = 9<sub>o</sub> (G5)
-            </Typography>
-          </Box>
         </Box>
       </CardContent>
     </Card>
