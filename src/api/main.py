@@ -113,9 +113,12 @@ async def redis_heartbeat_loop():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    await get_pool()
+    pool = await get_pool()
     logger.info("Database connection pool initialized")
 
+    # Warm up the pool
+    async with pool.acquire() as conn:
+        await conn.execute("SELECT 1")
     heartbeat_task = asyncio.create_task(redis_heartbeat_loop())
 
     yield
@@ -241,16 +244,29 @@ async def live_dashboard_stream(request: Request):
 
 @app.get("/api/v1/airports", response_model=AirportsResponse)
 async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
-    async with get_connection() as conn:
-        try:
+    redis_client = redis_config.get_redis_client()
+    try:
+        # 1. Attempt to grab the full dataset from Redis RAM
+        cached_airports = await redis_client.get(redis_config.AIRPORTS_CACHE_KEY)
+        
+        if cached_airports:
+            # CACHE HIT: Parse the JSON string back into a Python list of dicts
+            airports_data = json.loads(cached_airports)
+            
+            # Slice the array if the user provided a limit
+            if limit:
+                airports_data = airports_data[:limit]
+                
+            return AirportsResponse(airports=airports_data)
+        
+        # 2. CACHE MISS: Query PostgreSQL
+        async with get_connection() as conn:
             rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
             if not rows:
                 raise HTTPException(status_code=404, detail="No airport data available")
 
             airports = []
             for row in rows:
-                if limit and len(airports) >= limit:
-                    break
                 airports.append(
                     Airport(
                         name=row["name"],
@@ -265,13 +281,27 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
                     )
                 )
 
+            cache_payload = [airport.model_dump() for airport in airports]
+            
+            await redis_client.set(
+                redis_config.AIRPORTS_CACHE_KEY, 
+                json.dumps(cache_payload), 
+                ex=redis_config.VERY_LONG_TTL
+            )
+
+            if limit:
+                return AirportsResponse(airports=airports[:limit])
+
             return AirportsResponse(airports=airports)
 
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error fetching latest airports: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching latest airports: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    finally:
+        # Crucial: Always close the connection back to the pool
+        await redis_client.aclose()
 
 
 @app.get("/api/v1/flight-path/{icao24}", response_model=FlightPathResponse)

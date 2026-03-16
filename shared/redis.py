@@ -18,6 +18,7 @@ KPINDEX_CHANNEL = "kpindex_updates_channel"
 ALERTS_CHANNEL = "alerts_channel"
 
 # Memory Cache Keys
+AIRPORTS_CACHE_KEY = "latest_airports"
 FLIGHTS_CACHE_KEY = "latest_flights"
 AURORA_CACHE_KEY = "latest_aurora"
 DRAP_CACHE_KEY = "latest_drap"
@@ -30,6 +31,7 @@ ALERTS_CACHE_KEY = "latest_alerts"
 DEFAULT_TTL = 300  # 5 minutes
 MEDIUM_TTL = 21600  # 6 hours
 LONG_TTL = 43200  # 12 hours
+VERY_LONG_TTL = 86400  # 24 hours
 
 def get_redis_client() -> aioredis.Redis:
     """Returns an async Redis client configured for the stack."""
