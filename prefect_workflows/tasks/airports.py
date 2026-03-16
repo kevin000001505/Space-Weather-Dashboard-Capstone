@@ -1,14 +1,52 @@
-from tasks.queries import AIRPORTS_STAGING_DDL, AIRPORTS_STAGING_COLUMNS, AIRPORTS_TRANSFORM_SQL
+from tasks.queries import (
+    AIRPORTS_STAGING_DDL,
+    AIRPORTS_STAGING_COLUMNS,
+    AIRPORTS_TRANSFORM_SQL,
+    COUNTRIES_STAGING_DDL,
+    COUNTRIES_STAGING_COLUMNS,
+    COUNTRIES_TRANSFORM_SQL,
+    REGIONS_STAGING_DDL,
+    REGIONS_STAGING_COLUMNS,
+    REGIONS_TRANSFORM_SQL,
+    FREQUENCIES_STAGING_DDL,
+    FREQUENCIES_STAGING_COLUMNS,
+    FREQUENCIES_TRANSFORM_SQL,
+    COMMENTS_STAGING_DDL,
+    COMMENTS_STAGING_COLUMNS,
+    COMMENTS_TRANSFORM_SQL,
+    RUNWAYS_STAGING_DDL,
+    RUNWAYS_STAGING_COLUMNS,
+    RUNWAYS_TRANSFORM_SQL,
+    NAVAIDS_STAGING_DDL,
+    NAVAIDS_STAGING_COLUMNS,
+    NAVAIDS_TRANSFORM_SQL
+)
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
-from tasks.models import AirportRecord
+from tasks.models import (
+    AirportRecord,
+    CountryRecord,
+    RegionRecord,
+    FrequencyRecord,
+    RunwayRecord,
+    NavaidRecord,
+    CommentRecord
+)
 from database.db_tools import get_connection
 import requests
 import csv
 from io import StringIO
 from datetime import datetime
+from pydantic import ValidationError
 
-airport_csv_url = "https://davidmegginson.github.io/ourairports-data/airports.csv"
+airports_base_url = "https://davidmegginson.github.io/ourairports-data/"
+airports_url = f"{airports_base_url}airports.csv"
+countries_url = f"{airports_base_url}countries.csv"
+regions_url = f"{airports_base_url}regions.csv"
+runways_url = f"{airports_base_url}runways.csv"
+navaids_url = f"{airports_base_url}navaids.csv"
+freqs_url = f"{airports_base_url}airport-frequencies.csv"
+comments_url = f"{airports_base_url}airport-comments.csv"
 
 def parse_float(value):
     """Parse float value, return None if empty or invalid."""
@@ -48,67 +86,94 @@ def parse_datetime(value):
     except (ValueError, TypeError, AttributeError):
         return None
 
-
-@task(cache_policy=NO_CACHE)
-async def ingest_airports_csv():
-    """Task to download and ingest airports CSV data."""
+# Generic Ingestion Helper
+async def run_ingest_pipeline(url: str, model_class, staging_table: str, staging_ddl: str, columns: list, transform_sql: str):
     logger = get_run_logger()
     try:
-        logger.info("Downloading airports CSV data...")
-
-        response = requests.get(
-            airport_csv_url, timeout=30
-        )
+        logger.info(f"Downloading data from {url}...")
+        
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
 
         logger.info("Parsing CSV data...")
         reader = csv.DictReader(StringIO(response.text))
 
         all_tuples = []
+        skipped_count = 0
         for row in reader:
-            airport = AirportRecord(
-                ident=row["ident"],
-                type=row["type"],
-                name=row["name"],
-                latitude_deg=parse_float(row.get("latitude_deg")),
-                longitude_deg=parse_float(row.get("longitude_deg")),
-                elevation_ft=parse_float(row.get("elevation_ft")),
-                continent=row.get("continent") or None,
-                country_name=row.get("country_name") or None,
-                iso_country=row.get("iso_country") or None,
-                region_name=row.get("region_name") or None,
-                iso_region=row.get("iso_region") or None,
-                local_region=row.get("local_region") or None,
-                municipality=row.get("municipality") or None,
-                scheduled_service=parse_bool(row.get("scheduled_service")),
-                gps_code=row.get("gps_code") or None,
-                iata_code=row.get("iata_code") or None,
-                icao_code=row.get("icao_code") or None,
-                local_code=row.get("local_code") or None,
-                home_link=row.get("home_link") or None,
-                wikipedia_link=row.get("wikipedia_link") or None,
-                keywords=row.get("keywords") or None,
-                score=parse_int(row.get("score")),
-                last_updated=parse_datetime(row.get("last_updated")),
-            )
-            all_tuples.append(airport.to_tuple())
+            try:
+                # If Pydantic validates it perfectly, add it to the list
+                record = model_class(**row)
+                all_tuples.append(record.to_tuple())
+            except ValidationError:
+                # If a required field is missing (or CSV is mangled), skip this row entirely!
+                skipped_count += 1
+                continue
 
-        logger.info(f"Parsed {len(all_tuples)} airport records. Starting COPY...")
+        logger.info(f"Parsed {len(all_tuples)} records (Skipped {skipped_count} malformed rows).")
+        logger.info(f"Starting COPY to {staging_table}...")
 
         async with get_connection() as conn:
             async with conn.transaction():
-                await conn.execute(AIRPORTS_STAGING_DDL)
+                await conn.execute(staging_ddl)
                 await conn.copy_records_to_table(
-                    "airports_staging",
+                    staging_table,
                     records=all_tuples,
-                    columns=AIRPORTS_STAGING_COLUMNS,
+                    columns=columns,
                 )
-                await conn.execute(AIRPORTS_TRANSFORM_SQL)
+                await conn.execute(transform_sql)
 
-        logger.info(
-            f"✓ Airports data loaded successfully! Total records: {len(all_tuples)}"
-        )
-
+        logger.info(f"✓ {staging_table} data loaded successfully!")
+    
     except Exception as e:
         logger.error(f"Failed to load airports data: {e}")
         raise
+
+@task(cache_policy=NO_CACHE)
+async def ingest_countries_csv():
+    await run_ingest_pipeline(
+        countries_url, CountryRecord, "countries_staging",
+        COUNTRIES_STAGING_DDL, COUNTRIES_STAGING_COLUMNS, COUNTRIES_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_regions_csv():
+    await run_ingest_pipeline(
+        regions_url, RegionRecord, "regions_staging",
+        REGIONS_STAGING_DDL, REGIONS_STAGING_COLUMNS, REGIONS_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_airports_csv():
+    await run_ingest_pipeline(
+        airports_url, AirportRecord, "airports_staging",
+        AIRPORTS_STAGING_DDL, AIRPORTS_STAGING_COLUMNS, AIRPORTS_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_runways_csv():
+    await run_ingest_pipeline(
+        runways_url, RunwayRecord, "runways_staging",
+        RUNWAYS_STAGING_DDL, RUNWAYS_STAGING_COLUMNS, RUNWAYS_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_frequencies_csv():
+    await run_ingest_pipeline(
+        freqs_url, FrequencyRecord, "frequencies_staging",
+        FREQUENCIES_STAGING_DDL, FREQUENCIES_STAGING_COLUMNS, FREQUENCIES_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_navaids_csv():
+    await run_ingest_pipeline(
+        navaids_url, NavaidRecord, "navaids_staging",
+        NAVAIDS_STAGING_DDL, NAVAIDS_STAGING_COLUMNS, NAVAIDS_TRANSFORM_SQL
+    )
+
+@task(cache_policy=NO_CACHE)
+async def ingest_comments_csv():
+    await run_ingest_pipeline(
+        comments_url, CommentRecord, "comments_staging",
+        COMMENTS_STAGING_DDL, COMMENTS_STAGING_COLUMNS, COMMENTS_TRANSFORM_SQL
+    )

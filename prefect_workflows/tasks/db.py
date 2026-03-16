@@ -8,6 +8,12 @@ from database.db_tools import (
 from tasks.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
+    COUNTRIES_CREATE_TABLE_SQL,
+    REGIONS_CREATE_TABLE_SQL,
+    FREQUENCIES_CREATE_TABLE_SQL,
+    AIRPORT_COMMENTS_CREATE_TABLE_SQL,
+    NAVAIDS_CREATE_TABLE_SQL,
+    RUNWAYS_CREATE_TABLE_SQL,
     AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     KP_INDEX_CREATE_TABLE_SQL,
@@ -60,13 +66,27 @@ async def initial_activate_flight_db(conn: Connection):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_airport_db(conn: Connection):
+async def initial_airport_dbs(conn: Connection):
     """Task to initialize the airports table."""
     logger = _logger()
+
+    tables_to_create = [
+        ("countries", COUNTRIES_CREATE_TABLE_SQL),
+        ("regions", REGIONS_CREATE_TABLE_SQL),
+        ("airports", AIRPORT_CREATE_TABLE_SQL),
+        ("runways", RUNWAYS_CREATE_TABLE_SQL),
+        ("airport_frequencies", FREQUENCIES_CREATE_TABLE_SQL),
+        ("airport_comments", AIRPORT_COMMENTS_CREATE_TABLE_SQL),
+        ("navaids", NAVAIDS_CREATE_TABLE_SQL)
+    ]
+
     try:
-        logger.info("Ensuring airports table exists...")
-        await ensure_table_exists(conn, "airports", create_sql=AIRPORT_CREATE_TABLE_SQL)
-        logger.info("airports table is ready!")
+        for table_name, create_sql in tables_to_create:
+            logger.info(f"Ensuring {table_name} table exists...")
+            await ensure_table_exists(conn, table_name, create_sql=create_sql)
+            logger.info(f"Table '{table_name}' is ready.")
+
+        logger.info("All aviation reference tables initialized successfully!")
 
     except Exception as e:
         logger.error(f"Failed to initialize airports table: {e}")

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS activate_flight (
 );
 """
 
-
+# --- Aiport data ---
 AIRPORT_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS airports (
     id SERIAL PRIMARY KEY,
@@ -57,9 +57,9 @@ CREATE TABLE IF NOT EXISTS airports (
     elevation_ft REAL,
     continent VARCHAR(2),
     country_name VARCHAR(100),
-    iso_country VARCHAR(2),
+    iso_country VARCHAR(2) REFERENCES countries(code) ON DELETE SET NULL,
     region_name VARCHAR(100),
-    iso_region VARCHAR(10),
+    iso_region VARCHAR(10) REFERENCES regions(code) ON DELETE SET NULL,
     local_region VARCHAR(100),
     municipality VARCHAR(100),
     scheduled_service BOOLEAN,
@@ -80,6 +80,143 @@ CREATE INDEX idx_airports_ident ON airports(ident);
 CREATE INDEX idx_airports_iata ON airports(iata_code);
 CREATE INDEX idx_airports_icao ON airports(icao_code);
 CREATE INDEX idx_airports_geom ON airports USING GIST(geom);
+"""
+
+
+COUNTRIES_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS countries (
+    id INTEGER PRIMARY KEY,
+    code VARCHAR(2) UNIQUE NOT NULL,
+    name VARCHAR(255),
+    continent VARCHAR(2),
+    wikipedia_link VARCHAR(255),
+    keywords VARCHAR(500),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_countries_code ON countries(code);
+"""
+
+
+REGIONS_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS regions (
+    id INTEGER PRIMARY KEY,
+    code VARCHAR(10) UNIQUE NOT NULL,
+    local_code VARCHAR(10),
+    name VARCHAR(255),
+    continent VARCHAR(2),
+    iso_country VARCHAR(2) REFERENCES countries(code) ON DELETE CASCADE,
+    wikipedia_link VARCHAR(255),
+    keywords VARCHAR(500),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_regions_code ON regions(code);
+CREATE INDEX idx_regions_iso_country ON regions(iso_country);
+"""
+
+
+FREQUENCIES_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS airport_frequencies (
+    id INTEGER PRIMARY KEY,
+    airport_ref INTEGER REFERENCES airports(id) ON DELETE CASCADE,
+    airport_ident VARCHAR(10) REFERENCES airports(ident) ON DELETE CASCADE,
+    type VARCHAR(50),
+    description VARCHAR(255),
+    frequency_mhz DOUBLE PRECISION,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_frequencies_airport_ref ON airport_frequencies(airport_ref);
+CREATE INDEX idx_frequencies_airport_ident ON airport_frequencies(airport_ident);
+CREATE INDEX idx_frequencies_type ON airport_frequencies(type);
+"""
+
+
+AIRPORT_COMMENTS_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS airport_comments (
+    id INTEGER PRIMARY KEY,
+    airport_ref INTEGER REFERENCES airports(id) ON DELETE CASCADE,
+    airport_ident VARCHAR(10) REFERENCES airports(ident) ON DELETE CASCADE,
+    subject VARCHAR(255),
+    body TEXT,
+    author VARCHAR(255),
+    date TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_comments_airport_ref ON airport_comments(airport_ref);
+CREATE INDEX idx_comments_airport_ident ON airport_comments(airport_ident);
+"""
+
+NAVAIDS_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS navaids (
+    id INTEGER PRIMARY KEY,
+    filename VARCHAR(255),
+    ident VARCHAR(10),
+    name VARCHAR(255),
+    type VARCHAR(50),
+    frequency_khz INTEGER,
+    elevation_ft INTEGER,
+    iso_country VARCHAR(2),
+    dme_frequency_khz INTEGER,
+    dme_channel VARCHAR(10),
+    dme_geom GEOMETRY(POINT, 4326),
+    dme_elevation_ft INTEGER,
+    slaved_variation_deg DOUBLE PRECISION,
+    magnetic_variation_deg DOUBLE PRECISION,
+    usagetype VARCHAR(50),
+    power VARCHAR(50),
+    associated_airport VARCHAR(10) REFERENCES airports(ident) ON DELETE SET NULL,
+    geom GEOMETRY(POINT, 4326),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_navaids_ident ON navaids(ident);
+CREATE INDEX idx_navaids_associated_airport ON navaids(associated_airport);
+CREATE INDEX idx_navaids_type ON navaids(type);
+CREATE INDEX idx_navaids_geom ON navaids USING GIST(geom);
+"""
+
+
+RUNWAYS_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS runways (
+    id INTEGER PRIMARY KEY,
+    airport_ref INTEGER REFERENCES airports(id) ON DELETE CASCADE,
+    airport_ident VARCHAR(10) REFERENCES airports(ident) ON DELETE CASCADE,
+    length_ft INTEGER,
+    width_ft INTEGER,
+    surface VARCHAR(255),
+    lighted BOOLEAN,
+    closed BOOLEAN,
+    
+    -- Low End (le_) Data
+    le_ident VARCHAR(10),
+    le_elevation_ft INTEGER,
+    le_heading_degt DOUBLE PRECISION,
+    le_displaced_threshold_ft INTEGER,
+    le_geom GEOMETRY(POINT, 4326), -- Replaces le_latitude_deg & le_longitude_deg
+    
+    -- High End (he_) Data
+    he_ident VARCHAR(10),
+    he_elevation_ft INTEGER,
+    he_heading_degt DOUBLE PRECISION,
+    he_displaced_threshold_ft INTEGER,
+    he_geom GEOMETRY(POINT, 4326), -- Replaces he_latitude_deg & he_longitude_deg
+    
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_runways_airport_ref ON runways(airport_ref);
+CREATE INDEX idx_runways_airport_ident ON runways(airport_ident);
+CREATE INDEX idx_runways_le_geom ON runways USING GIST(le_geom);
+CREATE INDEX idx_runways_he_geom ON runways USING GIST(he_geom);
 """
 
 
@@ -410,6 +547,269 @@ ON CONFLICT (ident) DO UPDATE SET
     last_updated       = EXCLUDED.last_updated,
     geom               = EXCLUDED.geom,
     updated_at         = CURRENT_TIMESTAMP
+"""
+
+COUNTRIES_STAGING_DDL = """
+CREATE TEMP TABLE countries_staging (
+    id INTEGER,
+    code VARCHAR(2),
+    name VARCHAR(255),
+    continent VARCHAR(2),
+    wikipedia_link VARCHAR(255),
+    keywords VARCHAR(500)
+) ON COMMIT DROP
+"""
+
+COUNTRIES_STAGING_COLUMNS = [
+    "id", "code", "name", "continent", "wikipedia_link", "keywords"
+]
+
+COUNTRIES_TRANSFORM_SQL = """
+INSERT INTO countries (id, code, name, continent, wikipedia_link, keywords)
+SELECT id, code, name, continent, wikipedia_link, keywords
+FROM countries_staging
+ON CONFLICT (id) DO UPDATE SET
+    code = EXCLUDED.code,
+    name = EXCLUDED.name,
+    continent = EXCLUDED.continent,
+    wikipedia_link = EXCLUDED.wikipedia_link,
+    keywords = EXCLUDED.keywords,
+    updated_at = CURRENT_TIMESTAMP
+"""
+
+REGIONS_STAGING_DDL = """
+CREATE TEMP TABLE regions_staging (
+    id INTEGER,
+    code VARCHAR(10),
+    local_code VARCHAR(10),
+    name VARCHAR(255),
+    continent VARCHAR(2),
+    iso_country VARCHAR(2),
+    wikipedia_link VARCHAR(255),
+    keywords VARCHAR(500)
+) ON COMMIT DROP
+"""
+
+REGIONS_STAGING_COLUMNS = [
+    "id", "code", "local_code", "name", "continent", "iso_country", 
+    "wikipedia_link", "keywords"
+]
+
+REGIONS_TRANSFORM_SQL = """
+INSERT INTO regions (id, code, local_code, name, continent, iso_country, wikipedia_link, keywords)
+SELECT id, code, local_code, name, continent, iso_country, wikipedia_link, keywords
+FROM regions_staging
+ON CONFLICT (id) DO UPDATE SET
+    code = EXCLUDED.code,
+    local_code = EXCLUDED.local_code,
+    name = EXCLUDED.name,
+    continent = EXCLUDED.continent,
+    iso_country = EXCLUDED.iso_country,
+    wikipedia_link = EXCLUDED.wikipedia_link,
+    keywords = EXCLUDED.keywords,
+    updated_at = CURRENT_TIMESTAMP
+"""
+
+FREQUENCIES_STAGING_DDL = """
+CREATE TEMP TABLE frequencies_staging (
+    id INTEGER,
+    airport_ident VARCHAR(10),
+    type VARCHAR(50),
+    description VARCHAR(255),
+    frequency_mhz DOUBLE PRECISION
+) ON COMMIT DROP
+"""
+
+FREQUENCIES_STAGING_COLUMNS = [
+    "id", "airport_ident", "type", "description", "frequency_mhz"
+]
+
+FREQUENCIES_TRANSFORM_SQL = """
+INSERT INTO airport_frequencies (id, airport_ident, type, description, frequency_mhz)
+SELECT id, airport_ident, type, description, frequency_mhz
+FROM frequencies_staging
+ON CONFLICT (id) DO UPDATE SET
+    airport_ident = EXCLUDED.airport_ident,
+    type = EXCLUDED.type,
+    description = EXCLUDED.description,
+    frequency_mhz = EXCLUDED.frequency_mhz,
+    updated_at = CURRENT_TIMESTAMP
+"""
+
+COMMENTS_STAGING_DDL = """
+CREATE TEMP TABLE comments_staging (
+    id INTEGER,
+    airport_ident VARCHAR(10),
+    subject VARCHAR(255),
+    body TEXT,
+    author VARCHAR(255),
+    date TIMESTAMPTZ
+) ON COMMIT DROP
+"""
+
+COMMENTS_STAGING_COLUMNS = [
+    "id", "airport_ident", "subject", "body", "author", "date"
+]
+
+COMMENTS_TRANSFORM_SQL = """
+INSERT INTO airport_comments (id, airport_ident, subject, body, author, date)
+SELECT id, airport_ident, subject, body, author, date
+FROM comments_staging
+ON CONFLICT (id) DO UPDATE SET
+    airport_ident = EXCLUDED.airport_ident,
+    subject = EXCLUDED.subject,
+    body = EXCLUDED.body,
+    author = EXCLUDED.author,
+    date = EXCLUDED.date,
+    updated_at = CURRENT_TIMESTAMP
+"""
+
+RUNWAYS_STAGING_DDL = """
+CREATE TEMP TABLE runways_staging (
+    id INTEGER,
+    airport_ident VARCHAR(10),
+    length_ft INTEGER,
+    width_ft INTEGER,
+    surface VARCHAR(255),
+    lighted BOOLEAN,
+    closed BOOLEAN,
+    le_ident VARCHAR(10),
+    le_latitude_deg DOUBLE PRECISION,
+    le_longitude_deg DOUBLE PRECISION,
+    le_elevation_ft INTEGER,
+    le_heading_degt DOUBLE PRECISION,
+    le_displaced_threshold_ft INTEGER,
+    he_ident VARCHAR(10),
+    he_latitude_deg DOUBLE PRECISION,
+    he_longitude_deg DOUBLE PRECISION,
+    he_elevation_ft INTEGER,
+    he_heading_degt DOUBLE PRECISION,
+    he_displaced_threshold_ft INTEGER
+) ON COMMIT DROP
+"""
+
+RUNWAYS_STAGING_COLUMNS = [
+    "id", "airport_ident", "length_ft", "width_ft", "surface", "lighted", 
+    "closed", "le_ident", "le_latitude_deg", "le_longitude_deg", "le_elevation_ft", 
+    "le_heading_degt", "le_displaced_threshold_ft", "he_ident", "he_latitude_deg", 
+    "he_longitude_deg", "he_elevation_ft", "he_heading_degt", "he_displaced_threshold_ft"
+]
+
+RUNWAYS_TRANSFORM_SQL = """
+INSERT INTO runways (
+    id, airport_ident, length_ft, width_ft, surface, lighted, closed,
+    le_ident, le_elevation_ft, le_heading_degt, le_displaced_threshold_ft, le_geom,
+    he_ident, he_elevation_ft, he_heading_degt, he_displaced_threshold_ft, he_geom
+)
+SELECT
+    id, airport_ident, length_ft, width_ft, surface, lighted, closed,
+    le_ident, le_elevation_ft, le_heading_degt, le_displaced_threshold_ft,
+    CASE 
+        WHEN le_longitude_deg IS NOT NULL AND le_latitude_deg IS NOT NULL 
+        THEN ST_SetSRID(ST_MakePoint(le_longitude_deg, le_latitude_deg), 4326) 
+        ELSE NULL 
+    END AS le_geom,
+    he_ident, he_elevation_ft, he_heading_degt, he_displaced_threshold_ft,
+    CASE 
+        WHEN he_longitude_deg IS NOT NULL AND he_latitude_deg IS NOT NULL 
+        THEN ST_SetSRID(ST_MakePoint(he_longitude_deg, he_latitude_deg), 4326) 
+        ELSE NULL 
+    END AS he_geom
+FROM runways_staging
+ON CONFLICT (id) DO UPDATE SET
+    airport_ident = EXCLUDED.airport_ident,
+    length_ft = EXCLUDED.length_ft,
+    width_ft = EXCLUDED.width_ft,
+    surface = EXCLUDED.surface,
+    lighted = EXCLUDED.lighted,
+    closed = EXCLUDED.closed,
+    le_ident = EXCLUDED.le_ident,
+    le_elevation_ft = EXCLUDED.le_elevation_ft,
+    le_heading_degt = EXCLUDED.le_heading_degt,
+    le_displaced_threshold_ft = EXCLUDED.le_displaced_threshold_ft,
+    le_geom = EXCLUDED.le_geom,
+    he_ident = EXCLUDED.he_ident,
+    he_elevation_ft = EXCLUDED.he_elevation_ft,
+    he_heading_degt = EXCLUDED.he_heading_degt,
+    he_displaced_threshold_ft = EXCLUDED.he_displaced_threshold_ft,
+    he_geom = EXCLUDED.he_geom,
+    updated_at = CURRENT_TIMESTAMP
+"""
+
+NAVAIDS_STAGING_DDL = """
+CREATE TEMP TABLE navaids_staging (
+    id INTEGER,
+    filename VARCHAR(255),
+    ident VARCHAR(10),
+    name VARCHAR(255),
+    type VARCHAR(50),
+    frequency_khz INTEGER,
+    latitude_deg DOUBLE PRECISION,
+    longitude_deg DOUBLE PRECISION,
+    elevation_ft INTEGER,
+    iso_country VARCHAR(2),
+    dme_frequency_khz INTEGER,
+    dme_channel VARCHAR(10),
+    dme_latitude_deg DOUBLE PRECISION,
+    dme_longitude_deg DOUBLE PRECISION,
+    dme_elevation_ft INTEGER,
+    slaved_variation_deg DOUBLE PRECISION,
+    magnetic_variation_deg DOUBLE PRECISION,
+    usagetype VARCHAR(50),
+    power VARCHAR(50),
+    associated_airport VARCHAR(10)
+) ON COMMIT DROP
+"""
+
+NAVAIDS_STAGING_COLUMNS = [
+    "id", "filename", "ident", "name", "type", "frequency_khz", 
+    "latitude_deg", "longitude_deg", "elevation_ft", "iso_country", 
+    "dme_frequency_khz", "dme_channel", "dme_latitude_deg", "dme_longitude_deg", 
+    "dme_elevation_ft", "slaved_variation_deg", "magnetic_variation_deg", 
+    "usagetype", "power", "associated_airport"
+]
+
+NAVAIDS_TRANSFORM_SQL = """
+INSERT INTO navaids (
+    id, filename, ident, name, type, frequency_khz, elevation_ft, iso_country,
+    dme_frequency_khz, dme_channel, dme_elevation_ft,
+    slaved_variation_deg, magnetic_variation_deg, usagetype, power, associated_airport,
+    geom, dme_geom
+)
+SELECT
+    id, filename, ident, name, type, frequency_khz, elevation_ft, iso_country,
+    dme_frequency_khz, dme_channel, dme_elevation_ft,
+    slaved_variation_deg, magnetic_variation_deg, usagetype, power, associated_airport,
+    CASE 
+        WHEN longitude_deg IS NOT NULL AND latitude_deg IS NOT NULL 
+        THEN ST_SetSRID(ST_MakePoint(longitude_deg, latitude_deg), 4326) 
+        ELSE NULL 
+    END AS geom,
+    CASE 
+        WHEN dme_longitude_deg IS NOT NULL AND dme_latitude_deg IS NOT NULL 
+        THEN ST_SetSRID(ST_MakePoint(dme_longitude_deg, dme_latitude_deg), 4326) 
+        ELSE NULL 
+    END AS dme_geom
+FROM navaids_staging
+ON CONFLICT (id) DO UPDATE SET
+    filename = EXCLUDED.filename,
+    ident = EXCLUDED.ident,
+    name = EXCLUDED.name,
+    type = EXCLUDED.type,
+    frequency_khz = EXCLUDED.frequency_khz,
+    elevation_ft = EXCLUDED.elevation_ft,
+    iso_country = EXCLUDED.iso_country,
+    dme_frequency_khz = EXCLUDED.dme_frequency_khz,
+    dme_channel = EXCLUDED.dme_channel,
+    dme_elevation_ft = EXCLUDED.dme_elevation_ft,
+    slaved_variation_deg = EXCLUDED.slaved_variation_deg,
+    magnetic_variation_deg = EXCLUDED.magnetic_variation_deg,
+    usagetype = EXCLUDED.usagetype,
+    power = EXCLUDED.power,
+    associated_airport = EXCLUDED.associated_airport,
+    geom = EXCLUDED.geom,
+    dme_geom = EXCLUDED.dme_geom,
+    updated_at = CURRENT_TIMESTAMP
 """
 
 # --- aurora_forecast ---

@@ -5,7 +5,7 @@ from tasks.db import (
     initial_aurora_db,
     initial_drap_db,
     initial_activate_flight_db,
-    initial_airport_db,
+    initial_airport_dbs,
     cleanup_old_drap_data,
     initial_latest_xray_db,
     initial_proton_flux_plot_db,
@@ -47,7 +47,7 @@ async def initialize_db_flow():
     try:
         async with get_connection() as conn:
             await initial_drap_db(conn)
-            await initial_airport_db(conn)
+            await initial_airport_dbs(conn)
             await initial_activate_flight_db(conn)
             await initial_latest_xray_db(conn)
             await initial_proton_flux_plot_db(conn)
