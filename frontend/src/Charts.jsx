@@ -1,5 +1,14 @@
 import React, { useEffect } from "react";
-import { Box, Typography, Grid, Card, CardContent, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from "@mui/material";
 
 import {
   Chart as ChartJS,
@@ -20,8 +29,13 @@ import { toggleSidebar } from "./store/slices/planesSlice";
 import KpIndexChart from "./components/charts/KpIndexChart";
 import XrayFluxChart from "./components/charts/XrayFluxChart";
 import ProtonFluxChart from "./components/charts/ProtonFluxChart";
-import { Switch, FormControlLabel } from "@mui/material";
-import { setSelectedTimezone, setShowDate } from "./store/slices/chartsSlice";
+import CustomDateTime from "./components/charts/CustomDateTime";
+import { getPresetDateRange } from "./components/charts/helpers";
+import { MAJOR_TIMEZONES } from "./components/charts/constants";
+import {
+  setCustomDateTime,
+  setSelectedTimezone,
+} from "./store/slices/chartsSlice";
 import { Tabs, Tab } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchKpIndex, fetchXrayFlux, fetchProtonFlux } from "./api/api";
@@ -39,28 +53,31 @@ ChartJS.register(
   annotationPlugin,
 );
 
-const options = {
-  responsive: true,
-  maintainAspectRatio: false,
-};
-
 export default function Charts() {
   const dispatch = useDispatch();
-  const kpIndex = useSelector((state) => state.charts?.kpIndex);
-  const xrayFlux = useSelector((state) => state.charts?.xrayFlux);
-  const protonFlux = useSelector((state) => state.charts?.protonFlux);
-  const selectedTimezone = useSelector((state) => state.charts.selectedTimezone);
+  const selectedTimezone = useSelector(
+    (state) => state.charts.selectedTimezone,
+  );
+  const customdt = useSelector((state) => state.charts.customdt);
   useEffect(() => {
-    dispatch(fetchKpIndex());
-    dispatch(fetchXrayFlux());
-    dispatch(fetchProtonFlux());
+    if (!customdt.start || !customdt.end) {
+      const now = new Date();
+      const start = new Date(
+        now.getTime() - 3 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      const end = now.toISOString();
+      dispatch(setCustomDateTime({ start, end, range: "3days" }));
+    }
+    dispatch(fetchKpIndex({ start: customdt.start, end: customdt.end }));
+    dispatch(fetchXrayFlux({ start: customdt.start, end: customdt.end }));
+    dispatch(fetchProtonFlux({ start: customdt.start, end: customdt.end }));
     const interval = setInterval(() => {
-      dispatch(fetchKpIndex());
-      dispatch(fetchXrayFlux());
-      dispatch(fetchProtonFlux());
-    }, 60000); // 5 minutes
+      dispatch(fetchKpIndex({ start: customdt.start, end: customdt.end }));
+      dispatch(fetchXrayFlux({ start: customdt.start, end: customdt.end }));
+      dispatch(fetchProtonFlux({ start: customdt.start, end: customdt.end }));
+    }, 60000); // 1 minute
     return () => clearInterval(interval);
-  }, [dispatch]);
+  }, [dispatch, customdt.start, customdt.end]);
 
   const handleSidebar = (value) => {
     dispatch(toggleSidebar(value));
@@ -85,34 +102,10 @@ export default function Charts() {
     backdropFilter: "blur(4px)",
   };
 
-  const MAJOR_TIMEZONES = [
-    { label: "Local Time", value: "local" },
-    { label: "UTC (GMT+0)", value: "UTC" },
-    { label: "US/Eastern (GMT-5)", value: "America/New_York" },
-    { label: "US/Central (GMT-6)", value: "America/Chicago" },
-    { label: "US/Mountain (GMT-7)", value: "America/Denver" },
-    { label: "US/Pacific (GMT-8)", value: "America/Los_Angeles" },
-    { label: "Europe/London (GMT+0)", value: "Europe/London" },
-    { label: "Europe/Paris (GMT+1)", value: "Europe/Paris" },
-    { label: "Asia/Tokyo (GMT+9)", value: "Asia/Tokyo" },
-    { label: "Australia/Sydney (GMT+10)", value: "Australia/Sydney" },
-  ];
-  const ChartCard = ({ title, children }) => (
-    <Card sx={{ height: 350 }}>
-      <CardContent sx={{ height: "100%" }}>
-        <Typography variant="h6" gutterBottom>
-          {title}
-        </Typography>
-        <Box sx={{ height: "85%" }}>{children}</Box>
-      </CardContent>
-    </Card>
-  );
-
   const tab = useSelector((state) => state.charts.activeTab);
   const dispatchTab = useDispatch();
   const darkMode = useSelector((state) => state.ui.darkMode);
   const dispatchUi = useDispatch();
-  const showDate = useSelector((state) => state.charts.showDate);
   return (
     <Box
       padding={6}
@@ -176,7 +169,7 @@ export default function Charts() {
           <Tab label="X-ray Flux" />
           <Tab label="Proton Flux" />
         </Tabs>
-        <Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <FormControl sx={{ minWidth: 180 }} size="small">
             <InputLabel sx={{ color: darkMode ? "#e0e0e0" : "#333" }}>
               Time Zone
@@ -197,16 +190,13 @@ export default function Charts() {
               ))}
             </Select>
           </FormControl>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showDate}
-                onChange={() => dispatchTab(setShowDate(!showDate))}
-                color="primary"
-              />
-            }
-            label="Show Date"
-            sx={{ ml: 2 }}
+          <CustomDateTime
+            value={customdt.range}
+            darkMode={darkMode}
+            onChange={(range) => {
+              const { start, end } = getPresetDateRange(range);
+              dispatch(setCustomDateTime({ start, end, range }));
+            }}
           />
         </Box>
       </Box>
