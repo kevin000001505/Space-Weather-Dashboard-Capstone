@@ -4,7 +4,7 @@ import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Card, CardContent, Box } from "@mui/material";
-import { formatChartLabel, sortByTimeTag, formatSciNotation } from "./helpers";
+import { formatChartLabel, sortByTimeTag, formatSciNotation, filterLabelsByInterval, getIntervalMs } from "./helpers";
 import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 import { S_LEVELS, MAJOR_TIMEZONES } from "./constants";
@@ -30,23 +30,21 @@ const ProtonFluxChart = () => {
     (state) => state.charts.selectedTimezone,
   );
 
-  const sortedProtonFlux = sortByTimeTag(protonFlux);
-  let prevDateStr = null;
-  const fluxLabels = sortedProtonFlux.map((item) => {
-    const date = new Date(item.time_tag);
-    const { label, dateStr } = formatChartLabel(
-      date,
-      selectedTimezone,
-      prevDateStr,
-    );
-    prevDateStr = dateStr;
-    return label;
-  });
 
-  const flux10Mev = sortedProtonFlux.map((item) => item.flux_10_mev);
-  const flux50Mev = sortedProtonFlux.map((item) => item.flux_50_mev);
-  const flux100Mev = sortedProtonFlux.map((item) => item.flux_100_mev);
-  const flux500Mev = sortedProtonFlux.map((item) => item.flux_500_mev);
+  const sortedProtonFlux = sortByTimeTag(protonFlux);
+  const selectedRange = useSelector((state) => state.charts?.customdt?.range || "3days");
+  const uniqueTimeTags = Array.from(new Set(sortedProtonFlux.map((item) => item.time_tag))).sort((a, b) => new Date(a) - new Date(b));
+  const fluxLabels = filterLabelsByInterval(uniqueTimeTags, selectedRange);
+
+  function getFlux(time_tag, key) {
+    const found = sortedProtonFlux.find((item) => item.time_tag === time_tag);
+    return found ? found[key] : null;
+  }
+
+  const flux10Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_10_mev"));
+  const flux50Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_50_mev"));
+  const flux100Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_100_mev"));
+  const flux500Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_500_mev"));
 
   const fluxChartData = {
     labels: fluxLabels,
@@ -58,6 +56,8 @@ const ProtonFluxChart = () => {
         backgroundColor: "rgba(148,0,211,0.2)",
         fill: false,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 0,
       },
       {
         label: "Proton Flux (50 MeV)",
@@ -68,6 +68,8 @@ const ProtonFluxChart = () => {
           : "rgba(25,118,210,0.2)",
         fill: false,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 0,
       },
       {
         label: "Proton Flux (100 MeV)",
@@ -78,6 +80,8 @@ const ProtonFluxChart = () => {
           : "rgba(255,152,0,0.2)",
         fill: false,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 0,
       },
       {
         label: "Proton Flux (500 MeV)",
@@ -88,6 +92,8 @@ const ProtonFluxChart = () => {
           : "rgba(211,47,47,0.2)",
         fill: false,
         tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 0,
       },
     ],
   };
@@ -195,7 +201,7 @@ const ProtonFluxChart = () => {
           }}
         >
           <Line
-            key={`protonfluxchart-${sortedProtonFlux.map((p) => p.time_tag).join("-")}-${selectedTimezone}`}
+            key={`protonfluxchart-${fluxLabels.join("-")}-${selectedTimezone}`}
             ref={chartRef}
             data={fluxChartData}
             options={{
@@ -280,7 +286,7 @@ const ProtonFluxChart = () => {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
                     callback: function (value, index) {
-                      const iso = sortedProtonFlux[index]?.time_tag;
+                      const iso = fluxLabels[index];
                       if (!iso) return "";
                       const date = new Date(iso);
                       if (selectedTimezone === "local") {
@@ -323,7 +329,7 @@ const ProtonFluxChart = () => {
                     callback: function (value) {
                       if (value === 0.01) return "-2";
                       if (value === 0.1) return "-1";
-                      if (value === 1) return "0";
+                      if (value === 1) return "1";
                       if (value === 2) return "2";
                       if (value === 3) return "3";
                       if (value === 4) return "4";
