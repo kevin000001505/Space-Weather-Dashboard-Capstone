@@ -1,65 +1,61 @@
 import React from "react";
-import { useDispatch } from "react-redux";
-import { setShowProtonWarningThreshold } from "../../store/slices/chartsSlice";
-import { Switch, FormControlLabel, FormControl } from "@mui/material";
+import { useDispatch, useSelector } from "react-redux";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
-import zoomPlugin from "chartjs-plugin-zoom";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import { useSelector } from "react-redux";
+import annotationPlugin from "chartjs-plugin-annotation";
+import { Card, CardContent, Box } from "@mui/material";
+import { formatChartLabel, sortByTimeTag, formatSciNotation } from "./helpers";
+import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
+import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
+import { S_LEVELS, MAJOR_TIMEZONES } from "./constants";
 
-// Register zoom plugin
-Chart.register(zoomPlugin);
+Chart.register(annotationPlugin);
+
+const protonSLevelBackgroundPlugin = chartBackgroundBandsPlugin(S_LEVELS, {
+  id: "protonSLevelBackground",
+  font: "bold 16px sans-serif",
+  textAlign: "right",
+  labelPosition: "left",
+  labelOffset: 25,
+  alpha: 0.25,
+  afterDrawLabels: true,
+});
 
 const ProtonFluxChart = () => {
+  const dispatch = useDispatch();
+
   const protonFlux = useSelector((state) => state.charts?.protonFlux);
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const showDate = useSelector((state) => state.charts.showDate);
-  const showWarning = useSelector(
-    (state) => state.charts.showProtonWarningThreshold,
-  );
-  const dispatch = useDispatch();
-  const sortedProtonFlux = protonFlux
-    ? [...protonFlux].sort(
-        (a, b) => new Date(a.time_tag) - new Date(b.time_tag),
-      )
-    : [];
-  const fluxLabels = sortedProtonFlux.map((item) => {
-    const date = new Date(item.time_tag);
-    const month = date.toLocaleString("en-US", { month: "short" });
-    const dayNum = date.getDate();
-    const hour = date.toLocaleString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-    return showDate ? `${month} ${dayNum}' ${hour}` : `${hour}`;
-  });
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
+
+  const sortedProtonFlux = sortByTimeTag(protonFlux);
+  let prevDateStr = null;
+  const fluxLabels = sortedProtonFlux.map((item) => {
+    const date = new Date(item.time_tag);
+    const { label, dateStr } = formatChartLabel(
+      date,
+      selectedTimezone,
+      prevDateStr,
+    );
+    prevDateStr = dateStr;
+    return label;
+  });
+
   const flux10Mev = sortedProtonFlux.map((item) => item.flux_10_mev);
   const flux50Mev = sortedProtonFlux.map((item) => item.flux_50_mev);
   const flux100Mev = sortedProtonFlux.map((item) => item.flux_100_mev);
   const flux500Mev = sortedProtonFlux.map((item) => item.flux_500_mev);
+
   const fluxChartData = {
     labels: fluxLabels,
     datasets: [
       {
         label: "Proton Flux (10 MeV)",
         data: flux10Mev,
-        borderColor: darkMode ? "#1b5e20" : "#43a047",
-        backgroundColor: darkMode
-          ? "rgba(27,94,32,0.5)"
-          : "rgba(67,160,71,0.2)",
+        borderColor: "#9400D3",
+        backgroundColor: "rgba(148,0,211,0.2)",
         fill: false,
         tension: 0.4,
       },
@@ -99,10 +95,90 @@ const ProtonFluxChart = () => {
   // Chart ref for reset zoom
   const chartRef = React.useRef();
 
+  // Persistent label box plugin
+  const mousePosRef = React.useRef({ x: null, y: null, inside: false });
+
+  const persistentLabelBoxPlugin = React.useMemo(
+    () =>
+      persistentLabelBoxPluginFactory({
+        mousePosRef,
+        getLabelLines: ({ chart, nearestIndex }) => {
+          const point = sortedProtonFlux[nearestIndex];
+          let label = "";
+          if (point && point.time_tag) {
+            const date = new Date(point.time_tag);
+            const month = date.toLocaleString("en-US", {
+              month: "short",
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            const day = date.toLocaleString("en-US", {
+              day: "2-digit",
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            const time = date.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+              timeZone:
+                selectedTimezone === "local" ? undefined : selectedTimezone,
+            });
+            label = `${month} ${day}, ${time}`;
+          }
+          const lines = [];
+          lines.push({ type: "time", text: label });
+
+          chart.data.datasets.forEach((ds) => {
+            const value = ds.data[nearestIndex];
+            let valueStr =
+              value !== null && value !== undefined && !isNaN(value)
+                ? formatSciNotation(value)
+                : "";
+            lines.push({
+              type: "dataset",
+              color: ds.borderColor,
+              label: ds.label,
+              value: valueStr,
+              units: valueStr ? "pfu" : "",
+            });
+          });
+          return lines;
+        },
+      }),
+    [mousePosRef, sortedProtonFlux, selectedTimezone],
+  );
+
+  React.useEffect(() => {
+    const chart =
+      chartRef.current && chartRef.current.canvas
+        ? chartRef.current
+        : chartRef.current?.chartInstance || chartRef.current;
+    if (!chart || !chart.canvas) return;
+    const canvas = chart.canvas;
+    const handleMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      mousePosRef.current = { x, y, inside: true };
+      chart.update("none");
+    };
+    const handleLeave = (e) => {
+      mousePosRef.current = { x: null, y: null, inside: false };
+      chart.update("none");
+    };
+    canvas.addEventListener("mousemove", handleMove);
+    canvas.addEventListener("mouseleave", handleLeave);
+    return () => {
+      canvas.removeEventListener("mousemove", handleMove);
+      canvas.removeEventListener("mouseleave", handleLeave);
+    };
+  }, [sortedProtonFlux, selectedTimezone]);
+
   return (
     <Card
       sx={{
-        height: 500,
+        height: 900,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -112,50 +188,6 @@ const ProtonFluxChart = () => {
       >
         <Box
           sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 2,
-          }}
-        >
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{ color: darkMode ? "#e0e0e0" : "#333" }}
-          >
-            PROTON FLUX
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showWarning}
-                  onChange={() =>
-                    dispatch(setShowProtonWarningThreshold(!showWarning))
-                  }
-                  color="primary"
-                />
-              }
-              label="Show Warning Threshold"
-              sx={{ color: darkMode ? "#e0e0e0" : "#333" }}
-            />
-            <Tooltip title="Reset Zoom/Pan">
-              <IconButton
-                aria-label="reset zoom"
-                onClick={() => {
-                  if (chartRef.current) {
-                    chartRef.current.resetZoom();
-                  }
-                }}
-                sx={{ color: darkMode ? "#e0e0e0" : "#333" }}
-              >
-                <RestartAltIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-        <Box
-          sx={{
             height: "90%",
             backgroundColor: darkMode ? "#23272e" : "#fff",
             borderRadius: 2,
@@ -163,6 +195,7 @@ const ProtonFluxChart = () => {
           }}
         >
           <Line
+            key={`protonfluxchart-${sortedProtonFlux.map((p) => p.time_tag).join("-")}-${selectedTimezone}`}
             ref={chartRef}
             data={fluxChartData}
             options={{
@@ -174,70 +207,104 @@ const ProtonFluxChart = () => {
                     color: darkMode ? "#e0e0e0" : "#333",
                   },
                 },
-                annotation: showWarning
-                  ? {
-                      annotations: {
-                        warningThreshold: {
-                          type: "line",
-                          mode: "horizontal",
-                          scaleID: "y",
-                          value: 10,
-                          borderColor: "red",
-                          borderWidth: 2,
-                          borderDash: [6, 6],
-                          label: {
-                            display: true,
-                            content: "SWPC 10 MeV Warning Threshold",
-                            color: "red",
-                            font: {
-                              weight: "bold",
-                            },
-                            position: "start",
-                            yAdjust: -15,
-                          },
+                annotation: (() => {
+                  const dateLines = {};
+                  let prevDateStr = null;
+                  sortedProtonFlux.forEach((point, idx) => {
+                    const date = new Date(point?.time_tag);
+                    const currDateStr =
+                      selectedTimezone === "local"
+                        ? date.toLocaleString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : date.toLocaleString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            timeZone: selectedTimezone,
+                          });
+                    if (prevDateStr !== null && currDateStr !== prevDateStr) {
+                      dateLines[`dateLine${idx}`] = {
+                        type: "line",
+                        xMin: idx - 0.5,
+                        xMax: idx - 0.5,
+                        borderColor: darkMode ? "#90caf9" : "#1976d2",
+                        borderWidth: 2,
+                        borderDash: [2, 6],
+                        shadowColor: darkMode
+                          ? "rgba(144,202,249,0.5)"
+                          : "rgba(25,118,210,0.3)",
+                        shadowBlur: 8,
+                        label: {
+                          display: true,
+                          content: currDateStr,
+                          position: "end",
+                          color: darkMode ? "#23272e" : "#fff",
+                          font: { weight: "bold", size: 12 },
+                          backgroundColor: darkMode ? "#90caf9" : "#1976d2",
+                          borderRadius: 8,
+                          padding: 4,
+                          yAdjust: 0,
+                          xAdjust: 0,
+                          rotation: 0,
+                          borderWidth: 0,
                         },
-                      },
+                      };
                     }
-                  : undefined,
-                zoom: {
-                  pan: {
-                    enabled: true,
-                    mode: "xy",
-                  },
-                  zoom: {
-                    wheel: {
-                      enabled: true,
+                    prevDateStr = currDateStr;
+                  });
+                  dateLines.warningThreshold = {
+                    type: "line",
+                    mode: "horizontal",
+                    scaleID: "y",
+                    value: 10,
+                    borderColor: "red",
+                    borderWidth: 2,
+                    borderDash: [6, 6],
+                    label: {
+                      display: true,
+                      content: "SWPC 10 MeV Warning Threshold",
+                      color: "red",
+                      font: {
+                        weight: "bold",
+                      },
+                      position: "middle",
+                      yAdjust: 0,
                     },
-                    pinch: {
-                      enabled: true,
-                    },
-                    mode: "xy",
-                  },
-                },
+                  };
+                  return { annotations: dateLines };
+                })(),
               },
               scales: {
                 x: {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
-                  },
-                  grid: {
-                    color: darkMode ? "#444" : "#e0e0e0",
+                    callback: function (value, index) {
+                      const iso = sortedProtonFlux[index]?.time_tag;
+                      if (!iso) return "";
+                      const date = new Date(iso);
+                      if (selectedTimezone === "local") {
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+                      } else {
+                        return date.toLocaleTimeString("en-US", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                          timeZone: selectedTimezone,
+                        });
+                      }
+                    },
                   },
                   title: {
                     display: true,
                     text: `Time (${(() => {
-                      const tzMap = {
-                        local: "Local Time",
-                        UTC: "UTC (GMT+0)",
-                        "America/New_York": "US/Eastern (GMT-5)",
-                        "America/Chicago": "US/Central (GMT-6)",
-                        "America/Denver": "US/Mountain (GMT-7)",
-                        "America/Los_Angeles": "US/Pacific (GMT-8)",
-                        "Europe/London": "Europe/London (GMT+0)",
-                        "Europe/Paris": "Europe/Paris (GMT+1)",
-                        "Asia/Tokyo": "Asia/Tokyo (GMT+9)",
-                        "Australia/Sydney": "Australia/Sydney (GMT+10)",
-                      };
+                      const tzMap = Object.fromEntries(
+                        MAJOR_TIMEZONES.map((tz) => [tz.value, tz.label]),
+                      );
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
                     color: darkMode ? "#e0e0e0" : "#333",
@@ -245,16 +312,30 @@ const ProtonFluxChart = () => {
                   },
                 },
                 y: {
-                  max: showWarning ? 12 : undefined,
+                  type: "logarithmic",
+                  min: 1e-1 / 2,
+                  max: 1e2 / 5,
                   ticks: {
+                    font: {
+                      size: 16,
+                    },
                     color: darkMode ? "#e0e0e0" : "#333",
-                  },
-                  grid: {
-                    color: darkMode ? "#444" : "#e0e0e0",
+                    callback: function (value) {
+                      if (value === 0.01) return "-2";
+                      if (value === 0.1) return "-1";
+                      if (value === 1) return "0";
+                      if (value === 2) return "2";
+                      if (value === 3) return "3";
+                      if (value === 4) return "4";
+                      if (value === 5) return "5";
+                      if (value === 10) return "10";
+                      if (value === 100) return "20";
+                      return "";
+                    },
                   },
                   title: {
                     display: true,
-                    text: "Proton Flux (pfu)",
+                    text: "Proton Flux ( log₁₀(pfu) )",
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { weight: "bold", size: 16 },
                   },
@@ -265,6 +346,13 @@ const ProtonFluxChart = () => {
               },
               backgroundColor: darkMode ? "#23272e" : "#fff",
             }}
+            plugins={[
+              protonSLevelBackgroundPlugin,
+              annotationPlugin,
+              persistentLabelBoxPlugin,
+            ]}
+            onPointerMove={undefined}
+            onPointerOut={undefined}
           />
         </Box>
       </CardContent>

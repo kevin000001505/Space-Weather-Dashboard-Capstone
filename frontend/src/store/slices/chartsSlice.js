@@ -7,9 +7,8 @@ const initialState = {
   loading: false,
   error: null,
   activeTab: 0,
-  showDate: false,
-  showProtonWarningThreshold: false,
-  selectedTimezone: 'local',
+  selectedTimezone: "local",
+  customdt: { start: "", end: "", range: "3days" }, // range: 1week, 3days, 24hours, 6hours, custom
 };
 
 const chartsSlice = createSlice({
@@ -19,14 +18,11 @@ const chartsSlice = createSlice({
     setActiveTab(state, action) {
       state.activeTab = action.payload;
     },
-    setShowDate(state, action) {
-      state.showDate = action.payload;
-    },
-    setShowProtonWarningThreshold(state, action) {
-      state.showProtonWarningThreshold = action.payload;
-    },
     setSelectedTimezone(state, action) {
       state.selectedTimezone = action.payload;
+    },
+    setCustomDateTime(state, action) {
+      state.customdt = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -42,9 +38,10 @@ const chartsSlice = createSlice({
       .addCase("charts/fetchProtonFlux/fulfilled", (state, action) => {
         state.protonFlux = action.payload;
         state.loading = false;
-      })
+      });
   },
 });
 
-export const { setActiveTab, setShowDate, setShowProtonWarningThreshold, setSelectedTimezone } = chartsSlice.actions;
+export const { setActiveTab, setSelectedTimezone, setCustomDateTime } =
+  chartsSlice.actions;
 export default chartsSlice.reducer;

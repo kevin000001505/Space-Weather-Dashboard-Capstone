@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   liveStreamMode: true,
@@ -9,9 +9,9 @@ const initialState = {
   selectedPlane: null,
   selectedFlightsPanels: [], // Array of flights for FlightDetailsPanel
   selectedAirport: null,
-  planeFilter: 'all',
-  airportFilter: ['large_airport', 'medium_airport'],
-  darkMode: false,
+  planeFilter: "all",
+  airportFilter: ["large_airport", "medium_airport"],
+  darkMode: true,
   showPlanes: true,
   showAirports: true,
   showDRAP: true,
@@ -25,7 +25,7 @@ const initialState = {
     pitch: 0,
     bearing: 0,
   },
-  searchQuery: '',
+  searchQuery: "",
   searchResults: [],
   isSearchOpen: false,
   isZooming: false,
@@ -36,7 +36,7 @@ const initialState = {
   isolateMode: false, // Isolate mode: only show selected planes and paths
 };
 const uiSlice = createSlice({
-  name: 'ui',
+  name: "ui",
   initialState,
   reducers: {
     setLiveStreamMode: (state, action) => {
@@ -62,16 +62,22 @@ const uiSlice = createSlice({
     },
     addFlightPanel: (state, action) => {
       // Toggle: remove if present, add if not
-      const exists = state.selectedFlightsPanels.some(f => f.icao24 === action.payload.icao24);
+      const exists = state.selectedFlightsPanels.some(
+        (f) => f.icao24 === action.payload.icao24,
+      );
       if (exists) {
-        state.selectedFlightsPanels = state.selectedFlightsPanels.filter(f => f.icao24 !== action.payload.icao24);
+        state.selectedFlightsPanels = state.selectedFlightsPanels.filter(
+          (f) => f.icao24 !== action.payload.icao24,
+        );
       } else {
         state.selectedFlightsPanels.push(action.payload);
       }
     },
     removeFlightPanel: (state, action) => {
       // Remove flight panel by ICAO24
-      state.selectedFlightsPanels = state.selectedFlightsPanels.filter(f => f.icao24 !== action.payload);
+      state.selectedFlightsPanels = state.selectedFlightsPanels.filter(
+        (f) => f.icao24 !== action.payload,
+      );
     },
     clearFlightPanels: (state) => {
       state.selectedFlightsPanels = [];
@@ -137,7 +143,7 @@ const uiSlice = createSlice({
     setDrapRegionRange: (state, action) => {
       state.drapRegionRange = action.payload;
     },
-        setShowDate: (state, action) => {
+    setShowDate: (state, action) => {
       state.showDate = action.payload;
     },
   },
