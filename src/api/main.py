@@ -6,7 +6,7 @@ from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
-from utils.db_tools import get_connection, get_pool, close_all_connections
+from shared.db_utils import get_connection, get_pool, close_all_connections
 from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     ALERT_QUERY,
@@ -172,6 +172,7 @@ async def live_dashboard_stream(request: Request):
             redis_config.PROTONFLUX_CHANNEL,
             redis_config.KPINDEX_CHANNEL,
             redis_config.ALERTS_CHANNEL,
+            redis_config.GEOELECTRIC_CHANNEL,
             redis_config.HEARTBEAT_CHANNEL,  # For keeping the connection alive
         )
         
@@ -224,6 +225,11 @@ async def live_dashboard_stream(request: Request):
                         latest_alerts = await redis_client.get(redis_config.ALERTS_CACHE_KEY)
                         if latest_alerts:
                             yield f"event: alerts\ndata: {latest_alerts}\n\n"
+                    
+                    case redis_config.GEOELECTRIC_CHANNEL:
+                        latest_geoelectric = await redis_client.get(redis_config.GEOELECTRIC_CACHE_KEY)
+                        if latest_geoelectric:
+                            yield f"event: geoelectric\ndata: {latest_geoelectric}\n\n"
 
                     case _:
                         yield ": heartbeat\n\n"

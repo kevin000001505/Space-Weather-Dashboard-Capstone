@@ -14,6 +14,7 @@ EXCLUDED_FLOWS = {
     "alert.py",
     "flights_capture.py",
     "aurora_extract.py",
+    "geomatic_extract.py"
 }
 
 

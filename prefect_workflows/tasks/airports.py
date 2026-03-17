@@ -1,4 +1,4 @@
-from tasks.queries import (
+from database.queries import (
     AIRPORTS_STAGING_DDL,
     AIRPORTS_STAGING_COLUMNS,
     AIRPORTS_TRANSFORM_SQL,
@@ -32,7 +32,7 @@ from tasks.models import (
     NavaidRecord,
     CommentRecord
 )
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 import requests
 import csv
 from io import StringIO

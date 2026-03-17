@@ -1,9 +1,9 @@
 from prefect import task, get_run_logger
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 import requests
 from datetime import datetime
 from tasks.models import KPIndexRecord
-from tasks.queries import KP_STAGING_DDL, KP_STAGING_COLUMNS, KP_TRANSFORM_SQL
+from database.queries import KP_STAGING_DDL, KP_STAGING_COLUMNS, KP_TRANSFORM_SQL
 from typing import List
 
 KP_INDEX_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"

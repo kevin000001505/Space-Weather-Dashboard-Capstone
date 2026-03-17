@@ -14,6 +14,7 @@ from tasks.db import (
     initial_kp_index_db,
     initial_alert_db,
     cleanup_old_drap_data,
+    initial_geoelectric_db,
 )
 from flows.db_maintain import initialize_db_flow
 
@@ -147,6 +148,7 @@ class TestInitializeDbFlow:
             "goes_proton_flux",
             "kp_index",
             "alerts",
+            "geoelectric_field",
         ]
         for table in expected:
             assert await table_exists(conn, table), f"Missing table: {table}"

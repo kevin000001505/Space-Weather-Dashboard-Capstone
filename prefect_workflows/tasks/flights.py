@@ -4,12 +4,12 @@ import json
 import redis.asyncio as redis
 import pandas as pd
 from datetime import datetime, timedelta, timezone
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 from prefect import task, get_run_logger
 from prefect.variables import Variable
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
-from tasks.queries import (
+from database.queries import (
     CLEANUP_OLD_FLIGHT_DATA_QUERY,
     CREATE_PARTITION_IF_MISSING_QUERY,
     FLIGHT_STATES_STAGING_DDL,

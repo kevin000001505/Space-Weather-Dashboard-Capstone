@@ -1,5 +1,5 @@
 import logging
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 from prefect import flow, get_run_logger
 from tasks.db import (
     initial_aurora_db,
@@ -12,6 +12,7 @@ from tasks.db import (
     initial_kp_index_db,
     initial_alert_db,
     initial_xray_6hour_db,
+    initial_geoelectric_db,
 )
 
 _fallback = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ async def initialize_db_flow():
             await initial_alert_db(conn)
             await initial_xray_6hour_db(conn)
             await initial_aurora_db(conn)
+            await initial_geoelectric_db(conn)
             logger.info("Database initialization completed successfully!")
 
     except Exception as e:
@@ -78,6 +80,7 @@ if __name__ == "__main__":
             await initial_alert_db.fn(conn)
             await initial_xray_6hour_db.fn(conn)
             await initial_aurora_db.fn(conn)
+            await initial_geoelectric_db.fn(conn)
         finally:
             await conn.close()
 

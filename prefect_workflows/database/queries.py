@@ -961,6 +961,54 @@ ON CONFLICT (alert_id) DO NOTHING
 """
 
 
+# --- geoelectric_field ---
+GEOELECTRIC_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS geoelectric_field (
+    observed_at              TIMESTAMPTZ            NOT NULL,
+    location                 GEOGRAPHY(Point, 4326) NOT NULL,
+    ex                       DOUBLE PRECISION       NOT NULL,  -- North-South electric field (mV/m)
+    ey                       DOUBLE PRECISION       NOT NULL,  -- East-West electric field (mV/m)
+    quality_flag             SMALLINT               NOT NULL,
+    distance_nearest_station DOUBLE PRECISION       NOT NULL,  -- Distance to nearest magnetometer station (km)
+    PRIMARY KEY (observed_at, location)
+);
+
+CREATE INDEX IF NOT EXISTS ix_geoelectric_field_observed_at ON geoelectric_field (observed_at);
+CREATE INDEX IF NOT EXISTS ix_geoelectric_field_location ON geoelectric_field USING GIST (location);
+"""
+
+GEOELECTRIC_STAGING_DDL = """
+CREATE TEMP TABLE geoelectric_field_staging (
+    observed_at              TIMESTAMPTZ      NOT NULL,
+    longitude                DOUBLE PRECISION NOT NULL,
+    latitude                 DOUBLE PRECISION NOT NULL,
+    ex                       DOUBLE PRECISION NOT NULL,
+    ey                       DOUBLE PRECISION NOT NULL,
+    quality_flag             SMALLINT         NOT NULL,
+    distance_nearest_station DOUBLE PRECISION NOT NULL
+) ON COMMIT DROP
+"""
+
+GEOELECTRIC_STAGING_COLUMNS = [
+    "observed_at", "longitude", "latitude",
+    "ex", "ey", "quality_flag", "distance_nearest_station",
+]
+
+GEOELECTRIC_TRANSFORM_SQL = """
+INSERT INTO geoelectric_field
+    (observed_at, location, ex, ey, quality_flag, distance_nearest_station)
+SELECT
+    observed_at,
+    ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
+    ex,
+    ey,
+    quality_flag,
+    distance_nearest_station
+FROM geoelectric_field_staging
+ON CONFLICT (observed_at, location) DO NOTHING
+"""
+
+
 ACTIVATE_FLIGHT_STATES_QUERY = """
     SELECT 
         icao24,

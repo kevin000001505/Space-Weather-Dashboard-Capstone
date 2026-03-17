@@ -1,0 +1,138 @@
+import json
+from datetime import datetime, timezone
+from typing import List, Dict, Any
+
+import requests
+from pyquery import PyQuery as pq
+from prefect import task, get_run_logger
+
+from shared.db_utils import get_connection
+from shared.redis import (
+    get_redis_client,
+    GEOELECTRIC_CACHE_KEY,
+    GEOELECTRIC_CHANNEL,
+    MEDIUM_TTL,
+)
+from tasks.models import GeoelectricRecord
+from database.queries import (
+    GEOELECTRIC_STAGING_DDL,
+    GEOELECTRIC_STAGING_COLUMNS,
+    GEOELECTRIC_TRANSFORM_SQL,
+)
+
+base_url = "https://services.swpc.noaa.gov/json/lists/rgeojson/US-Canada-1D/"
+
+
+@task(log_prints=True, retries=3, retry_delay_seconds=5)
+async def extract_date() -> str:
+    """Extract the latest filename from the NOAA geoelectric listing page."""
+    logger = get_run_logger()
+    try:
+        response = requests.get(base_url)
+        response.raise_for_status()
+        raw = pq(response.text)
+        items = list(raw('body a').items())
+        file_name = items[-1].attr("href")
+        logger.info(f"Latest geoelectric file: {file_name}")
+        return file_name
+    except Exception as e:
+        logger.error(f"Error fetching geoelectric date: {e}")
+        return "None"
+
+
+@task(log_prints=True, retries=3, retry_delay_seconds=5)
+async def extract_data(url: str) -> List[Dict[str, Any]]:
+    """Fetch GeoJSON features from the NOAA geoelectric endpoint."""
+    logger = get_run_logger()
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()['features']
+        logger.info(f"Fetched {len(data)} geoelectric features from {url}")
+        return data
+    except Exception as e:
+        logger.error(f"Error fetching geoelectric data: {e}")
+        return []
+
+
+@task(log_prints=True)
+def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> List[tuple]:
+    """Parse GeoJSON features into GeoelectricRecord tuples."""
+    logger = get_run_logger()
+    records = []
+    skipped = 0
+    for feature in features:
+        try:
+            coords = feature["geometry"]["coordinates"]
+            props = feature["properties"]
+            record = GeoelectricRecord(
+                observed_at=observed_at,
+                longitude=coords[0],
+                latitude=coords[1],
+                ex=props["Ex"],
+                ey=props["Ey"],
+                quality_flag=props["quality_flag"],
+                distance_nearest_station=props["distance_nearest_station"],
+            )
+            records.append(record.to_tuple())
+        except Exception as e:
+            skipped += 1
+            if skipped <= 3:
+                logger.warning(f"Skipping invalid geoelectric record: {e}")
+
+    if skipped:
+        logger.warning(f"Skipped {skipped} invalid geoelectric records total")
+
+    return records
+
+
+@task(log_prints=True)
+async def load_geoelectric_data(records: List[tuple]) -> None:
+    """Bulk-insert geoelectric field records into the database."""
+    logger = get_run_logger()
+    if not records:
+        logger.warning("No valid geoelectric records to insert")
+        return
+
+    async with get_connection() as conn:
+        async with conn.transaction():
+            await conn.execute(GEOELECTRIC_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "geoelectric_field_staging",
+                records=records,
+                columns=GEOELECTRIC_STAGING_COLUMNS,
+            )
+            await conn.execute(GEOELECTRIC_TRANSFORM_SQL)
+
+    logger.info(f"Geoelectric field data inserted: {len(records)} records")
+
+
+@task(name="Broadcast Geoelectric to Redis")
+async def broadcast_geoelectric_to_redis(
+    features: List[Dict[str, Any]], observed_at: datetime
+) -> None:
+    """Push geoelectric field data to Redis cache and pub/sub channel."""
+    logger = get_run_logger()
+    if not features:
+        logger.warning("No geoelectric data to broadcast.")
+        return
+
+    try:
+        client = get_redis_client()
+        payload = json.dumps({
+            "observed_at": observed_at.isoformat(),
+            "count": len(features),
+            "features": features,
+        })
+        await client.set(GEOELECTRIC_CACHE_KEY, payload, ex=MEDIUM_TTL)
+        await client.publish(GEOELECTRIC_CHANNEL, "new_data")
+        await client.aclose()
+        logger.info(f"Broadcasted {len(features)} geoelectric records to Redis.")
+    except Exception as e:
+        logger.error(f"Failed to broadcast geoelectric data to Redis: {e}")
+
+
+def parse_observed_at(filename: str) -> datetime:
+    """Parse the observation datetime from the NOAA filename (e.g. '20231015T120000Z.json')."""
+    name = filename.split("-")[0]
+    return datetime.strptime(name, "%Y%m%dT%H%M%S").replace(tzinfo=timezone.utc)

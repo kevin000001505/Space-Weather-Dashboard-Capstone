@@ -2,7 +2,7 @@ import json
 from pandas import DataFrame
 from prefect import task, get_run_logger
 
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 from tasks.d_rap_etl import extractors, transformers, loaders
 
 from shared.redis import (

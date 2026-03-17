@@ -1,9 +1,9 @@
 from prefect import task, get_run_logger
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 import requests
 import json
 from tasks.models import XraySixHourRecord
-from tasks.queries import (
+from database.queries import (
     XRAY_6HOUR_STAGING_DDL,
     XRAY_6HOUR_STAGING_COLUMNS,
     XRAY_6HOUR_TRANSFORM_SQL,

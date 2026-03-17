@@ -1,9 +1,9 @@
 import json
 from prefect import task, get_run_logger
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 import requests
 from tasks.models import AuroraRecord
-from tasks.queries import (
+from database.queries import (
     AURORA_STAGING_DDL,
     AURORA_STAGING_COLUMNS,
     AURORA_TRANSFORM_SQL

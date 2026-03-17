@@ -1,9 +1,9 @@
 from prefect import task, get_run_logger
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 import requests
 import json
 from tasks.models import ProtonFluxPlot
-from tasks.queries import PROTON_FLUX_STAGING_DDL, PROTON_FLUX_STAGING_COLUMNS, PROTON_FLUX_TRANSFORM_SQL
+from database.queries import PROTON_FLUX_STAGING_DDL, PROTON_FLUX_STAGING_COLUMNS, PROTON_FLUX_TRANSFORM_SQL
 from typing import List
 
 

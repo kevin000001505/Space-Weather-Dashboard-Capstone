@@ -31,6 +31,15 @@ deployments:
     schedules:
       - cron: "* * * * *"
         timezone: UTC
+  
+  - name: Geoelectric Field Extract
+    entrypoint: flows/geomatic_extract.py:geomatic_extract_flow
+    description: "Fetches live geoelectric field data from NOAA every minute"
+    work_pool:
+      name: NOAA-pool
+    schedules:
+      - cron: "* * * * *"
+        timezone: UTC
 
   - name: Proton Flux Plot Extract
     entrypoint: flows/proton_flux_plot.py:ingest_proton_flux_plot_flow

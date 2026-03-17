@@ -407,6 +407,34 @@ class KPIndexRecord(BaseModel):
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 
 
+class GeoelectricRecord(BaseModel):
+    """Geoelectric field record for database insertion."""
+
+    observed_at: datetime = Field(description="Observation timestamp")
+    longitude: float = Field(ge=-180, le=180, description="Longitude")
+    latitude: float = Field(ge=-90, le=90, description="Latitude")
+    ex: float = Field(description="North-South electric field component (mV/m)")
+    ey: float = Field(description="East-West electric field component (mV/m)")
+    quality_flag: int = Field(ge=0, description="Data quality flag")
+    distance_nearest_station: float = Field(
+        ge=0, description="Distance to nearest magnetometer station (km)"
+    )
+
+    def to_tuple(self) -> tuple:
+        """Convert to tuple for asyncpg copy_records_to_table."""
+        return (
+            self.observed_at,
+            self.longitude,
+            self.latitude,
+            self.ex,
+            self.ey,
+            self.quality_flag,
+            self.distance_nearest_station,
+        )
+
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
+
 class AlertRecord(BaseModel):
     """Alert record for database insertion."""
 

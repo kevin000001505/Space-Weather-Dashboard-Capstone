@@ -1,9 +1,9 @@
 import requests
 from prefect import task, get_run_logger
-from database.db_tools import get_connection
+from shared.db_utils import get_connection
 from datetime import datetime
 from typing import List
-from tasks.queries import ALERTS_STAGING_DDL, ALERTS_STAGING_COLUMNS, ALERTS_TRANSFORM_SQL
+from database.queries import ALERTS_STAGING_DDL, ALERTS_STAGING_COLUMNS, ALERTS_TRANSFORM_SQL
 from tasks.models import AlertRecord
 
 url = "https://services.swpc.noaa.gov/products/alerts.json"

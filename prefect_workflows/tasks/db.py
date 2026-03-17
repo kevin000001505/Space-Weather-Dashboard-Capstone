@@ -1,11 +1,8 @@
 """Database initialization and maintenance tasks."""
 
 import logging
-from database.db_tools import (
-    ensure_table_exists,
-    cleanup_old_data,
-)
-from tasks.queries import (
+from shared.db_utils import ensure_table_exists, cleanup_old_data
+from database.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
     COUNTRIES_CREATE_TABLE_SQL,
@@ -21,6 +18,7 @@ from tasks.queries import (
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
+    GEOELECTRIC_CREATE_TABLE_SQL,
 )
 from prefect import task, get_run_logger
 from prefect.cache_policies import NO_CACHE
@@ -182,6 +180,21 @@ async def initial_xray_6hour_db(conn: Connection):
         logger.info("goes_xray_6hour table is ready!")
     except Exception as e:
         logger.error(f"Failed to initialize goes_xray_6hour table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_geoelectric_db(conn: Connection):
+    """Task to initialize the geoelectric_field table."""
+    logger = _logger()
+    try:
+        logger.info("Ensuring geoelectric_field table exists...")
+        await ensure_table_exists(
+            conn, "geoelectric_field", create_sql=GEOELECTRIC_CREATE_TABLE_SQL
+        )
+        logger.info("geoelectric_field table is ready!")
+    except Exception as e:
+        logger.error(f"Failed to initialize geoelectric_field table: {e}")
         raise
 
 

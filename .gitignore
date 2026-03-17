@@ -11,6 +11,7 @@ venv/
 dist/
 build/
 *.pyc
+*.claude
 
 # Prefect
 .prefect/
