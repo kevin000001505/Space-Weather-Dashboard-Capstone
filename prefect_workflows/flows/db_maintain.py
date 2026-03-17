@@ -70,7 +70,7 @@ if __name__ == "__main__":
         conn = await asyncpg.connect(os.environ["DATABASE_URL"])
         try:
             await initial_drap_db.fn(conn)
-            await initial_airport_db.fn(conn)
+            await initial_airport_dbs.fn(conn)
             await initial_activate_flight_db.fn(conn)
             await initial_latest_xray_db.fn(conn)
             await initial_proton_flux_plot_db.fn(conn)
