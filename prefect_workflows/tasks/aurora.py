@@ -22,15 +22,22 @@ AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 def fetch_aurora_data() -> dict:
     """Fetch aurora forecast JSON from NOAA. Returns the raw response dict."""
     logger = get_run_logger()
-    logger.info(f"Fetching aurora data from {AURORA_URL}")
-    response = requests.get(AURORA_URL, timeout=30)
-    response.raise_for_status()
-    data = response.json()
-    logger.info(
-        f"Fetched aurora data: observation_time={data.get('Observation Time')}, "
-        f"{len(data.get('coordinates', []))} coordinate points"
-    )
-    return data
+    try:
+        logger.info(f"Fetching aurora data from {AURORA_URL}")
+        response = requests.get(AURORA_URL, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+        logger.info(
+            f"Fetched aurora data: observation_time={data.get('Observation Time')}, "
+            f"{len(data.get('coordinates', []))} coordinate points"
+        )
+        return data
+    except requests.exceptions.JSONDecodeError:
+        error_pos = 918616
+        logger.info("--- RAW CONTENT AROUND ERROR ---")
+        logger.error(response.text[error_pos - 50 : error_pos + 50]) 
+        logger.debug("RAW data:", response.text)
+        raise 
 
 
 @task(log_prints=True)
