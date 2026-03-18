@@ -63,8 +63,10 @@ REQUIRED_DIRS = [
     "src/api/database",
     "src/models",
     # test suites
-    "tests/unit",
-    "tests/tests_prefect_workflows",
+    "tests/test_api_health",
+    "tests/test_flows",
+    "tests/test_ingestion",
+    "tests/test_transforms",
     # shared utilities
     "shared",
 ]

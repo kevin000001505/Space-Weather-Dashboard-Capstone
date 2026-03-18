@@ -1,6 +1,6 @@
 from prefect import task, get_run_logger
-from shared.db_utils import get_connection
 import requests
+from asyncpg import Connection
 from datetime import datetime
 from tasks.models import KPIndexRecord
 from database.queries import KP_STAGING_DDL, KP_STAGING_COLUMNS, KP_TRANSFORM_SQL
@@ -51,7 +51,7 @@ def fetch_kp_index() -> List[KPIndexRecord]:
 
 
 @task
-async def store_kp_index(kp_records: List[KPIndexRecord]) -> None:
+async def store_kp_index(kp_records: List[KPIndexRecord], conn: Connection) -> None:
     """Bulk insert Kp index records into the database."""
     logger = get_run_logger()
 
@@ -60,13 +60,12 @@ async def store_kp_index(kp_records: List[KPIndexRecord]) -> None:
         return
 
     records = [r.to_tuple() for r in kp_records]
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(KP_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "kp_index_staging",
-                records=records,
-                columns=KP_STAGING_COLUMNS,
-            )
-            await conn.execute(KP_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(KP_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "kp_index_staging",
+            records=records,
+            columns=KP_STAGING_COLUMNS,
+        )
+        await conn.execute(KP_TRANSFORM_SQL)
     logger.info(f"Stored {len(records)} Kp index records")

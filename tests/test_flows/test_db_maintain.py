@@ -4,17 +4,20 @@ import pytest_asyncio
 import asyncpg
 from contextlib import asynccontextmanager
 from unittest.mock import patch
+import tasks.db as db_tasks
 
 from tasks.db import (
     initial_drap_db,
     initial_activate_flight_db,
-    initial_airport_dbs,
-    initial_latest_xray_db,
+    initial_airport_db,
+    # initial_latest_xray_db,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
     cleanup_old_drap_data,
     initial_geoelectric_db,
+    initial_aurora_db,
+    initial_xray_6hour_db,
 )
 from flows.db_maintain import initialize_db_flow
 
@@ -70,6 +73,40 @@ async def table_exists(conn, table_name: str) -> bool:
     )
     return row["exists"]
 
+# ---------------------------------------------------------------------------
+# Task tests — 
+# ---------------------------------------------------------------------------
+
+class TestCoverageEnforcement:
+    def test_all_initial_db_tasks_have_test_class(self):
+        """Fails if a new initial_*_db task is added without a corresponding test class."""
+        
+        # Find all initial_*_db tasks in tasks.db
+        initial_tasks = [
+            name for name in dir(db_tasks)
+            if name.startswith("initial_") and name.endswith("_db")
+        ]
+
+        # Map task names to expected test class names
+        # initial_kp_index_db → TestInitialKpIndexDb
+        def to_class_name(task_name: str) -> str:
+            return "Test" + "".join(
+                part.capitalize() for part in task_name.split("_")
+            )
+
+        import sys
+        current_module = sys.modules[__name__]
+
+        missing = []
+        for task_name in initial_tasks:
+            class_name = to_class_name(task_name)
+            if not hasattr(current_module, class_name):
+                missing.append(f"{task_name} → expected {class_name}")
+
+        assert not missing, (
+            f"Missing test classes for these tasks:\n" +
+            "\n".join(missing)
+        )
 
 # ---------------------------------------------------------------------------
 # Individual task tests — pass conn directly via .fn()
@@ -86,7 +123,7 @@ class TestInitialDrapDb:
 class TestInitialAirportDb:
     @pytest.mark.asyncio
     async def test_creates_table(self, conn):
-        await initial_airport_dbs.fn(conn)
+        await initial_airport_db.fn(conn)
         assert await table_exists(conn, "airports")
 
 
@@ -97,14 +134,14 @@ class TestInitialActivateFlightDb:
         assert await table_exists(conn, "activate_flight")
 
 
-class TestInitialXrayDb:
-    @pytest.mark.asyncio
-    async def test_creates_table(self, conn):
-        await initial_latest_xray_db.fn(conn)
-        assert await table_exists(conn, "goes_xray_events")
+# class TestInitialLatestXrayDb:
+#     @pytest.mark.asyncio
+#     async def test_creates_table(self, conn):
+#         await initial_latest_xray_db.fn(conn)
+#         assert await table_exists(conn, "goes_xray_events")
 
 
-class TestInitialProtonFluxDb:
+class TestInitialProtonFluxPlotDb:
     @pytest.mark.asyncio
     async def test_creates_table(self, conn):
         await initial_proton_flux_plot_db.fn(conn)
@@ -123,6 +160,26 @@ class TestInitialAlertDb:
     async def test_creates_table(self, conn):
         await initial_alert_db.fn(conn)
         assert await table_exists(conn, "alerts")
+
+class TestInitialGeoelectricDb:
+    @pytest.mark.asyncio
+    async def test_creates_table(self, conn):
+        await initial_geoelectric_db.fn(conn)
+        assert await table_exists(conn, "geoelectric_field")
+
+
+class TestInitialAuroraDb:
+    @pytest.mark.asyncio
+    async def test_creates_table(self, conn):
+        await initial_aurora_db.fn(conn)
+        assert await table_exists(conn, "aurora_forecast")
+
+
+class TestInitialXray6hourDb:
+    @pytest.mark.asyncio
+    async def test_creates_table(self, conn):
+        await initial_xray_6hour_db.fn(conn)
+        assert await table_exists(conn, "goes_xray_6hour")
 
 
 # ---------------------------------------------------------------------------
@@ -144,11 +201,13 @@ class TestInitializeDbFlow:
             "drap_region",
             "activate_flight",
             "airports",
-            "goes_xray_events",
+            # "goes_xray_events",
             "goes_proton_flux",
             "kp_index",
             "alerts",
             "geoelectric_field",
+            "aurora_forecast",
+            "goes_xray_6hour",
         ]
         for table in expected:
             assert await table_exists(conn, table), f"Missing table: {table}"
@@ -173,9 +232,31 @@ class TestCleanupOldDrapData:
     @pytest.mark.asyncio
     async def test_removes_old_records(self, conn):
         await initial_drap_db.fn(conn)
+
+        # Use obviously fake coordinates as a marker
+        # (0.0001, 0.0001) will never appear in real NOAA DRAP data
+        FAKE_OLD    = "POINT(0.0001 0.0001)"
+        FAKE_RECENT = "POINT(0.0002 0.0002)"
+
+        await conn.execute("""
+            INSERT INTO drap_region (observed_at, absorption, location)
+            VALUES
+                (NOW() - INTERVAL '10 days', 2.5, ST_GeogFromText($1)),
+                (NOW() - INTERVAL '1 day',   1.0, ST_GeogFromText($2))
+        """, FAKE_OLD, FAKE_RECENT)
+
         await cleanup_old_drap_data.fn(conn, older_than_days=3)
 
-        count = await conn.fetchval(
-            "SELECT COUNT(*) FROM drap_region WHERE observed_at < NOW() - INTERVAL '3 days'"
-        )
-        assert count == 0, "Records older than 3 days should have been deleted"
+        # Only check YOUR test rows by filtering on the fake coordinates
+        old_count = await conn.fetchval("""
+            SELECT COUNT(*) FROM drap_region
+            WHERE location = ST_GeogFromText($1)
+            AND observed_at < NOW() - INTERVAL '3 days'
+        """, FAKE_OLD)
+        assert old_count == 0       # old fake row was deleted
+
+        remaining = await conn.fetchval("""
+            SELECT COUNT(*) FROM drap_region
+            WHERE location = ST_GeogFromText($1)
+        """, FAKE_RECENT)
+        assert remaining == 1       # recent fake row still there  

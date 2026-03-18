@@ -4,7 +4,7 @@ import json
 import redis.asyncio as redis
 import pandas as pd
 from datetime import datetime, timedelta, timezone
-from shared.db_utils import get_connection
+from asyncpg import Connection
 from prefect import task, get_run_logger
 from prefect.variables import Variable
 from pyopensky.rest import REST
@@ -123,45 +123,43 @@ def fetch_flights() -> pd.DataFrame:
 
 
 @task(name="Insert Flight States")
-async def insert_batch(records: list[FlightStateRecord]) -> None:
+async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> None:
     """Insert flight records into both tables using COPY + server-side transform."""
     logger = get_run_logger()
     logger.info(f"Inserting {len(records)} records.")
 
     tuples = [r.to_tuple() for r in records]  # convert once, not per batch
 
-    async with get_connection() as conn:
-        await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, records[0].time)
+    await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, records[0].time)
 
-        async with conn.transaction():
-            # flight_states
-            await conn.execute(FLIGHT_STATES_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "flight_states_staging",
-                records=tuples,
-                columns=FLIGHT_STATES_STAGING_COLUMNS,
-            )
-            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
+    async with conn.transaction():
+        # flight_states
+        await conn.execute(FLIGHT_STATES_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "flight_states_staging",
+            records=tuples,
+            columns=FLIGHT_STATES_STAGING_COLUMNS,
+        )
+        await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
-            # activate_flight
-            await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "activate_flight_staging",
-                records=tuples,
-                columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
-            )
-            await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
+        # activate_flight
+        await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "activate_flight_staging",
+            records=tuples,
+            columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
+        )
+        await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
 
     logger.info(f"Finished inserting {len(records)} records.")
 
 @task(name="Broadcast Active Flights to Redis")
-async def broadcast_active_flights_to_redis() -> None:
+async def broadcast_active_flights_to_redis(conn: Connection) -> None:
     """Pull the latest active flights state from Postgres and push to Redis."""
     logger = get_run_logger()
-    
+
     # Fetch the true, calculated state from the database
-    async with get_connection() as conn:
-        rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
+    rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
         
     # Format it for the frontend
     flights_data = []
@@ -199,13 +197,12 @@ async def broadcast_active_flights_to_redis() -> None:
 
 
 @task(name="Cleanup Old Flight Data")
-async def cleanup_db() -> None:
+async def cleanup_db(conn: Connection) -> None:
     """Clean up old flight state records based on retention policy."""
     logger = get_run_logger()
 
     retention_days = await Variable[int].aget("flight_data_retention_days", default=30)
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
 
-    async with get_connection() as conn:
-        res = await conn.execute(CLEANUP_OLD_FLIGHT_DATA_QUERY, cutoff)
-        logger.info(f"Cleaned old data: {res}")
+    res = await conn.execute(CLEANUP_OLD_FLIGHT_DATA_QUERY, cutoff)
+    logger.info(f"Cleaned old data: {res}")

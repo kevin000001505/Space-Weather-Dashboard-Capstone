@@ -1,6 +1,6 @@
 import requests
 from prefect import task, get_run_logger
-from shared.db_utils import get_connection
+from asyncpg import Connection
 from datetime import datetime
 from typing import List
 from database.queries import ALERTS_STAGING_DDL, ALERTS_STAGING_COLUMNS, ALERTS_TRANSFORM_SQL
@@ -49,7 +49,7 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
 
 
 @task(retries=3, retry_delay_seconds=5)
-async def store_alert(alerts_records: List[AlertRecord]) -> None:
+async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> None:
     """Store alert records in the database."""
     logger = get_run_logger()
     if not alerts_records:
@@ -57,14 +57,13 @@ async def store_alert(alerts_records: List[AlertRecord]) -> None:
         return
 
     records = [r.to_tuple() for r in alerts_records]
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(ALERTS_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "alerts_staging",
-                records=records,
-                columns=ALERTS_STAGING_COLUMNS,
-            )
-            await conn.execute(ALERTS_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(ALERTS_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "alerts_staging",
+            records=records,
+            columns=ALERTS_STAGING_COLUMNS,
+        )
+        await conn.execute(ALERTS_TRANSFORM_SQL)
 
     logger.info(f"Stored {len(records)} alert records")

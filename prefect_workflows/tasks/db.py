@@ -14,7 +14,7 @@ from database.queries import (
     AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     KP_INDEX_CREATE_TABLE_SQL,
-    LATEST_X_RAY_CREATE_TABLE_SQL,
+    # LATEST_X_RAY_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
@@ -64,7 +64,7 @@ async def initial_activate_flight_db(conn: Connection):
 
 
 @task(cache_policy=NO_CACHE)
-async def initial_airport_dbs(conn: Connection):
+async def initial_airport_db(conn: Connection):
     """Task to initialize the airports table."""
     logger = _logger()
 
@@ -91,20 +91,20 @@ async def initial_airport_dbs(conn: Connection):
         raise
 
 
-@task(cache_policy=NO_CACHE)
-async def initial_latest_xray_db(conn: Connection):
-    """Task to initialize the xray table."""
-    logger = _logger()
-    try:
-        logger.info("Ensuring xray table exists...")
-        await ensure_table_exists(
-            conn, "goes_xray_events", create_sql=LATEST_X_RAY_CREATE_TABLE_SQL
-        )
-        logger.info("xray table is ready!")
+# @task(cache_policy=NO_CACHE)
+# async def initial_latest_xray_db(conn: Connection):
+#     """Task to initialize the xray table."""
+#     logger = _logger()
+#     try:
+#         logger.info("Ensuring xray table exists...")
+#         await ensure_table_exists(
+#             conn, "goes_xray_events", create_sql=LATEST_X_RAY_CREATE_TABLE_SQL
+#         )
+#         logger.info("xray table is ready!")
 
-    except Exception as e:
-        logger.error(f"Failed to initialize xray table: {e}")
-        raise
+#     except Exception as e:
+#         logger.error(f"Failed to initialize xray table: {e}")
+#         raise
 
 
 @task(cache_policy=NO_CACHE)

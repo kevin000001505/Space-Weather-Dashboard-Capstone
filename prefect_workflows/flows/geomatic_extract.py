@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger
 from prefect.variables import Variable
+from shared.db_utils import get_connection
 
 from tasks.geomatic import (
     extract_date,
@@ -44,7 +45,8 @@ async def geomatic_extract_flow():
     logger.info(f"Observation time: {observed_at} | Features: {len(features)}")
 
     records = transform_data(features, observed_at)
-    await load_geoelectric_data(records)
+    async with get_connection() as conn:
+        await load_geoelectric_data(records, conn)
 
     logger.info("Broadcasting geoelectric data to Redis...")
     await broadcast_geoelectric_to_redis(features, observed_at)

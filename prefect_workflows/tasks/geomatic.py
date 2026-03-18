@@ -6,7 +6,7 @@ import requests
 from pyquery import PyQuery as pq
 from prefect import task, get_run_logger
 
-from shared.db_utils import get_connection
+from asyncpg import Connection
 from shared.redis import (
     get_redis_client,
     GEOELECTRIC_CACHE_KEY,
@@ -87,22 +87,21 @@ def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> Lis
 
 
 @task(log_prints=True)
-async def load_geoelectric_data(records: List[tuple]) -> None:
+async def load_geoelectric_data(records: List[tuple], conn: Connection) -> None:
     """Bulk-insert geoelectric field records into the database."""
     logger = get_run_logger()
     if not records:
         logger.warning("No valid geoelectric records to insert")
         return
 
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(GEOELECTRIC_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "geoelectric_field_staging",
-                records=records,
-                columns=GEOELECTRIC_STAGING_COLUMNS,
-            )
-            await conn.execute(GEOELECTRIC_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(GEOELECTRIC_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "geoelectric_field_staging",
+            records=records,
+            columns=GEOELECTRIC_STAGING_COLUMNS,
+        )
+        await conn.execute(GEOELECTRIC_TRANSFORM_SQL)
 
     logger.info(f"Geoelectric field data inserted: {len(records)} records")
 

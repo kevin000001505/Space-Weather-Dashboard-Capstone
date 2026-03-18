@@ -1,6 +1,7 @@
 """Flight data ingestion and maintenance flows."""
 
 from prefect import flow
+from shared.db_utils import get_connection
 from tasks import (
     fetch_flights,
     clean_records,
@@ -15,12 +16,14 @@ async def ingest_flow():
     """Main flow for ingesting flight data from OpenSky."""
     df = fetch_flights()
     records = clean_records(df)
-    await insert_batch(records)
+    async with get_connection() as conn:
+        await insert_batch(records, conn)
 
-    if records:
-        await broadcast_active_flights_to_redis()
+        if records:
+            await broadcast_active_flights_to_redis(conn)
 
 @flow(name="Daily Maintenance", log_prints=True)
 async def maintenance_flow():
     """Daily maintenance flow for cleaning up old flight data."""
-    await cleanup_db()
+    async with get_connection() as conn:
+        await cleanup_db(conn)

@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger
 from prefect.variables import Variable
+from shared.db_utils import get_connection
 from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_aurora_data
 
 
@@ -22,7 +23,8 @@ async def aurora_extract_flow():
         return
 
     logger.info("New aurora data detected. Loading...")
-    await load_aurora_data(data)
+    async with get_connection() as conn:
+        await load_aurora_data(data, conn)
 
     logger.info("Broadcasting new aurora data to redis...")
     await broadcast_aurora_to_redis(data)

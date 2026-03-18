@@ -4,7 +4,7 @@ from prefect import task, get_run_logger
 
 from shared.db_utils import get_connection
 from tasks.d_rap_etl import extractors, transformers, loaders
-
+from asyncpg import Connection
 from shared.redis import (
     get_redis_client,
     DRAP_CACHE_KEY,
@@ -24,13 +24,12 @@ async def extract_data():
 
 
 @task(log_prints=True)
-async def load_data(df_long: DataFrame):
+async def load_data(df_long: DataFrame, conn: Connection):
     """Load data into PostgreSQL."""
     logger = get_run_logger()
     try:
-        async with get_connection() as conn:
-            await loaders.insert_drap_data(df_long, conn)
-            logger.info("✓ Data loading completed successfully!")
+        await loaders.insert_drap_data(df_long, conn)
+        logger.info("✓ Data loading completed successfully!")
     except Exception as e:
         logger.error(f"✗ Data loading failed: {e}")
         raise
@@ -53,7 +52,7 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
 
     # Extract just the columns we need and convert to a native Python list of lists
     # .astype(float) ensures we don't pass weird numpy datatypes to the JSON serializer
-    print (df_long)
+    logger.info(df_long)
     points = df_long[['Latitude', 'Longitude', 'Absorption']].astype(float).values.tolist()
     
     payload = {

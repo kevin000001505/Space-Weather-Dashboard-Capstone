@@ -2,7 +2,7 @@ from pathlib import Path
 import pytest
 
 FLOWS_DIR = Path("prefect_workflows/flows")
-TESTS_DIR = Path("tests/tests_prefect_workflows")
+TESTS_DIR = Path("tests/test_flows")
 
 EXCLUDED_FLOWS = {
     "__init__.py",

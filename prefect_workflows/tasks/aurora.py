@@ -1,7 +1,7 @@
 import json
 from prefect import task, get_run_logger
-from shared.db_utils import get_connection
 import requests
+from asyncpg import Connection
 from tasks.models import AuroraRecord
 from database.queries import (
     AURORA_STAGING_DDL,
@@ -41,7 +41,7 @@ def fetch_aurora_data() -> dict:
 
 
 @task(log_prints=True)
-async def load_aurora_data(data: dict) -> None:
+async def load_aurora_data(data: dict, conn: Connection) -> None:
     """Parse and bulk-insert aurora forecast records into the database."""
     logger = get_run_logger()
 
@@ -79,15 +79,14 @@ async def load_aurora_data(data: dict) -> None:
         logger.warning("No valid aurora records to insert")
         return
 
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(AURORA_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "aurora_forecast_staging",
-                records=records,
-                columns=AURORA_STAGING_COLUMNS,
-            )
-            await conn.execute(AURORA_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(AURORA_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "aurora_forecast_staging",
+            records=records,
+            columns=AURORA_STAGING_COLUMNS,
+        )
+        await conn.execute(AURORA_TRANSFORM_SQL)
 
     logger.info(f"Aurora forecast inserted: {len(records)} records")
 

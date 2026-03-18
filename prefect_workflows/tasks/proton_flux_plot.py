@@ -1,5 +1,5 @@
 from prefect import task, get_run_logger
-from shared.db_utils import get_connection
+from asyncpg import Connection
 import requests
 import json
 from tasks.models import ProtonFluxPlot
@@ -51,7 +51,7 @@ def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
 
 
 @task
-async def store_proton_flux_plot(plots: List[ProtonFluxPlot]) -> None:
+async def store_proton_flux_plot(plots: List[ProtonFluxPlot], conn: Connection) -> None:
     """Bulk insert proton flux plot records into the database."""
     logger = get_run_logger()
     if not plots:
@@ -59,13 +59,12 @@ async def store_proton_flux_plot(plots: List[ProtonFluxPlot]) -> None:
         return
 
     records = [plot.to_tuple() for plot in plots]
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(PROTON_FLUX_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "goes_proton_flux_staging",
-                records=records,
-                columns=PROTON_FLUX_STAGING_COLUMNS,
-            )
-            await conn.execute(PROTON_FLUX_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(PROTON_FLUX_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "goes_proton_flux_staging",
+            records=records,
+            columns=PROTON_FLUX_STAGING_COLUMNS,
+        )
+        await conn.execute(PROTON_FLUX_TRANSFORM_SQL)
     logger.info(f"Stored {len(records)} proton flux records")

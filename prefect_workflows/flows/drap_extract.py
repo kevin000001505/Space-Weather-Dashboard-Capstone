@@ -1,5 +1,6 @@
 from prefect import flow, get_run_logger
 from prefect.variables import Variable
+from shared.db_utils import get_connection
 from tasks.drap import broadcast_drap_to_redis, extract_data, load_data
 
 
@@ -21,7 +22,8 @@ async def rap_extract_flow():
         return
 
     logger.info("New data detected. Loading...")
-    await load_data(df_long)
+    async with get_connection() as conn:
+        await load_data(df_long, conn)
 
     logger.info("Broadcasting new D-RAP data to redis...")
     await broadcast_drap_to_redis(df_long, current_updated)

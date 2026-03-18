@@ -1,7 +1,7 @@
 from prefect import task, get_run_logger
-from shared.db_utils import get_connection
 import requests
 import json
+from asyncpg import Connection
 from tasks.models import XraySixHourRecord
 from database.queries import (
     XRAY_6HOUR_STAGING_DDL,
@@ -68,21 +68,27 @@ async def extract_xray_6hour_data():
         logger.warning("No X-ray 6-hour data returned from API")
         return []
 
+    return xray_data
+
+
+@task(log_prints=True)
+async def load_xray_6hour_data(xray_data: list, conn: Connection):
+    """Load 6-hour X-ray flux records into the database."""
+    logger = get_run_logger()
+
     parsed = parse_xray_6hour_data(xray_data, logger)
 
     if not parsed:
         logger.warning("No valid X-ray 6-hour records to insert")
-        return xray_data
+        return
 
-    async with get_connection() as conn:
-        async with conn.transaction():
-            await conn.execute(XRAY_6HOUR_STAGING_DDL)
-            await conn.copy_records_to_table(
-                "goes_xray_6hour_staging",
-                records=parsed,
-                columns=XRAY_6HOUR_STAGING_COLUMNS,
-            )
-            await conn.execute(XRAY_6HOUR_TRANSFORM_SQL)
+    async with conn.transaction():
+        await conn.execute(XRAY_6HOUR_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "goes_xray_6hour_staging",
+            records=parsed,
+            columns=XRAY_6HOUR_STAGING_COLUMNS,
+        )
+        await conn.execute(XRAY_6HOUR_TRANSFORM_SQL)
 
     logger.info(f"X-ray 6-hour data inserted: {len(parsed)} records")
-    return xray_data

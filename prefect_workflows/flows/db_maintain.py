@@ -5,9 +5,9 @@ from tasks.db import (
     initial_aurora_db,
     initial_drap_db,
     initial_activate_flight_db,
-    initial_airport_dbs,
+    initial_airport_db,
     cleanup_old_drap_data,
-    initial_latest_xray_db,
+    # initial_latest_xray_db,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
@@ -48,7 +48,7 @@ async def initialize_db_flow():
     try:
         async with get_connection() as conn:
             await initial_drap_db(conn)
-            await initial_airport_dbs(conn)
+            await initial_airport_db(conn)
             await initial_activate_flight_db(conn)
             await initial_latest_xray_db(conn)
             await initial_proton_flux_plot_db(conn)
@@ -72,9 +72,9 @@ if __name__ == "__main__":
         conn = await asyncpg.connect(os.environ["DATABASE_URL"])
         try:
             await initial_drap_db.fn(conn)
-            await initial_airport_dbs.fn(conn)
+            await initial_airport_db.fn(conn)
             await initial_activate_flight_db.fn(conn)
-            await initial_latest_xray_db.fn(conn)
+            # await initial_latest_xray_db.fn(conn)
             await initial_proton_flux_plot_db.fn(conn)
             await initial_kp_index_db.fn(conn)
             await initial_alert_db.fn(conn)

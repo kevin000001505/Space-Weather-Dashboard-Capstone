@@ -130,7 +130,7 @@ jobs:
           DATABASE_URL: postgresql://developer:${{ secrets.DEVELOPER_PASSWORD }}@localhost:5432/app
 
       - name: Execute Flows Tests
-        run: pytest tests/tests_prefect_workflows/ -v
+        run: pytest tests/test_transforms/ tests/test_ingestion/ tests/test_flows/ -v
         env:
           PYTHONPATH: "."
           DEVELOPER_USER: developer
@@ -168,7 +168,7 @@ jobs:
   deploy:
     name: Deploy to VM
     needs: [test-api, test-flows, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
     runs-on: self-hosted
     steps:
       - name: Checkout Code
