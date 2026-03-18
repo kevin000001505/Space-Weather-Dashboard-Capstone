@@ -1,4 +1,3 @@
-import pytest
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
@@ -8,4 +7,3 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).parent / ".env", override=False)
 
 sys.path.insert(0, str(Path(__file__).parent / "prefect_workflows"))
-pytest_plugins = ["pytest_asyncio"]

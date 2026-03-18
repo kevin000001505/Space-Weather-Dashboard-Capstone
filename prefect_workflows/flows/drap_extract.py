@@ -1,7 +1,8 @@
-from prefect import flow, get_run_logger
+from prefect import flow
+from shared.logger import get_logger
 from prefect.variables import Variable
 from shared.db_utils import get_connection
-from tasks.drap import broadcast_drap_to_redis, extract_data, load_data
+from tasks.drap import broadcast_drap_to_redis, extract_data, transform_data, load_data
 
 
 @flow(
@@ -10,10 +11,11 @@ from tasks.drap import broadcast_drap_to_redis, extract_data, load_data
 )
 async def rap_extract_flow():
     last_seen = await Variable.get("data_last_updated", default=None)
-    metadata, df_wide, df_long = await extract_data()
+    data_string = extract_data()
+    metadata, df_wide, df_long = transform_data(data_string)
     current_updated = metadata.get("valid_at", "Unknown")
 
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     logger.info(f"Last seen: '{last_seen}' (type: {type(last_seen)})")
     logger.info(f"Current: '{current_updated}' (type: {type(current_updated)})")
 

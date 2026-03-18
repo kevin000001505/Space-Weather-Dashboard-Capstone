@@ -1,4 +1,5 @@
-from prefect import flow, get_run_logger
+from prefect import flow
+from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks.alert import fetch_alerts, parse_alerts, store_alert
 
@@ -8,7 +9,7 @@ from tasks.alert import fetch_alerts, parse_alerts, store_alert
     description="ETL flow for alerts data extraction.",
 )
 async def alerts_extract_flow():
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     try:
         raw_alerts = fetch_alerts()

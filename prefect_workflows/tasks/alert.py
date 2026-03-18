@@ -1,5 +1,6 @@
 import requests
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 from asyncpg import Connection
 from datetime import datetime
 from typing import List
@@ -12,7 +13,7 @@ url = "https://services.swpc.noaa.gov/products/alerts.json"
 @task(retries=3, retry_delay_seconds=5)
 def fetch_alerts() -> List[dict]:
     """Fetch space weather alerts from the NOAA API."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         response = requests.get(url, timeout=30)
         response.raise_for_status()
@@ -27,7 +28,7 @@ def fetch_alerts() -> List[dict]:
 @task(retries=3, retry_delay_seconds=5)
 def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
     """Parse raw alert data into AlertRecord objects."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     records: List[AlertRecord] = []
     for alert in raw_alerts:
         try:
@@ -51,7 +52,7 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
 @task(retries=3, retry_delay_seconds=5)
 async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> None:
     """Store alert records in the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     if not alerts_records:
         logger.warning("No alert records to store")
         return

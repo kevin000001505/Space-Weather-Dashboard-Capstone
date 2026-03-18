@@ -5,7 +5,8 @@ import redis.asyncio as redis
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from asyncpg import Connection
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 from prefect.variables import Variable
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
@@ -91,6 +92,7 @@ def clean_records(df: pd.DataFrame) -> list[FlightStateRecord]:
     Returns:
         List of cleaned tuples, or empty list if no valid records
     """
+    logger = get_logger(__name__)
     if df.empty:
         return []
 
@@ -100,7 +102,7 @@ def clean_records(df: pd.DataFrame) -> list[FlightStateRecord]:
             record = clean_row(row)
             records.append(record)
         except Exception:
-            get_run_logger().warning(f"Failed to clean row: {row}")
+            logger.warning(f"Failed to clean row: {row}")
             continue
 
     return records
@@ -111,7 +113,7 @@ def fetch_flights() -> pd.DataFrame:
     """
     Sync task running pyopensky.
     """
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         rest = REST()
         df = rest.states(own=False)
@@ -125,7 +127,7 @@ def fetch_flights() -> pd.DataFrame:
 @task(name="Insert Flight States")
 async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> None:
     """Insert flight records into both tables using COPY + server-side transform."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     logger.info(f"Inserting {len(records)} records.")
 
     tuples = [r.to_tuple() for r in records]  # convert once, not per batch
@@ -156,7 +158,7 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
 @task(name="Broadcast Active Flights to Redis")
 async def broadcast_active_flights_to_redis(conn: Connection) -> None:
     """Pull the latest active flights state from Postgres and push to Redis."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     # Fetch the true, calculated state from the database
     rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
@@ -199,7 +201,7 @@ async def broadcast_active_flights_to_redis(conn: Connection) -> None:
 @task(name="Cleanup Old Flight Data")
 async def cleanup_db(conn: Connection) -> None:
     """Clean up old flight state records based on retention policy."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     retention_days = await Variable[int].aget("flight_data_retention_days", default=30)
     cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)

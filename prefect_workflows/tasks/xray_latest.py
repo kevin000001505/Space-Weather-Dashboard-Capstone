@@ -1,4 +1,5 @@
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 import requests
 import json
 from asyncpg import Connection
@@ -28,8 +29,9 @@ def _fetch_json(url: str) -> list:
         raise
 
 
-def parse_xray_6hour_data(xray_data: list, logger) -> list[tuple]:
+def parse_xray_6hour_data(xray_data: list) -> list[tuple]:
     """Parse 6-hour X-ray flux records into tuples for DB insertion."""
+    logger = get_logger(__name__)
     parsed = []
     for item in xray_data:
         try:
@@ -49,9 +51,9 @@ def parse_xray_6hour_data(xray_data: list, logger) -> list[tuple]:
 
 
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
-async def extract_xray_6hour_data():
+def extract_xray_6hour_data():
     """Extract 6-hour X-ray flux data from NOAA GOES primary (with secondary fallback)."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     try:
         xray_data = _fetch_json(XRAY_6HOUR_URL)
@@ -74,11 +76,9 @@ async def extract_xray_6hour_data():
 @task(log_prints=True)
 async def load_xray_6hour_data(xray_data: list, conn: Connection):
     """Load 6-hour X-ray flux records into the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
-    parsed = parse_xray_6hour_data(xray_data, logger)
-
-    if not parsed:
+    if not xray_data:
         logger.warning("No valid X-ray 6-hour records to insert")
         return
 
@@ -86,9 +86,9 @@ async def load_xray_6hour_data(xray_data: list, conn: Connection):
         await conn.execute(XRAY_6HOUR_STAGING_DDL)
         await conn.copy_records_to_table(
             "goes_xray_6hour_staging",
-            records=parsed,
+            records=xray_data,
             columns=XRAY_6HOUR_STAGING_COLUMNS,
         )
         await conn.execute(XRAY_6HOUR_TRANSFORM_SQL)
 
-    logger.info(f"X-ray 6-hour data inserted: {len(parsed)} records")
+    logger.info(f"X-ray 6-hour data inserted: {len(xray_data)} records")

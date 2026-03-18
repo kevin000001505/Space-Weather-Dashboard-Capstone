@@ -3,12 +3,12 @@ from pandas import DataFrame
 from database.queries import DRAP_STAGING_DDL, DRAP_STAGING_COLUMNS, DRAP_TRANSFORM_SQL
 from asyncpg import Connection
 from tasks.models import DrapRecord
-from prefect import get_run_logger
+from shared.logger import get_logger
 
 
 async def insert_drap_data(df_long: DataFrame, conn: Connection):
     """Load DRAP data into PostgreSQL."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     observed_at = datetime.now(timezone.utc)
     records = []
     for _, row in df_long.iterrows():

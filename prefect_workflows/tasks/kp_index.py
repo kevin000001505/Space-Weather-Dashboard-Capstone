@@ -1,4 +1,5 @@
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 import requests
 from asyncpg import Connection
 from datetime import datetime
@@ -17,7 +18,7 @@ def fetch_kp_index() -> List[KPIndexRecord]:
       ['time_tag', 'Kp', 'a_running', 'station_count']
     Subsequent rows contain string values that are cast to their proper types.
     """
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     logger.info(f"Fetching Kp index data from {KP_INDEX_URL}")
 
     response = requests.get(KP_INDEX_URL, timeout=30)
@@ -53,7 +54,7 @@ def fetch_kp_index() -> List[KPIndexRecord]:
 @task
 async def store_kp_index(kp_records: List[KPIndexRecord], conn: Connection) -> None:
     """Bulk insert Kp index records into the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     if not kp_records:
         logger.warning("No Kp index records to store")

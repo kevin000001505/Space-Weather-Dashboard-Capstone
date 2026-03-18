@@ -4,8 +4,8 @@ from typing import List, Dict, Any
 
 import requests
 from pyquery import PyQuery as pq
-from prefect import task, get_run_logger
-
+from prefect import task
+from shared.logger import get_logger
 from asyncpg import Connection
 from shared.redis import (
     get_redis_client,
@@ -24,9 +24,9 @@ base_url = "https://services.swpc.noaa.gov/json/lists/rgeojson/US-Canada-1D/"
 
 
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
-async def extract_date() -> str:
+def extract_file() -> str:
     """Extract the latest filename from the NOAA geoelectric listing page."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         response = requests.get(base_url)
         response.raise_for_status()
@@ -41,9 +41,9 @@ async def extract_date() -> str:
 
 
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
-async def extract_data(url: str) -> List[Dict[str, Any]]:
+def extract_data(url: str) -> List[Dict[str, Any]]:
     """Fetch GeoJSON features from the NOAA geoelectric endpoint."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -58,7 +58,7 @@ async def extract_data(url: str) -> List[Dict[str, Any]]:
 @task(log_prints=True)
 def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> List[tuple]:
     """Parse GeoJSON features into GeoelectricRecord tuples."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     records = []
     skipped = 0
     for feature in features:
@@ -89,7 +89,7 @@ def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> Lis
 @task(log_prints=True)
 async def load_geoelectric_data(records: List[tuple], conn: Connection) -> None:
     """Bulk-insert geoelectric field records into the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     if not records:
         logger.warning("No valid geoelectric records to insert")
         return
@@ -111,7 +111,7 @@ async def broadcast_geoelectric_to_redis(
     features: List[Dict[str, Any]], observed_at: datetime
 ) -> None:
     """Push geoelectric field data to Redis cache and pub/sub channel."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     if not features:
         logger.warning("No geoelectric data to broadcast.")
         return

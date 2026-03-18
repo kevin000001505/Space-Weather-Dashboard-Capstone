@@ -1,8 +1,8 @@
 import json
 from pandas import DataFrame
-from prefect import task, get_run_logger
+from prefect import task
 
-from shared.db_utils import get_connection
+from shared.logger import get_logger
 from tasks.d_rap_etl import extractors, transformers, loaders
 from asyncpg import Connection
 from shared.redis import (
@@ -16,17 +16,21 @@ d_rap_url = "https://services.swpc.noaa.gov/text/drap_global_frequencies.txt"
 
 
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
-async def extract_data():
+def extract_data():
     """Extract data from API."""
     data_string = extractors.extract_drap_data(d_rap_url)
+    return data_string
+
+
+@task(log_prints=True, retries=3, retry_delay_seconds=5)
+def transform_data(data_string):
     metadata, df_wide, df_long = transformers.parse_drap_data(data_string)
     return (metadata, df_wide, df_long)
-
 
 @task(log_prints=True)
 async def load_data(df_long: DataFrame, conn: Connection):
     """Load data into PostgreSQL."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         await loaders.insert_drap_data(df_long, conn)
         logger.info("✓ Data loading completed successfully!")
@@ -37,7 +41,7 @@ async def load_data(df_long: DataFrame, conn: Connection):
 @task(name="Broadcast DRAP to Redis")
 async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
     """Format the in-memory pandas DataFrame and push straight to Redis."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     
     if df_long.empty:
         logger.warning("DataFrame is empty, nothing to broadcast.")

@@ -65,8 +65,6 @@ REQUIRED_DIRS = [
     # test suites
     "tests/test_api_health",
     "tests/test_flows",
-    "tests/test_ingestion",
-    "tests/test_transforms",
     # shared utilities
     "shared",
 ]

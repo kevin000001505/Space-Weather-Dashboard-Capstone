@@ -1,5 +1,6 @@
 import json
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 import requests
 from asyncpg import Connection
 from tasks.models import AuroraRecord
@@ -21,7 +22,7 @@ AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 @task(log_prints=True, retries=3, retry_delay_seconds=5)
 def fetch_aurora_data() -> dict:
     """Fetch aurora forecast JSON from NOAA. Returns the raw response dict."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         logger.info(f"Fetching aurora data from {AURORA_URL}")
         response = requests.get(AURORA_URL, timeout=30)
@@ -43,7 +44,7 @@ def fetch_aurora_data() -> dict:
 @task(log_prints=True)
 async def load_aurora_data(data: dict, conn: Connection) -> None:
     """Parse and bulk-insert aurora forecast records into the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     observation_time = data.get("Observation Time")
     forecast_time = data.get("Forecast Time")
@@ -93,7 +94,7 @@ async def load_aurora_data(data: dict, conn: Connection) -> None:
 @task(name="Broadcast Aurora to Redis")
 async def broadcast_aurora_to_redis(data: dict) -> None:
     """Push the raw NOAA dictionary straight from memory to Redis."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     
     if not data or not data.get("coordinates"):
         logger.warning("No Aurora data to broadcast.")

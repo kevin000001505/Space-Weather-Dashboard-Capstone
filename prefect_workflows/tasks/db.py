@@ -1,6 +1,5 @@
 """Database initialization and maintenance tasks."""
 
-import logging
 from shared.db_utils import ensure_table_exists, cleanup_old_data
 from database.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
@@ -20,25 +19,16 @@ from database.queries import (
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
 )
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 from prefect.cache_policies import NO_CACHE
 from asyncpg import Connection
-
-_fallback = logging.getLogger(__name__)
-
-
-def _logger():
-    """Return Prefect run logger if in a flow/task context, else stdlib logger."""
-    try:
-        return get_run_logger()
-    except Exception:
-        return _fallback
 
 
 @task(cache_policy=NO_CACHE)
 async def initial_drap_db(conn: Connection):
     """Task to initialize the DRAP region table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring DRAP region table exists...")
         await ensure_table_exists(conn, "drap_region", create_sql=DRAP_CREATE_TABLE_SQL)
@@ -52,7 +42,7 @@ async def initial_drap_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_activate_flight_db(conn: Connection):
     """Task to initialize the activate_flight table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring activate_flight table exists...")
         await ensure_table_exists(
@@ -66,7 +56,7 @@ async def initial_activate_flight_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_airport_db(conn: Connection):
     """Task to initialize the airports table."""
-    logger = _logger()
+    logger = get_logger(__name__)
 
     tables_to_create = [
         ("countries", COUNTRIES_CREATE_TABLE_SQL),
@@ -110,7 +100,7 @@ async def initial_airport_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_proton_flux_plot_db(conn: Connection):
     """Task to initialize the proton flux plot table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring goes_proton_flux table exists...")
         await ensure_table_exists(
@@ -126,7 +116,7 @@ async def initial_proton_flux_plot_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_kp_index_db(conn: Connection):
     """Task to initialize the Kp index table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring kp_index table exists...")
         await ensure_table_exists(
@@ -142,7 +132,7 @@ async def initial_kp_index_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_alert_db(conn: Connection):
     """Task to initialize the alert table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring alerts table exists...")
         await ensure_table_exists(conn, "alerts", create_sql=ALERT_CREATE_TABLE_SQL)
@@ -156,7 +146,7 @@ async def initial_alert_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_aurora_db(conn: Connection):
     """Task to initialize the aurora_forecast table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring aurora_forecast table exists...")
         await ensure_table_exists(
@@ -171,7 +161,7 @@ async def initial_aurora_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_xray_6hour_db(conn: Connection):
     """Task to initialize the goes_xray_6hour table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring goes_xray_6hour table exists...")
         await ensure_table_exists(
@@ -186,7 +176,7 @@ async def initial_xray_6hour_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def initial_geoelectric_db(conn: Connection):
     """Task to initialize the geoelectric_field table."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info("Ensuring geoelectric_field table exists...")
         await ensure_table_exists(
@@ -202,7 +192,7 @@ async def initial_geoelectric_db(conn: Connection):
 @task(cache_policy=NO_CACHE)
 async def cleanup_old_drap_data(conn: Connection, older_than_days: int = 1):
     """Task to clean up old DRAP data."""
-    logger = _logger()
+    logger = get_logger(__name__)
     try:
         logger.info(f"Cleaning up DRAP data older than {older_than_days} days...")
         await cleanup_old_data(conn, "drap_region", older_than_days=older_than_days)

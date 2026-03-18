@@ -1,4 +1,5 @@
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 from asyncpg import Connection
 import requests
 import json
@@ -10,7 +11,7 @@ from typing import List
 @task(retries=3, retry_delay_seconds=5)
 def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
     """Fetch all proton flux plot records from the NOAA API."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-plot-6-hour.json"
     logger.info(f"Fetching proton flux plot data from {url}")
     response = requests.get(url)
@@ -53,7 +54,7 @@ def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
 @task
 async def store_proton_flux_plot(plots: List[ProtonFluxPlot], conn: Connection) -> None:
     """Bulk insert proton flux plot records into the database."""
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     if not plots:
         logger.warning("No proton flux records to store")
         return

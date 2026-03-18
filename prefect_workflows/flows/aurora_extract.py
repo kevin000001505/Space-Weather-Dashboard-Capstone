@@ -1,4 +1,5 @@
-from prefect import flow, get_run_logger
+from prefect import flow
+from shared.logger import get_logger
 from prefect.variables import Variable
 from shared.db_utils import get_connection
 from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_aurora_data
@@ -9,7 +10,7 @@ from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_auro
     description="ETL flow for aurora forecast data extraction and loading.",
 )
 async def aurora_extract_flow():
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     logger.info("Starting aurora forecast extraction flow...")
 
     data = fetch_aurora_data()

@@ -1,9 +1,10 @@
-from prefect import flow, get_run_logger
+from prefect import flow
 from prefect.variables import Variable
 from shared.db_utils import get_connection
+from shared.logger import get_logger
 
 from tasks.geomatic import (
-    extract_date,
+    extract_file,
     extract_data,
     transform_data,
     load_geoelectric_data,
@@ -18,10 +19,10 @@ from tasks.geomatic import (
     description="ETL flow for NOAA geoelectric field data extraction and loading.",
 )
 async def geomatic_extract_flow():
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     logger.info("Starting geoelectric field extraction flow...")
 
-    file_name = await extract_date()
+    file_name = extract_file()
     if not file_name or file_name == "None":
         logger.error("Could not determine latest geoelectric file. Aborting.")
         return
@@ -35,7 +36,7 @@ async def geomatic_extract_flow():
 
     logger.info("New geoelectric data detected. Fetching...")
     url = base_url + file_name
-    features = await extract_data(url)
+    features = extract_data(url)
 
     if not features:
         logger.warning("No features returned from API. Aborting.")
@@ -45,6 +46,8 @@ async def geomatic_extract_flow():
     logger.info(f"Observation time: {observed_at} | Features: {len(features)}")
 
     records = transform_data(features, observed_at)
+    async with get_connection() as conn:
+        await load_geoelectric_data(records, conn)
     async with get_connection() as conn:
         await load_geoelectric_data(records, conn)
 

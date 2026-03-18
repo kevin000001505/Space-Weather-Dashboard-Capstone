@@ -21,7 +21,8 @@ from database.queries import (
     NAVAIDS_STAGING_COLUMNS,
     NAVAIDS_TRANSFORM_SQL
 )
-from prefect import task, get_run_logger
+from prefect import task
+from shared.logger import get_logger
 from prefect.cache_policies import NO_CACHE
 from tasks.models import (
     AirportRecord,
@@ -32,6 +33,7 @@ from tasks.models import (
     NavaidRecord,
     CommentRecord
 )
+from asyncpg import Connection
 from asyncpg import Connection
 import requests
 import csv
@@ -47,6 +49,7 @@ runways_url = f"{airports_base_url}runways.csv"
 navaids_url = f"{airports_base_url}navaids.csv"
 freqs_url = f"{airports_base_url}airport-frequencies.csv"
 comments_url = f"{airports_base_url}airport-comments.csv"
+
 
 def parse_float(value):
     """Parse float value, return None if empty or invalid."""
@@ -88,7 +91,7 @@ def parse_datetime(value):
 
 # Generic Ingestion Helper
 async def run_ingest_pipeline(url: str, model_class, staging_table: str, staging_ddl: str, columns: list, transform_sql: str, conn: Connection):
-    logger = get_run_logger()
+    logger = get_logger(__name__)
     try:
         logger.info(f"Downloading data from {url}...")
 
@@ -121,8 +124,17 @@ async def run_ingest_pipeline(url: str, model_class, staging_table: str, staging
                 columns=columns,
             )
             await conn.execute(transform_sql)
+        async with conn.transaction():
+            await conn.execute(staging_ddl)
+            await conn.copy_records_to_table(
+                staging_table,
+                records=all_tuples,
+                columns=columns,
+            )
+            await conn.execute(transform_sql)
 
         logger.info(f"✓ {staging_table} data loaded successfully!")
+
 
     except Exception as e:
         logger.error(f"Failed to load airports data: {e}")
@@ -130,12 +142,15 @@ async def run_ingest_pipeline(url: str, model_class, staging_table: str, staging
 
 @task(cache_policy=NO_CACHE)
 async def ingest_countries_csv(conn: Connection):
+async def ingest_countries_csv(conn: Connection):
     await run_ingest_pipeline(
         countries_url, CountryRecord, "countries_staging",
+        COUNTRIES_STAGING_DDL, COUNTRIES_STAGING_COLUMNS, COUNTRIES_TRANSFORM_SQL, conn
         COUNTRIES_STAGING_DDL, COUNTRIES_STAGING_COLUMNS, COUNTRIES_TRANSFORM_SQL, conn
     )
 
 @task(cache_policy=NO_CACHE)
+async def ingest_regions_csv(conn: Connection):
 async def ingest_regions_csv(conn: Connection):
     await run_ingest_pipeline(
         regions_url, RegionRecord, "regions_staging",
@@ -144,35 +159,45 @@ async def ingest_regions_csv(conn: Connection):
 
 @task(cache_policy=NO_CACHE)
 async def ingest_airports_csv(conn: Connection):
+async def ingest_airports_csv(conn: Connection):
     await run_ingest_pipeline(
         airports_url, AirportRecord, "airports_staging",
+        AIRPORTS_STAGING_DDL, AIRPORTS_STAGING_COLUMNS, AIRPORTS_TRANSFORM_SQL, conn
         AIRPORTS_STAGING_DDL, AIRPORTS_STAGING_COLUMNS, AIRPORTS_TRANSFORM_SQL, conn
     )
 
 @task(cache_policy=NO_CACHE)
 async def ingest_runways_csv(conn: Connection):
+async def ingest_runways_csv(conn: Connection):
     await run_ingest_pipeline(
         runways_url, RunwayRecord, "runways_staging",
+        RUNWAYS_STAGING_DDL, RUNWAYS_STAGING_COLUMNS, RUNWAYS_TRANSFORM_SQL, conn
         RUNWAYS_STAGING_DDL, RUNWAYS_STAGING_COLUMNS, RUNWAYS_TRANSFORM_SQL, conn
     )
 
 @task(cache_policy=NO_CACHE)
 async def ingest_frequencies_csv(conn: Connection):
+async def ingest_frequencies_csv(conn: Connection):
     await run_ingest_pipeline(
         freqs_url, FrequencyRecord, "frequencies_staging",
+        FREQUENCIES_STAGING_DDL, FREQUENCIES_STAGING_COLUMNS, FREQUENCIES_TRANSFORM_SQL, conn
         FREQUENCIES_STAGING_DDL, FREQUENCIES_STAGING_COLUMNS, FREQUENCIES_TRANSFORM_SQL, conn
     )
 
 @task(cache_policy=NO_CACHE)
 async def ingest_navaids_csv(conn: Connection):
+async def ingest_navaids_csv(conn: Connection):
     await run_ingest_pipeline(
         navaids_url, NavaidRecord, "navaids_staging",
+        NAVAIDS_STAGING_DDL, NAVAIDS_STAGING_COLUMNS, NAVAIDS_TRANSFORM_SQL, conn
         NAVAIDS_STAGING_DDL, NAVAIDS_STAGING_COLUMNS, NAVAIDS_TRANSFORM_SQL, conn
     )
 
 @task(cache_policy=NO_CACHE)
 async def ingest_comments_csv(conn: Connection):
+async def ingest_comments_csv(conn: Connection):
     await run_ingest_pipeline(
         comments_url, CommentRecord, "comments_staging",
+        COMMENTS_STAGING_DDL, COMMENTS_STAGING_COLUMNS, COMMENTS_TRANSFORM_SQL, conn
         COMMENTS_STAGING_DDL, COMMENTS_STAGING_COLUMNS, COMMENTS_TRANSFORM_SQL, conn
     )

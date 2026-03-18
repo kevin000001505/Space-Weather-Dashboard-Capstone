@@ -1,4 +1,5 @@
-from prefect import flow, get_run_logger
+from prefect import flow
+from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks import airports
 import asyncio
@@ -8,7 +9,7 @@ import asyncio
     description="ETL flow for airports data extraction.",
 )
 async def airports_extract_flow():
-    logger = get_run_logger()
+    logger = get_logger(__name__)
 
     try:
         logger.info("Starting sequential parent ingestion...")

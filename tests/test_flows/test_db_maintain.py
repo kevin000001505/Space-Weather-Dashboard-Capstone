@@ -1,7 +1,4 @@
-import os
 import pytest
-import pytest_asyncio
-import asyncpg
 from contextlib import asynccontextmanager
 from unittest.mock import patch
 import tasks.db as db_tasks
@@ -20,40 +17,6 @@ from tasks.db import (
     initial_xray_6hour_db,
 )
 from flows.db_maintain import initialize_db_flow
-
-
-_user = os.environ["DEVELOPER_USER"]
-_pass = os.environ["DEVELOPER_PASSWORD"]
-_db = os.environ["DEVELOPER_DB"]
-_host = os.environ.get("PGHOST", "localhost")
-_port = os.environ.get("PGPORT", "5432")
-DATABASE_URL = f"postgresql://{_user}:{_pass}@{_host}:{_port}/{_db}"
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest_asyncio.fixture(scope="session")
-async def pool():
-    """One connection pool for the entire test session."""
-    pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
-    yield pool
-    await pool.close()
-
-
-@pytest_asyncio.fixture
-async def conn(pool):
-    """
-    Per-test transaction that rolls back automatically.
-    asyncpg's PoolConnectionProxy satisfies your task type hints directly.
-    """
-    async with pool.acquire() as connection:
-        tx = connection.transaction()
-        await tx.start()
-        yield connection  # this IS a PoolConnectionProxy
-        await tx.rollback()
-
 
 # ---------------------------------------------------------------------------
 # Helpers
