@@ -5,6 +5,7 @@ from typing import List, Dict, Any
 import requests
 from pyquery import PyQuery as pq
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 from asyncpg import Connection
 from shared.redis import (
@@ -86,7 +87,7 @@ def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> Lis
     return records
 
 
-@task(log_prints=True)
+@task(log_prints=True, cache_policy=NO_CACHE)
 async def load_geoelectric_data(records: List[tuple], conn: Connection) -> None:
     """Bulk-insert geoelectric field records into the database."""
     logger = get_logger(__name__)

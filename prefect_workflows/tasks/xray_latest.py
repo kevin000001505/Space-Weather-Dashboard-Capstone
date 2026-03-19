@@ -1,4 +1,5 @@
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 import requests
 import json
@@ -73,7 +74,7 @@ def extract_xray_6hour_data():
     return xray_data
 
 
-@task(log_prints=True)
+@task(log_prints=True, cache_policy=NO_CACHE)
 async def load_xray_6hour_data(xray_data: list, conn: Connection):
     """Load 6-hour X-ray flux records into the database."""
     logger = get_logger(__name__)

@@ -1,6 +1,7 @@
 import json
 from pandas import DataFrame
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 
 from shared.logger import get_logger
 from tasks.d_rap_etl import extractors, transformers, loaders
@@ -27,7 +28,7 @@ def transform_data(data_string):
     metadata, df_wide, df_long = transformers.parse_drap_data(data_string)
     return (metadata, df_wide, df_long)
 
-@task(log_prints=True)
+@task(log_prints=True, cache_policy=NO_CACHE)
 async def load_data(df_long: DataFrame, conn: Connection):
     """Load data into PostgreSQL."""
     logger = get_logger(__name__)

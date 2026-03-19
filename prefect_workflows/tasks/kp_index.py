@@ -1,4 +1,5 @@
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 import requests
 from asyncpg import Connection
@@ -51,7 +52,7 @@ def fetch_kp_index() -> List[KPIndexRecord]:
     return records
 
 
-@task
+@task(cache_policy=NO_CACHE)
 async def store_kp_index(kp_records: List[KPIndexRecord], conn: Connection) -> None:
     """Bulk insert Kp index records into the database."""
     logger = get_logger(__name__)

@@ -1,5 +1,6 @@
 import json
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 import requests
 from asyncpg import Connection
@@ -41,7 +42,7 @@ def fetch_aurora_data() -> dict:
         raise 
 
 
-@task(log_prints=True)
+@task(log_prints=True, cache_policy=NO_CACHE)
 async def load_aurora_data(data: dict, conn: Connection) -> None:
     """Parse and bulk-insert aurora forecast records into the database."""
     logger = get_logger(__name__)

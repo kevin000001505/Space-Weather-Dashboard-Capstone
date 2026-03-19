@@ -1,4 +1,5 @@
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 from asyncpg import Connection
 import requests
@@ -51,7 +52,7 @@ def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
         raise Exception(f"Error processing proton flux plot data: {e}")
 
 
-@task
+@task(cache_policy=NO_CACHE)
 async def store_proton_flux_plot(plots: List[ProtonFluxPlot], conn: Connection) -> None:
     """Bulk insert proton flux plot records into the database."""
     logger = get_logger(__name__)

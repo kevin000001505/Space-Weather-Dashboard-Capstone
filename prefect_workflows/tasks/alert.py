@@ -1,5 +1,6 @@
 import requests
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 from asyncpg import Connection
 from datetime import datetime
@@ -49,7 +50,7 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
     return records
 
 
-@task(retries=3, retry_delay_seconds=5)
+@task(retries=3, retry_delay_seconds=5, cache_policy=NO_CACHE)
 async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> None:
     """Store alert records in the database."""
     logger = get_logger(__name__)

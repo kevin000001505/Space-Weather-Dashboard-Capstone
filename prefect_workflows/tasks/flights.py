@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import datetime, timedelta, timezone
 from asyncpg import Connection
 from prefect import task
+from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 from prefect.variables import Variable
 from pyopensky.rest import REST
@@ -124,7 +125,7 @@ def fetch_flights() -> pd.DataFrame:
         raise
 
 
-@task(name="Insert Flight States")
+@task(name="Insert Flight States", cache_policy=NO_CACHE)
 async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> None:
     """Insert flight records into both tables using COPY + server-side transform."""
     logger = get_logger(__name__)
@@ -155,7 +156,7 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
 
     logger.info(f"Finished inserting {len(records)} records.")
 
-@task(name="Broadcast Active Flights to Redis")
+@task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE)
 async def broadcast_active_flights_to_redis(conn: Connection) -> None:
     """Pull the latest active flights state from Postgres and push to Redis."""
     logger = get_logger(__name__)
@@ -198,7 +199,7 @@ async def broadcast_active_flights_to_redis(conn: Connection) -> None:
         logger.error(f"Failed to broadcast to Redis: {e}")
 
 
-@task(name="Cleanup Old Flight Data")
+@task(name="Cleanup Old Flight Data", cache_policy=NO_CACHE)
 async def cleanup_db(conn: Connection) -> None:
     """Clean up old flight state records based on retention policy."""
     logger = get_logger(__name__)
