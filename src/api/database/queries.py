@@ -122,18 +122,9 @@ WHERE a.ident = $1
 
 
 FLIGHT_PATH_QUERY = """
-    SELECT
-        icao24,
-        callsign,
-        ST_AsGeoJSON(
-            ST_MakeLine( (dp).geom ORDER BY (dp).path )
-        )::jsonb AS path_geojson
-    FROM (
-    SELECT icao24, callsign, ST_DumpPoints(path_geom) AS dp
+    SELECT icao24, callsign, path_points
     FROM activate_flight
-    WHERE icao24 = $1
-    ) s
-    GROUP BY icao24, callsign;
+    WHERE icao24 = $1;
 """
 
 

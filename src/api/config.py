@@ -14,7 +14,7 @@ class DRAPResponse(BaseModel):
 class FlightPathResponse(BaseModel):
     icao24: str
     callsign: Optional[str]
-    path_geojson: dict
+    path_points: list[list[float]]
     number_of_points: int
 
 

@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS activate_flight (
     -- Spatial Index Column
     geom        GEOMETRY(POINT, 4326),-- PostGIS geometry column for spatial queries using WGS 84 coordinate system (SRID 4326)
     
-    -- The column collect multiple points for the flight path --
-    path_geom GEOMETRY(MultiPoint, 4326),
+    -- Ordered list of [lat, lon] pairs representing the flight path
+    path_points DOUBLE PRECISION[][],
 
     -- Combination of time and icao24 as PRIMARY KEY for uniqueness
     PRIMARY KEY (icao24)
@@ -396,41 +396,43 @@ INSERT INTO activate_flight
     (time, icao24, callsign, origin_country, time_pos,
      lat, lon, geo_altitude, baro_altitude, velocity,
      heading, vert_rate, on_ground, squawk, spi, source, sensors,
-     geom, path_geom)
+     geom, path_points)
 SELECT
     s.time, s.icao24, s.callsign, s.origin_country, s.time_pos,
     s.lat, s.lon, s.geo_altitude, s.baro_altitude, s.velocity,
     s.heading, s.vert_rate, s.on_ground, s.squawk, s.spi, s.source, s.sensors,
     ST_SetSRID(ST_MakePoint(s.geom_lon, s.geom_lat), 4326),
-    ST_Multi(ST_SetSRID(ST_MakePoint(s.geom_lon, s.geom_lat), 4326)::geometry)
+    CASE
+        WHEN s.geom_lat IS NOT NULL AND s.geom_lon IS NOT NULL
+        THEN ARRAY[ARRAY[s.geom_lon, s.geom_lat, EXTRACT(EPOCH FROM s.time_pos)]]
+        ELSE ARRAY[]::DOUBLE PRECISION[][]
+    END
 FROM activate_flight_staging s
 ON CONFLICT (icao24)
 DO UPDATE SET
-    path_geom = CASE
+    path_points = CASE
         -- State A: Landing (was airborne, now ground) -> reset
         WHEN EXCLUDED.on_ground = TRUE THEN
-            ST_Multi(EXCLUDED.geom)
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
 
         -- State B: Takeoff (was ground, now airborne) -> reset
         WHEN EXCLUDED.on_ground = FALSE AND activate_flight.on_ground = TRUE THEN
-            ST_Multi(EXCLUDED.geom)
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
 
         -- State C: Null position (signal loss) -> preserve path
         WHEN EXCLUDED.lat IS NULL OR EXCLUDED.lon IS NULL THEN
-            activate_flight.path_geom
+            activate_flight.path_points
 
-        -- State D: >30 min gap + within 2000000m -> likely landed & back, reset
+        -- State D: >30 min gap -> likely landed & back, reset
         WHEN EXCLUDED.on_ground = FALSE
             AND EXCLUDED.time_pos IS NOT NULL
             AND (EXCLUDED.time_pos - activate_flight.time_pos) > INTERVAL '30 minutes'
             AND ST_Distance(activate_flight.geom::geography, EXCLUDED.geom::geography) <= 2000000 THEN
-            ST_Multi(EXCLUDED.geom)
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
 
         -- State E: Normal flying / taxiing -> append point
         ELSE
-            ST_Multi(ST_CollectionExtract(
-                ST_Collect(activate_flight.path_geom, EXCLUDED.geom), 1
-            ))
+            activate_flight.path_points || ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
     END,
 
     on_ground      = EXCLUDED.on_ground,

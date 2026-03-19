@@ -351,15 +351,13 @@ async def get_flight_path(icao24: str):
                 raise HTTPException(status_code=404, detail="No flight data available")
 
             row = rows[0]
-            path_geojson = row["path_geojson"]
-            if isinstance(path_geojson, str):
-                path_geojson = json.loads(path_geojson)
+            path_points = row["path_points"] or []
 
             return FlightPathResponse(
                 icao24=row["icao24"],
                 callsign=row["callsign"],
-                path_geojson=path_geojson,
-                number_of_points=len(path_geojson.get("coordinates", [])),
+                path_points=path_points,
+                number_of_points=len(path_points),
             )
 
         except HTTPException:

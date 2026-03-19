@@ -96,7 +96,7 @@ export const fetchFlightPath = createAsyncThunk(
       const response = await fetch(`${API_BASE_URL}/flight-path/${flightId}`);
       if (!response.ok) throw new Error("Failed to fetch flight path");
       const data = await response.json();
-      if (data && data.path_geojson.coordinates.length <= 1) {
+      if (data && data.path_points.length <= 1) {
         toast.error(
           `No flight path exists for ${data?.callsign?.toUpperCase() ?? flightId.toUpperCase()}`,
           {

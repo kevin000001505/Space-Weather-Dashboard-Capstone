@@ -78,10 +78,10 @@ const FlightDetailsPanel = ({ flight, onClose, children, useImperial }) => {
           <strong>Position:</strong> {formatCoord(flight.lat)}, {formatCoord(flight.lon)}<br/>
         </div>
         {/* Show flight path info if available */}
-        {typeof flightPath !== 'undefined' && flightPath && flightPath.path_geojson && (
+        {typeof flightPath !== 'undefined' && flightPath && flightPath.path_points && (
           <div style={{ marginTop: 12, color: 'var(--ui-text)' }}>
             <strong>Flight Path:</strong><br/>
-            <span>Path points: {flightPath.path_geojson.coordinates.length}</span>
+            <span>Path points: {flightPath.path_points.length}</span>
           </div>
         )}
         {children}

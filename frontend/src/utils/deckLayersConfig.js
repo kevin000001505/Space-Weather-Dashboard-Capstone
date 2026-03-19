@@ -292,11 +292,13 @@ export const buildDeckLayers = ({
       }),
 
     // Flight Paths Layer
-    ...Object.entries(flightPath || {}).map(([icao24, pathData]) => (
-      pathData && pathData.path_geojson && pathData.path_geojson.coordinates &&
-      new PathLayer({
+    ...Object.entries(flightPath || {}).map(([icao24, pathData]) => {
+      if (!pathData || !pathData.path_points || pathData.path_points.length === 0) return null;
+      // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
+      const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
+      return new PathLayer({
         id: `flight-path-pathlayer-${icao24}`,
-        data: [{ ...pathData.path_geojson, coordinates: normalizePathCoordinates(pathData.path_geojson.coordinates) }],
+        data: [{ coordinates: normalizePathCoordinates(deckCoords) }],
         getPath: d => d.coordinates,
         getColor: [0, 128, 255, 200],
         getWidth: 4,
@@ -305,8 +307,8 @@ export const buildDeckLayers = ({
         capRounded: true,
         jointRounded: true,
         pickable: false,
-      })
-    )).filter(Boolean),
+      });
+    }).filter(Boolean),
 
     // Planes Icon Layer
     showPlanes &&
