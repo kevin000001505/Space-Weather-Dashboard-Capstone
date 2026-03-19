@@ -18,11 +18,14 @@ class TestExtractDrap:
 class TestLoadDrap:
 
     @pytest.mark.asyncio
-    async def test_inserts_records(self, conn, transformed_drap):
-        _, _, df_long = transformed_drap
-        await load_data.fn(df_long, conn)
+    async def test_inserts_records(self, conn):
+        df = pd.DataFrame([
+            {"Latitude": 45.0, "Longitude": -90.0, "Absorption": 2.5},
+            {"Latitude": 46.0, "Longitude": -91.0, "Absorption": 0.0},
+        ])
+        await load_data.fn(df, conn)
         count = await conn.fetchval("SELECT COUNT(*) FROM drap_region")
-        assert count > 0
+        assert count == 1
 
     @pytest.mark.asyncio
     async def test_empty_df_does_nothing(self, conn):
