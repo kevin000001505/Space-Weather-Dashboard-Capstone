@@ -4,24 +4,39 @@ import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Card, CardContent, Box } from "@mui/material";
-import { formatChartLabel, sortByTimeTag, formatSciNotation, filterLabelsByInterval, getIntervalMs } from "./helpers";
+import {
+  formatChartLabel,
+  sortByTimeTag,
+  formatSciNotation,
+  filterLabelsByInterval,
+  getIntervalMs,
+} from "./helpers";
 import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 import { S_LEVELS, MAJOR_TIMEZONES } from "./constants";
 
 Chart.register(annotationPlugin);
 
-const protonSLevelBackgroundPlugin = chartBackgroundBandsPlugin(S_LEVELS, {
-  id: "protonSLevelBackground",
-  font: "bold 16px sans-serif",
-  textAlign: "right",
-  labelPosition: "left",
-  labelOffset: 25,
-  alpha: 0.25,
-  afterDrawLabels: true,
-});
+const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
+  const axisLabelSize = useSelector((state) => state.charts.axisLabelSize);
 
-const ProtonFluxChart = () => {
+  const backgroundBandsOpacity = useSelector(
+    (state) => state.charts.backgroundBandsOpacity,
+  );
+  const protonSLevelBackgroundPlugin = React.useMemo(
+    () =>
+      chartBackgroundBandsPlugin(S_LEVELS, {
+        id: "protonSLevelBackground",
+        font: "bold 16px sans-serif",
+        textAlign: "right",
+        labelPosition: "left",
+        labelOffset: 25,
+        alpha: backgroundBandsOpacity,
+        afterDrawLabels: true,
+      }),
+    [backgroundBandsOpacity],
+  );
+
   const dispatch = useDispatch();
 
   const protonFlux = useSelector((state) => state.charts?.protonFlux);
@@ -30,10 +45,13 @@ const ProtonFluxChart = () => {
     (state) => state.charts.selectedTimezone,
   );
 
-
   const sortedProtonFlux = sortByTimeTag(protonFlux);
-  const selectedRange = useSelector((state) => state.charts?.customdt?.range || "3days");
-  const uniqueTimeTags = Array.from(new Set(sortedProtonFlux.map((item) => item.time_tag))).sort((a, b) => new Date(a) - new Date(b));
+  const selectedRange = useSelector(
+    (state) => state.charts?.customdt?.range || "3days",
+  );
+  const uniqueTimeTags = Array.from(
+    new Set(sortedProtonFlux.map((item) => item.time_tag)),
+  ).sort((a, b) => new Date(a) - new Date(b));
   const fluxLabels = filterLabelsByInterval(uniqueTimeTags, selectedRange);
 
   function getFlux(time_tag, key) {
@@ -41,10 +59,18 @@ const ProtonFluxChart = () => {
     return found ? found[key] : null;
   }
 
-  const flux10Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_10_mev"));
-  const flux50Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_50_mev"));
-  const flux100Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_100_mev"));
-  const flux500Mev = fluxLabels.map((time_tag) => getFlux(time_tag, "flux_500_mev"));
+  const flux10Mev = fluxLabels.map((time_tag) =>
+    getFlux(time_tag, "flux_10_mev"),
+  );
+  const flux50Mev = fluxLabels.map((time_tag) =>
+    getFlux(time_tag, "flux_50_mev"),
+  );
+  const flux100Mev = fluxLabels.map((time_tag) =>
+    getFlux(time_tag, "flux_100_mev"),
+  );
+  const flux500Mev = fluxLabels.map((time_tag) =>
+    getFlux(time_tag, "flux_500_mev"),
+  );
 
   const fluxChartData = {
     labels: fluxLabels,
@@ -98,16 +124,19 @@ const ProtonFluxChart = () => {
     ],
   };
 
-  // Chart ref for reset zoom
-  const chartRef = React.useRef();
+  // Chart ref for reset zoom or export
+  const internalChartRef = React.useRef();
+  const chartRef = externalChartRef || internalChartRef;
 
   // Persistent label box plugin
   const mousePosRef = React.useRef({ x: null, y: null, inside: false });
 
+  const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
   const persistentLabelBoxPlugin = React.useMemo(
     () =>
       persistentLabelBoxPluginFactory({
         mousePosRef,
+        labelBoxSize,
         getLabelLines: ({ chart, nearestIndex }) => {
           const point = sortedProtonFlux[nearestIndex];
           let label = "";
@@ -184,7 +213,7 @@ const ProtonFluxChart = () => {
   return (
     <Card
       sx={{
-        height: 900,
+        height: 600,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -194,14 +223,13 @@ const ProtonFluxChart = () => {
       >
         <Box
           sx={{
-            height: "90%",
+            height: "100%",
             backgroundColor: darkMode ? "#23272e" : "#fff",
             borderRadius: 2,
-            p: 1,
           }}
         >
           <Line
-            key={`protonfluxchart-${fluxLabels.join("-")}-${selectedTimezone}`}
+            key={`protonfluxchart-${fluxLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
             ref={chartRef}
             data={fluxChartData}
             options={{
@@ -211,6 +239,7 @@ const ProtonFluxChart = () => {
                 legend: {
                   labels: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: { size: axisLabelSize, weight: "bold" },
                   },
                 },
                 annotation: (() => {
@@ -246,7 +275,7 @@ const ProtonFluxChart = () => {
                           content: currDateStr,
                           position: "end",
                           color: darkMode ? "#23272e" : "#fff",
-                          font: { weight: "bold", size: 12 },
+                          font: { weight: "bold", size: axisLabelSize },
                           backgroundColor: darkMode ? "#90caf9" : "#1976d2",
                           borderRadius: 8,
                           padding: 4,
@@ -272,6 +301,7 @@ const ProtonFluxChart = () => {
                       content: "SWPC 10 MeV Warning Threshold",
                       color: "red",
                       font: {
+                        size: axisLabelSize - 4,
                         weight: "bold",
                       },
                       position: "middle",
@@ -285,6 +315,9 @@ const ProtonFluxChart = () => {
                 x: {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: {
+                      size: axisLabelSize,
+                    },
                     callback: function (value, index) {
                       const iso = fluxLabels[index];
                       if (!iso) return "";
@@ -314,7 +347,7 @@ const ProtonFluxChart = () => {
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                 },
                 y: {
@@ -323,7 +356,7 @@ const ProtonFluxChart = () => {
                   max: 1e2 / 5,
                   ticks: {
                     font: {
-                      size: 16,
+                      size: axisLabelSize,
                     },
                     color: darkMode ? "#e0e0e0" : "#333",
                     callback: function (value) {
@@ -343,7 +376,7 @@ const ProtonFluxChart = () => {
                     display: true,
                     text: "Proton Flux ( log₁₀(pfu) )",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                 },
               },

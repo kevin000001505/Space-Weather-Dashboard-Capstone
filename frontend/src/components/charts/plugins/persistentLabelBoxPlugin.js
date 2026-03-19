@@ -6,6 +6,7 @@
 export default function persistentLabelBoxPlugin({
   mousePosRef,
   getLabelLines,
+  labelBoxSize = 1,
 }) {
   return {
     id: "persistentLabelBox",
@@ -45,12 +46,12 @@ export default function persistentLabelBoxPlugin({
       const lines = getLabelLines({ chart, nearestIndex });
       // Box dimensions
       ctx.save();
-      const fontTime = "bold 14px sans-serif";
-      const fontDataset = "14px sans-serif";
-      const paddingX = 14;
-      const paddingY = 12;
-      const lineHeight = 18;
-      const colorBoxSize = 12;
+      const fontTime = `bold ${14 * labelBoxSize}px sans-serif`;
+      const fontDataset = `${14 * labelBoxSize}px sans-serif`;
+      const paddingX = 14 * labelBoxSize;
+      const paddingY = 12 * labelBoxSize;
+      const lineHeight = 18 * labelBoxSize;
+      const colorBoxSize = 12 * labelBoxSize;
       let maxWidth = 0;
       lines.forEach((line) => {
         if (line.type === "time") {
