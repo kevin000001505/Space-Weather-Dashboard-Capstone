@@ -48,8 +48,6 @@ async def geomatic_extract_flow():
     records = transform_data(features, observed_at)
     async with get_connection() as conn:
         await load_geoelectric_data(records, conn)
-    async with get_connection() as conn:
-        await load_geoelectric_data(records, conn)
 
     logger.info("Broadcasting geoelectric data to Redis...")
     await broadcast_geoelectric_to_redis(features, observed_at)
