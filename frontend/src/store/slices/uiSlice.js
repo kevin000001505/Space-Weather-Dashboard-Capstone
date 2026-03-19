@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { fetchAirportDetails } from "../../api/api";
 
 const initialState = {
   liveStreamMode: true,
@@ -8,6 +9,8 @@ const initialState = {
   showSettings: false,
   selectedPlane: null,
   selectedFlightsPanels: [], // Array of flights for FlightDetailsPanel
+  selectedAirportsPanels: [], // Array of airports for AirportDetailsPanel
+  hoveredRunwayId: null,
   selectedAirport: null,
   planeFilter: "all",
   airportFilter: ["large_airport", "medium_airport"],
@@ -79,6 +82,22 @@ const uiSlice = createSlice({
         (f) => f.icao24 !== action.payload,
       );
     },
+    addAirportPanel: (state, action) => {
+      // Prevent duplicates if the user clicks the same airport twice
+      const exists = state.selectedAirportsPanels.find(a => a.ident === action.payload.ident);
+      if (!exists) {
+        state.selectedAirportsPanels.push(action.payload);
+      }
+    },
+    removeAirportPanel: (state, action) => {
+      // action.payload is the airport 'ident' string (e.g., "KJFK")
+      state.selectedAirportsPanels = state.selectedAirportsPanels.filter(
+        a => a.ident !== action.payload
+      );
+    },
+    setHoveredRunwayId: (state, action) => {
+      state.hoveredRunwayId = action.payload;
+    },
     clearFlightPanels: (state) => {
       state.selectedFlightsPanels = [];
     },
@@ -147,6 +166,24 @@ const uiSlice = createSlice({
       state.showDate = action.payload;
     },
   },
+
+  extraReducers: (builder) => {
+    builder.addCase(fetchAirportDetails.fulfilled, (state, action) => {
+      // Find the specific panel in the array
+      const airportIndex = state.selectedAirportsPanels.findIndex(
+        (a) => a.ident === action.payload.ident
+      );
+      
+      // If the panel is still open, seamlessly merge the new rich data 
+      // into the existing basic airport object
+      if (airportIndex !== -1) {
+        state.selectedAirportsPanels[airportIndex] = {
+          ...state.selectedAirportsPanels[airportIndex],
+          ...action.payload, 
+        };
+      }
+    });
+  },
 });
 
 export const {
@@ -178,6 +215,9 @@ export const {
   setDrapRegionRange,
   addFlightPanel,
   removeFlightPanel,
+  addAirportPanel,
+  removeAirportPanel,
+  setHoveredRunwayId,
   clearFlightPanels,
   toggleIsolateMode,
 } = uiSlice.actions;

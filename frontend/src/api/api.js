@@ -74,6 +74,20 @@ export const fetchAirports = createAsyncThunk(
   },
 );
 
+export const fetchAirportDetails = createAsyncThunk(
+  "airports/fetchAirportDetails",
+  async (airportIdent, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/airport/${airportIdent}`);
+      if (!response.ok) throw new Error("Failed to fetch airport details");
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const fetchFlightPath = createAsyncThunk(
   "flightPath/fetchFlightPath",
   async (flightId, { rejectWithValue }) => {

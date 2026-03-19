@@ -8,7 +8,12 @@ import Map, { Layer, Popup, Source, useControl } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 // API imports
-import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from './api/api';
+import {
+  fetchPlanes,
+  fetchDRAP,
+  fetchAurora,
+  fetchAirports,
+} from './api/api';
 
 // SSE Hook import
 import { useLiveStream } from './hooks/useLiveStream';
@@ -27,15 +32,17 @@ import {
   setIsZooming,
   addFlightPanel,
   removeFlightPanel,
+  addAirportPanel,
+  removeAirportPanel,
+  setHoveredRunwayId,
 } from './store/slices/uiSlice';
 
 // Utility imports
-import { getAltFt, getAltM, getAltDisplay, getSpeedDisplay, formatCoord } from './utils/mapUtils';
+import { getAltDisplay, getSpeedDisplay, formatCoord, capitalizeWords } from './utils/mapUtils';
 import { buildDeckLayers } from './utils/deckLayersConfig';
 
 // DRAP imports
 import { 
-  createDRAPFilledCellsLayers,
   getDRAPFilledCellsGeoJSON,
   getDRAPFilledCellsMapLayers
 } from './utils/drap';
@@ -45,6 +52,7 @@ import { getAuroraGeoJSON, getAuroraMapLayers } from './utils/aurora';
 
 // Flight details panel imports
 import FlightDetailsPanel from './components/ui/FlightDetailsPanel';
+import AirportDetailsPanel from './components/ui/AirporDetailsPanel';
 import SearchBar from './components/ui/SearchBar';
 
 const DeckGLOverlay = (props) => {
@@ -57,6 +65,8 @@ const PlaneTracker = () => {
   const dispatch = useDispatch();
   const { data: planes } = useSelector((state) => state.planes);
   const selectedFlightsPanels = useSelector(state => state.ui.selectedFlightsPanels);
+  const selectedAirportsPanels = useSelector(state => state.ui.selectedAirportsPanels || []);
+  const hoveredRunwayId = useSelector(state => state.ui.hoveredRunwayId);
   const { points: drapPoints } = useSelector((state) => state.drap);
   const { data: auroraData } = useSelector((state) => state.aurora);
   const { data: airports } = useSelector((state) => state.airports);
@@ -100,7 +110,7 @@ const PlaneTracker = () => {
   const filteredPlanes = useMemo(() => {
     return planes.filter(p => {
       if (!p.lat || !p.lon) return false;
-      const altValue = useImperial ? getAltFt(p.geo_altitude) : p.geo_altitude;
+      const altValue = getAltDisplay(p.geo_altitude, false, useImperial);
       if (altValue < altitudeRange[0] || altValue > altitudeRange[1]) return false;
       return true;
     });
@@ -111,7 +121,7 @@ const PlaneTracker = () => {
     if (airportFilter.length === 0) return [];
     return airports.filter(a => {
       if (!airportFilter.includes(a.type)) return false;
-      const altValue = useImperial ? a.elevation_ft : getAltM(a.elevation);
+      const altValue = getAltDisplay(a.elevation_ft, true, useImperial);
       if (altValue < airportAltitudeRange[0] || altValue > airportAltitudeRange[1]) return false;
       return true;
     });
@@ -176,6 +186,10 @@ const PlaneTracker = () => {
       dispatch,
       addFlightPanel: (plane) => dispatch(addFlightPanel(plane)),
       selectedFlightsPanels,
+      addAirportPanel: (airport) => dispatch(addAirportPanel(airport)),
+      selectedAirportsPanels,
+      hoveredRunwayId,
+      setHoveredRunwayId: (id) => dispatch(setHoveredRunwayId(id)),
     });
     if (showDRAP && drapDeckLayers && drapDeckLayers.length > 0) {
       return [...drapDeckLayers, ...baseLayers];
@@ -195,7 +209,9 @@ const PlaneTracker = () => {
     isZooming,
     drapDeckLayers,
     flightPath,
-    isolateMode
+    isolateMode,
+    selectedAirportsPanels,
+    hoveredRunwayId
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -272,9 +288,7 @@ const PlaneTracker = () => {
               <h3 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>{selectedAirport.name}</h3>
               <div style={{ fontSize: '12px', lineHeight: '1.6' }}>
                 <strong>Code:</strong> {selectedAirport.iata_code || selectedAirport.gps_code || 'N/A'}<br/>
-                <strong>Type:</strong>
-                {selectedAirport.type.replace('_', ' ').split(' ').map(word => word.charAt(0)
-                .toUpperCase() + word.slice(1)).join(' ')}<br/>
+                <strong>Type:</strong> {capitalizeWords(selectedAirport.type)}<br/>
                 <strong>Location:</strong> {selectedAirport.municipality || 'N/A'}, {selectedAirport.country}<br/>
                 <strong>Elevation:</strong> {getAltDisplay(selectedAirport.elevation_ft, true, useImperial)}<br/>
                 <strong>Position:</strong> {formatCoord(selectedAirport.lat)}°, {formatCoord(selectedAirport.lon)}°
@@ -331,6 +345,16 @@ const PlaneTracker = () => {
             dispatch(removeFlightPanel(flight.icao24));
             dispatch({ type: 'flightPath/removeFlightPath', payload: flight.icao24 });
           }}
+          useImperial={useImperial}
+        />
+      ))}
+
+      {/* Airport Details Panels */}
+      {selectedAirportsPanels.map(airport => (
+        <AirportDetailsPanel
+          key={airport.ident}
+          airport={airport}
+          onClose={() => dispatch(removeAirportPanel(airport.ident))}
           useImperial={useImperial}
         />
       ))}

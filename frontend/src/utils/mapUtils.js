@@ -13,21 +13,21 @@ export const formatCoord = (val) => {
 };
 
 // Metric to Imperial
-export const getAltFt = (m) => (m !== null && m !== undefined ? m * 3.28084 : null);
-export const getSpeedKts = (ms) => (ms !== null && ms !== undefined ? ms * 1.94384 : null);
+export const m2ft = (m) => (m !== null && m !== undefined ? m * 3.28084 : null);
+export const ms2kts = (ms) => (ms !== null && ms !== undefined ? ms * 1.94384 : null);
 
 // Imperial to Metric
-export const getAltM = (ft) => (ft !== null && ft !== undefined ? ft / 3.28084 : null);
-export const getSpeedMs = (kts) => (kts !== null && kts !== undefined ? kts / 1.94384 : null);
+export const ft2m = (ft) => (ft !== null && ft !== undefined ? ft / 3.28084 : null);
+export const kts2ms = (kts) => (kts !== null && kts !== undefined ? kts / 1.94384 : null);
 
 export const getAltDisplay = (alt, isImperial, useImperial) => {
   if (alt === null || alt === undefined) return 'N/A';
   let altValue = alt;
   if (isImperial && !useImperial) {
-    altValue = getAltM(alt);
+    altValue = ft2m(alt);
   }
   else if (!isImperial && useImperial) {
-    altValue = getAltFt(alt);
+    altValue = m2ft(alt);
   }
   const suffix = useImperial ? ' ft' : ' m';
   return formatNumber(altValue, 0, suffix);
@@ -37,13 +37,18 @@ export const getSpeedDisplay = (speed, isImperial, useImperial) => {
   if (speed === null || speed === undefined) return 'N/A';
   let speedValue = speed;
   if (isImperial && !useImperial) {
-    speedValue = getSpeedMs(speed);
+    speedValue = kts2ms(speed);
   }
   else if (!isImperial && useImperial) {
-    speedValue = getSpeedKts(speed);
+    speedValue = ms2kts(speed);
   }
   const suffix = useImperial ? ' kts' : ' m/s';
   return formatNumber(speedValue, 0, suffix);
+}
+
+export const capitalizeWords = (str) => {
+  if (!str) return 'N/A';
+  return str.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
 
 // Defines the exact breakpoints for the gradient colors
@@ -82,10 +87,10 @@ export const getAltitudeColor = (alt, isImperial, useImperial) => {
   
   let altValue = alt;
   if (isImperial && !useImperial) {
-    altValue = getAltM(alt);
+    altValue = ft2m(alt);
   }
   else if (!isImperial && useImperial) {
-    altValue = getAltFt(alt);
+    altValue = m2ft(alt);
   }
   if (altValue <= stops[0].val) return stops[0].color;
   if (altValue >= stops[stops.length - 1].val) return stops[stops.length - 1].color;

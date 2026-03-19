@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { fetchAirportDetails } from '../../api/api';
 import {
   setSearchOpen,
   setSearchQuery,
@@ -7,6 +8,7 @@ import {
   setSelectedAirport,
   setSelectedPlane,
   setViewState,
+  addAirportPanel,
 } from '../../store/slices/uiSlice';
 
 const SearchBar = () => {
@@ -79,17 +81,8 @@ const SearchBar = () => {
         transitionDuration: 1500,
       }));
 
-      try {
-        const response = await fetch(`/api/v1/airport/${airport.ident}`);
-        if (response.ok) {
-          const details = await response.json();
-          console.log('Fetched Airport Details:', details);
-        } else {
-          console.error(`Failed to fetch details for ${airport.ident}. Status:`, response.status);
-        }
-      } catch (error) {
-        console.error('Network error fetching airport details:', error);
-      }
+      dispatch(addAirportPanel(airport));
+      dispatch(fetchAirportDetails(airport.ident));
     }
 
     dispatch(setSearchQuery(''));

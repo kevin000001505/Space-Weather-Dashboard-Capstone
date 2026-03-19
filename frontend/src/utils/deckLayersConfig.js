@@ -1,6 +1,6 @@
-import { ScatterplotLayer, IconLayer, LineLayer, PathLayer, TextLayer } from "@deck.gl/layers";
+import { IconLayer, PathLayer, TextLayer, LineLayer, ScatterplotLayer } from "@deck.gl/layers";
 import { getAltitudeColor, PLANE_ATLAS, PLANE_OUTLINE_ATLAS } from "./mapUtils";
-import { fetchFlightPath } from "../api/api";
+import { fetchFlightPath, fetchAirportDetails } from "../api/api";
 
 const svgToDataUrl = (svg) =>
   `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -39,6 +39,17 @@ const AIRPORT_ICONS = Object.fromEntries(
     },
   ]),
 );
+
+// Vibrant, distinct colors for overlapping runways. Red is reserved.
+const RUNWAY_PALETTE = [
+  [255, 140, 0],   // Orange
+  [46, 204, 113],  // Green
+  [52, 152, 219],  // Blue
+  [155, 89, 182],  // Purple
+  [241, 196, 15],  // Yellow
+  [26, 188, 156],  // Teal
+  [255, 105, 180]  // Pink
+];
 
 const DEFAULT_AIRPORT_ICON = AIRPORT_ICONS.small_airport;
 
@@ -84,17 +95,23 @@ export const buildDeckLayers = ({
   dispatch,
   addFlightPanel,
   selectedFlightsPanels,
+  addAirportPanel,
+  selectedAirportsPanels,
+  hoveredRunwayId,
+  setHoveredRunwayId,
 }) => {
   // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
     if (object) {
-      const exists = selectedFlightsPanels.some(f => f.icao24 === object.icao24);
-      addFlightPanel(object);
-      if (exists) {
-        dispatch({ type: 'flightPath/removeFlightPath', payload: object.icao24 });
-      } else {
-        dispatch(fetchFlightPath(object.icao24));
-      }
+      setTimeout(() => {
+        const exists = selectedFlightsPanels.some(f => f.icao24 === object.icao24);
+        addFlightPanel(object);
+        if (exists) {
+          dispatch({ type: 'flightPath/removeFlightPath', payload: object.icao24 });
+        } else {
+          dispatch(fetchFlightPath(object.icao24));
+        }
+      }, 10);
       return true;
     }
   };
@@ -120,6 +137,11 @@ export const buildDeckLayers = ({
       setTimeout(() => {
         setSelectedAirport(object);
         setSelectedPlane(null);
+        const exists = selectedAirportsPanels?.some(a => a.ident === object.ident);
+        addAirportPanel(object);
+        if (!exists) {
+          dispatch(fetchAirportDetails(object.ident));
+        }
       }, 10);
       return true;
     }
@@ -140,7 +162,112 @@ export const buildDeckLayers = ({
     }
   };
 
+  // Extract all runways that have both end coordinates
+  const activeRunways = selectedAirportsPanels.flatMap(a => 
+    (a.runways || [])
+      .filter(r => r.le_geom && r.he_geom)
+      .map((r, index) => ({ ...r, colorIndex: index }))
+  );
+
+  // Extract LE and HE points to draw text labels at the ends of the runways
+  const runwayLabels = activeRunways.flatMap(r => {
+    const labels = [];
+    if (r.le_geom && r.le_ident) {
+      labels.push({ coordinates: r.le_geom.coordinates, text: r.le_ident });
+    }
+    if (r.he_geom && r.he_ident) {
+      labels.push({ coordinates: r.he_geom.coordinates, text: r.he_ident });
+    }
+    return labels;
+  });
+
+  // Extract all main antennas and DME antennas into a single list of points
+  const activeNavaidPoints = selectedAirportsPanels.flatMap(a => {
+    const points = [];
+    if (!a.navaids) return points;
+    
+    a.navaids.forEach(n => {
+      // Add the main antenna
+      if (n.geom && n.geom.coordinates) {
+        points.push({ ...n, coordinates: n.geom.coordinates, isDME: false });
+      }
+      // Add the DME antenna if it is physically offset
+      if (n.dme_geom && n.dme_geom.coordinates) {
+        points.push({ ...n, coordinates: n.dme_geom.coordinates, isDME: true });
+      }
+    });
+    return points;
+  });
+
   return [
+    // Runway Lines Layer
+    showAirports && activeRunways.length > 0 &&
+      new LineLayer({
+        id: 'airport-runways-layer',
+        data: activeRunways,
+        getSourcePosition: d => d.le_geom.coordinates,
+        getTargetPosition: d => d.he_geom.coordinates,
+        getColor: d => {
+          let baseColor;
+          if (d.id === hoveredRunwayId) {
+            baseColor = [255, 255, 255]; // White hover highlight
+          } else if (d.closed) {
+            baseColor = [255, 50, 50]; // Red
+          } else {
+            baseColor = RUNWAY_PALETTE[d.colorIndex % RUNWAY_PALETTE.length];
+          }
+          // Drop opacity to 25 when dragging the map
+          return [...baseColor, isZooming ? 25 : 255];
+        },
+        getWidth: 8,
+        widthUnits: 'pixels',
+        pickable: true,
+        onHover: ({ object }) => {
+          setHoveredRunwayId(object ? object.id : null);
+          if (object) console.log("Hovering over runway ID:", object.id);
+        },
+        updateTriggers: {
+          getWidth: [hoveredRunwayId],
+          getColor: [darkMode, hoveredRunwayId],
+        },
+      }),
+
+    // Runway End Text Labels
+    showAirports && runwayLabels.length > 0 &&
+      new TextLayer({
+        id: 'airport-runways-text-layer',
+        data: runwayLabels,
+        getPosition: d => d.coordinates,
+        getText: d => d.text,
+        getSize: 14,
+        getColor: darkMode ? [255, 255, 255, isZooming ? 20 : 255] : [0, 0, 0, isZooming ? 20 : 255],
+        getBackgroundColor: darkMode ? [0, 0, 0, isZooming ? 20 : 200] : [255, 255, 255, isZooming ? 20 : 200],
+        background: true,
+        backgroundPadding: [2, 2],
+        fontFamily: 'monospace',
+        fontWeight: 'bold',
+        getTextAnchor: 'middle',
+        getAlignmentBaseline: 'center',
+        pickable: false,
+      }),
+
+    // Navaid Points Layer
+    showAirports && activeNavaidPoints.length > 0 &&
+      new ScatterplotLayer({
+        id: 'airport-navaids-layer',
+        data: activeNavaidPoints,
+        getPosition: d => d.coordinates,
+        getFillColor: d => {
+          const color = d.isDME ? [156, 39, 176] : [0, 200, 255];
+          return [...color, isZooming ? 25 : 200];
+        },
+        getLineColor: darkMode ? [255, 255, 255, isZooming ? 25 : 255] : [0, 0, 0, isZooming ? 25 : 255],
+        lineWidthMinPixels: 1,
+        stroked: true,
+        getRadius: 5,
+        radiusUnits: 'pixels',
+        pickable: true,
+      }),
 
     // Airports Icon Layer
     showAirports &&
