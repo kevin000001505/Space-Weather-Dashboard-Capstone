@@ -29,6 +29,8 @@ services:
   postgis:
     image: postgis/postgis:16-3.4
     container_name: postgis
+    restart: unless-stopped  # Auto-restart if crashes
+    stop_grace_period: 30s   # Clean shutdown
     command: >
       postgres
       -c shared_buffers=8GB
