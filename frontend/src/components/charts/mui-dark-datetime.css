@@ -1,0 +1,43 @@
+.MuiMultiSectionDigitalClock-root::-webkit-scrollbar,
+.MuiMultiSectionDigitalClock-root *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  background: transparent !important;
+}
+
+.MuiMultiSectionDigitalClock-root,
+.MuiMultiSectionDigitalClock-root * {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE and Edge */
+}
+.mui-dark-datetime-popper .MuiPaper-root{
+  background-color: #23272e !important;
+  color: #e0e0e0 !important;
+}
+.mui-dark-datetime-popper .MuiPickersDay-root{
+  color: #e0e0e0 !important;
+}
+.mui-dark-datetime-popper  .MuiDayCalendar-header{
+  color: #e0e0e0 !important;
+}
+.mui-dark-datetime-popper  .MuiPickersArrowSwitcher-button{
+  color: #e0e0e0 !important;
+}
+.mui-dark-datetime-popper  .MuiPickersArrowSwitcher-button{
+  color: #e0e0e0 !important;
+}
+.mui-dark-datetime label,
+.mui-dark-datetime {
+  -webkit-text-fill-color: #e0e0e0 !important;
+}
+.mui-dark-datetime .MuiPickersTextField-root {
+  color: #e0e0e0 !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px;
+}
+.mui-dark-datetime .MuiFormLabel-root {
+  background-color: #23272e !important;
+}
+.mui-dark-datetime .MuiSvgIcon-root {
+  color: #e0e0e0 !important;
+}

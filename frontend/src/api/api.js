@@ -1,6 +1,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-hot-toast";
 import { toIso, getTimeRange } from "./helper";
+import { setLoading } from "../store/slices/chartsSlice";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -39,11 +40,11 @@ export const fetchDRAP = createAsyncThunk(
 );
 
 export const fetchAurora = createAsyncThunk(
-  'aurora/fetchAurora',
+  "aurora/fetchAurora",
   async (utc_time = null, { rejectWithValue }) => {
     try {
-      const url = utc_time 
-        ? `${API_BASE_URL}/aurora?utc_time=${utc_time}` 
+      const url = utc_time
+        ? `${API_BASE_URL}/aurora?utc_time=${utc_time}`
         : `${API_BASE_URL}/aurora`;
       const response = await fetch(url);
 
@@ -102,12 +103,15 @@ export const fetchFlightPath = createAsyncThunk(
 
 export const fetchKpIndex = createAsyncThunk(
   "charts/fetchKpIndex",
-  async ({ start, end, hours = 144 } = {}, { rejectWithValue }) => {
+  async ({ start, end, hours = 144, polling = false } = {}, { dispatch, rejectWithValue }) => {
     try {
       let s = start,
         e = end;
       if (!s || !e) {
         [s, e] = getTimeRange(hours);
+      }
+      if (!polling) {
+        dispatch(setLoading(true));
       }
       const url = `${API_BASE_URL}/kp-index?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);
@@ -122,12 +126,18 @@ export const fetchKpIndex = createAsyncThunk(
 
 export const fetchXrayFlux = createAsyncThunk(
   "charts/fetchXrayFlux",
-  async ({ start, end, hours = 24 } = {}, { rejectWithValue }) => {
+  async (
+    { start, end, hours = 24, polling = false } = {},
+    { dispatch, rejectWithValue },
+  ) => {
     try {
       let s = start,
         e = end;
       if (!s || !e) {
         [s, e] = getTimeRange(hours);
+      }
+      if (!polling) {
+        dispatch(setLoading(true));
       }
       const url = `${API_BASE_URL}/xray?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);
@@ -142,12 +152,15 @@ export const fetchXrayFlux = createAsyncThunk(
 
 export const fetchProtonFlux = createAsyncThunk(
   "charts/fetchProtonFlux",
-  async ({ start, end, hours = 24 } = {}, { rejectWithValue }) => {
+  async ({ start, end, hours = 24, polling = false } = {}, { dispatch, rejectWithValue }) => {
     try {
       let s = start,
         e = end;
       if (!s || !e) {
         [s, e] = getTimeRange(hours);
+      }
+      if (!polling) {
+        dispatch(setLoading(true));
       }
       const url = `${API_BASE_URL}/proton-flux?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);

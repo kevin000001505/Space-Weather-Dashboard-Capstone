@@ -9,7 +9,16 @@ const initialState = {
   activeTab: 0,
   selectedTimezone: "local",
   customdt: { start: "", end: "", range: "3days" }, // range: 1week, 3days, 24hours, 6hours, custom
+  showChartSettings: false,
+  backgroundBandsOpacity: 0.25,
+  labelBoxSize: 1,
+  axisLabelSize: 16,
+  showDownloadPanel: false,
+  showCustomDateDialog: false,
+  customDialogStart: null,
+  customDialogEnd: null,
 };
+
 
 const chartsSlice = createSlice({
   name: "charts",
@@ -23,6 +32,33 @@ const chartsSlice = createSlice({
     },
     setCustomDateTime(state, action) {
       state.customdt = action.payload;
+    },
+    setShowChartSettings(state, action) {
+      state.showChartSettings = action.payload;
+    },
+    setBackgroundBandsOpacity(state, action) {
+      state.backgroundBandsOpacity = action.payload;
+    },
+    setLabelBoxSize(state, action) {
+      state.labelBoxSize = action.payload;
+    },
+    setAxisLabelSize(state, action) {
+      state.axisLabelSize = action.payload;
+    },
+    setShowDownloadPanel(state, action) {
+      state.showDownloadPanel = action.payload;
+    },
+    setShowCustomDateDialog(state, action) {
+      state.showCustomDateDialog = action.payload;
+    },
+    setCustomDialogStart(state, action) {
+      state.customDialogStart = action.payload;
+    },
+    setCustomDialogEnd(state, action) {
+      state.customDialogEnd = action.payload;
+    },
+    setLoading(state, action) {
+      state.loading = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -42,6 +78,6 @@ const chartsSlice = createSlice({
   },
 });
 
-export const { setActiveTab, setSelectedTimezone, setCustomDateTime } =
+export const { setActiveTab, setSelectedTimezone, setCustomDateTime, setShowChartSettings, setBackgroundBandsOpacity, setLabelBoxSize, setAxisLabelSize, setShowDownloadPanel, setShowCustomDateDialog, setCustomDialogStart, setCustomDialogEnd, setLoading } =
   chartsSlice.actions;
 export default chartsSlice.reducer;

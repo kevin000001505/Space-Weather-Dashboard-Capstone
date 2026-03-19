@@ -1,4 +1,5 @@
 import React from "react";
+import { debounce } from "lodash";
 import { useDispatch, useSelector } from "react-redux";
 import { Line } from "react-chartjs-2";
 import {
@@ -46,9 +47,19 @@ Chart.register(
   [Tooltip],
 );
 
-const XrayFluxChart = () => {
-  let xrayFlux = useSelector((state) => state.charts?.xrayFlux);
-  xrayFlux = sortByTimeTag(xrayFlux);
+const XrayFluxChart = ({ chartRef: externalChartRef }) => {
+  const rawXrayFlux = useSelector((state) => state.charts?.xrayFlux);
+  const [xrayFlux, setXrayFlux] = React.useState(sortByTimeTag(rawXrayFlux));
+
+  const debouncedSetXrayFlux = React.useMemo(
+    () => debounce((data) => setXrayFlux(sortByTimeTag(data)), 200),
+    []
+  );
+
+  React.useEffect(() => {
+    debouncedSetXrayFlux(rawXrayFlux);
+    return () => debouncedSetXrayFlux.cancel();
+  }, [rawXrayFlux, debouncedSetXrayFlux]);
 
   const darkMode = useSelector((state) => state.ui.darkMode);
   const showDate = useSelector((state) => state.charts.showDate);
@@ -56,6 +67,7 @@ const XrayFluxChart = () => {
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
+  const axisLabelSize = useSelector((state) => state.charts.axisLabelSize);
   const dispatch = useDispatch();
 
   // Track mouse position over the canvas
@@ -64,14 +76,21 @@ const XrayFluxChart = () => {
   // Persistent label box plugin (shared, now generic)
 
   // R-levels: [min, max, color, label]
-  const radioBlackoutBackgroundPlugin = chartBackgroundBandsPlugin(R_LEVELS, {
-    id: "radioBlackoutBackground",
-    font: "bold 16px sans-serif",
-    textAlign: "right",
-    labelPosition: "left",
-    labelOffset: 25,
-    alpha: 0.25,
-  });
+  const backgroundBandsOpacity = useSelector(
+    (state) => state.charts.backgroundBandsOpacity,
+  );
+  const radioBlackoutBackgroundPlugin = React.useMemo(
+    () =>
+      chartBackgroundBandsPlugin(R_LEVELS, {
+        id: "radioBlackoutBackground",
+        font: "bold 16px sans-serif",
+        textAlign: "right",
+        labelPosition: "left",
+        labelOffset: 25,
+        alpha: backgroundBandsOpacity,
+      }),
+    [backgroundBandsOpacity],
+  );
 
   // Build unique time_tag list (chronological)
   const uniqueTimeTags = getUniqueTimeTags(xrayFlux);
@@ -100,10 +119,12 @@ const XrayFluxChart = () => {
     getFlux(time_tag, 19, "0.05-0.4nm"),
   );
 
+  const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
   const persistentLabelBoxPlugin = React.useMemo(
     () =>
       persistentLabelBoxPluginFactory({
         mousePosRef,
+        labelBoxSize,
         getLabelLines: ({ chart, nearestIndex }) => {
           // Format the time as 'Mon DD h:mmAM/PM'
           const labelIso = xrayLabels[nearestIndex];
@@ -196,8 +217,9 @@ const XrayFluxChart = () => {
       },
     ],
   };
-  // Chart ref for reset zoom
-  const chartRef = React.useRef();
+  // Chart ref for reset zoom or export
+  const internalChartRef = React.useRef();
+  const chartRef = externalChartRef || internalChartRef;
 
   // Track mouse position and force chart redraw on mouse move
   React.useEffect(() => {
@@ -229,7 +251,7 @@ const XrayFluxChart = () => {
   return (
     <Card
       sx={{
-        height: 900,
+        height: 600,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -239,14 +261,13 @@ const XrayFluxChart = () => {
       >
         <Box
           sx={{
-            height: "80%",
+            height: "100%",
             backgroundColor: darkMode ? "#23272e" : "#fff",
             borderRadius: 2,
-            p: 1,
           }}
         >
           <Line
-            key={`xraychart-${xrayLabels.join("-")}-${selectedTimezone}`}
+            key={`xraychart-${xrayLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
             ref={chartRef}
             data={xrayChartData}
             options={{
@@ -256,6 +277,7 @@ const XrayFluxChart = () => {
                 legend: {
                   labels: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: { size: axisLabelSize, weight: "bold" },
                   },
                 },
                 tooltip: {
@@ -269,7 +291,7 @@ const XrayFluxChart = () => {
                     autoSkip: true,
                     maxTicksLimit: 18,
                     font: {
-                      size: 14,
+                      size: axisLabelSize,
                     },
                     callback: function (value, index) {
                       const date = new Date(xrayLabels[index]);
@@ -299,7 +321,7 @@ const XrayFluxChart = () => {
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 14 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                 },
                 y: {
@@ -307,6 +329,9 @@ const XrayFluxChart = () => {
                   position: "left",
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: {
+                      size: axisLabelSize,
+                    },
                     callback: function (value) {
                       const allowed = [
                         1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2,
@@ -339,7 +364,7 @@ const XrayFluxChart = () => {
                     display: true,
                     text: "X-ray Flux (W/m²)",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                   min: 1e-10,
                   max: 1e-1,
@@ -368,14 +393,14 @@ const XrayFluxChart = () => {
                       if (value === 1e-4) return "X";
                       return "";
                     },
-                    font: { weight: "bold", size: 14 },
+                    font: { weight: "bold", size: axisLabelSize },
                     padding: 8,
                   },
                   title: {
                     display: true,
                     text: "X-ray Flare Class",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                 },
               },
@@ -392,7 +417,7 @@ const XrayFluxChart = () => {
                     display: true,
                     position: "end",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold" },
+                    font: { weight: "bold", size: axisLabelSize },
                     backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
@@ -407,7 +432,7 @@ const XrayFluxChart = () => {
                     display: true,
                     position: "end",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold" },
+                    font: { weight: "bold", size: axisLabelSize },
                     backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
@@ -422,7 +447,7 @@ const XrayFluxChart = () => {
                     display: true,
                     position: "end",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold" },
+                    font: { weight: "bold", size: axisLabelSize },
                     backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
@@ -437,7 +462,7 @@ const XrayFluxChart = () => {
                     display: true,
                     position: "end",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold" },
+                    font: { weight: "bold", size: axisLabelSize },
                     backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
@@ -452,7 +477,7 @@ const XrayFluxChart = () => {
                     display: true,
                     position: "end",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold" },
+                    font: { weight: "bold", size: axisLabelSize },
                     backgroundColor: "rgba(0,0,0,0)",
                   },
                 },
@@ -490,7 +515,7 @@ const XrayFluxChart = () => {
                           content: currDateStr,
                           position: "end",
                           color: darkMode ? "#23272e" : "#fff",
-                          font: { weight: "bold", size: 12 },
+                          font: { weight: "bold", size: axisLabelSize - 4 },
                           backgroundColor: darkMode ? "#90caf9" : "#1976d2",
                           borderRadius: 8,
                           padding: 4,

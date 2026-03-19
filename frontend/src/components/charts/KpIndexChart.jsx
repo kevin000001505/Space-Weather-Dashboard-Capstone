@@ -13,15 +13,16 @@ import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 Chart.register(annotationPlugin, zoomPlugin);
 
 import { G_LEVELS, KP_COLORS, MAJOR_TIMEZONES } from "./constants";
-const kpGLevelBackgroundPlugin = chartBackgroundBandsPlugin(G_LEVELS, {
-  id: "kpGLevelBackground",
-  font: "bold 16px sans-serif",
-  textAlign: "right",
-  labelPosition: "left",
-  labelOffset: 25,
-  alpha: 0.25,
-});
-const KpIndexChart = () => {
+const KpIndexChart = ({ chartRef }) => {
+  const backgroundBandsOpacity = useSelector((state) => state.charts.backgroundBandsOpacity);
+  const kpGLevelBackgroundPlugin = React.useMemo(() => chartBackgroundBandsPlugin(G_LEVELS, {
+    id: "kpGLevelBackground",
+    font: "bold 16px sans-serif",
+    textAlign: "right",
+    labelPosition: "left",
+    labelOffset: 25,
+    alpha: backgroundBandsOpacity,
+  }), [backgroundBandsOpacity]);
   const kpIndex = useSelector((state) => state.charts?.kpIndex);
   const darkMode = useSelector((state) => state.ui.darkMode);
   const selectedTimezone = useSelector(
@@ -67,14 +68,17 @@ const KpIndexChart = () => {
     ],
   };
 
-  const chartRef = React.useRef();
+  // chartRef is now passed from parent
   // Track mouse position for persistent label box
   const mousePosRef = React.useRef({ x: null, y: null, inside: false });
   // Always create a new instance of the persistent label box plugin for this chart
+  const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
+  const axisLabelSize = useSelector((state) => state.charts.axisLabelSize);
   const persistentLabelBoxPlugin = React.useMemo(
     () =>
       persistentLabelBoxPluginFactory({
         mousePosRef,
+        labelBoxSize,
         getLabelLines: ({ chart, nearestIndex }) => {
           // Always use the value and date from sortedKpIndex[nearestIndex]
           const point = sortedKpIndex[nearestIndex];
@@ -135,7 +139,7 @@ const KpIndexChart = () => {
     // Chart ref for reset zoom
     <Card
       sx={{
-        height: 900,
+        height: 600,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -145,14 +149,13 @@ const KpIndexChart = () => {
       >
         <Box
           sx={{
-            height: "80%",
+            height: "100%",
             backgroundColor: darkMode ? "#23272e" : "#fff",
             borderRadius: 2,
-            p: 1,
           }}
         >
           <Line
-            key={`kpchart-${kpLabels.length}-${selectedTimezone}`}
+            key={`kpchart-${kpLabels.length}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
             ref={chartRef}
             data={kpChartData}
             options={{
@@ -162,6 +165,7 @@ const KpIndexChart = () => {
                 legend: {
                   labels: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: { size: axisLabelSize, weight: "bold" },
                   },
                 },
                 annotation: {
@@ -202,7 +206,7 @@ const KpIndexChart = () => {
                               content: currDateStr,
                               position: "end",
                               color: darkMode ? "#23272e" : "#fff",
-                              font: { weight: "bold", size: 12 },
+                              font: { weight: "bold", size: axisLabelSize - 4 },
                               backgroundColor: darkMode ? "#90caf9" : "#1976d2",
                               borderRadius: 8,
                               padding: 4,
@@ -224,6 +228,9 @@ const KpIndexChart = () => {
                 x: {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: {
+                      size: axisLabelSize,
+                    },
                     callback: function (value, index, ticks) {
                       // Use kpLabels[index] for correct ISO string, like XrayFluxChart
                       const iso = kpLabels[index];
@@ -254,13 +261,16 @@ const KpIndexChart = () => {
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                 },
                 y: {
                   position: "left",
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    font: {
+                      size: axisLabelSize,
+                    },
                   },
                   grid: {
                     color: darkMode ? "#444" : "#e0e0e0",
@@ -269,7 +279,7 @@ const KpIndexChart = () => {
                     display: true,
                     text: "Kp Index (0 -- 9)",
                     color: darkMode ? "#e0e0e0" : "#333",
-                    font: { weight: "bold", size: 16 },
+                    font: { weight: "bold", size: axisLabelSize },
                   },
                   min: 0,
                   max: 10,
@@ -285,8 +295,6 @@ const KpIndexChart = () => {
               annotationPlugin,
               persistentLabelBoxPlugin,
             ]}
-            onElementsClick={undefined}
-            getDatasetAtEvent={undefined}
             onPointerMove={(event) => {
               // react-chartjs-2 v5+ chartRef.current is a wrapper, get .canvas and .chart
               const chartWrapper = chartRef.current;
