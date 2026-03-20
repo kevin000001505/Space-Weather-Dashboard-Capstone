@@ -2,7 +2,7 @@
 
 from prefect import flow
 from shared.db_utils import get_connection
-from tasks import (
+from tasks.flights import (
     fetch_flights,
     clean_records,
     insert_batch,
