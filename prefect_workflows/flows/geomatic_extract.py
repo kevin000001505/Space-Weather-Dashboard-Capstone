@@ -1,5 +1,6 @@
 from prefect import flow
 from prefect.variables import Variable
+from shared.prefect_utils import variable_upsert
 from shared.db_utils import get_connection
 from shared.logger import get_logger
 
@@ -52,5 +53,5 @@ async def geomatic_extract_flow():
     logger.info("Broadcasting geoelectric data to Redis...")
     await broadcast_geoelectric_to_redis(features, observed_at)
 
-    await Variable.set("geoelectric_last_file", file_name, overwrite=True)
+    await variable_upsert("geoelectric_last_file", file_name)
     logger.info("Geoelectric field extraction flow completed successfully!")

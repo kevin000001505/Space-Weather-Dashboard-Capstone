@@ -1,5 +1,6 @@
 from prefect import flow
 from shared.logger import get_logger
+from shared.prefect_utils import variable_upsert
 from prefect.variables import Variable
 from shared.db_utils import get_connection
 from tasks.drap import broadcast_drap_to_redis, extract_data, transform_data, load_data
@@ -30,7 +31,7 @@ async def rap_extract_flow():
     logger.info("Broadcasting new D-RAP data to redis...")
     await broadcast_drap_to_redis(df_long, current_updated)
 
-    await Variable.set("data_last_updated", current_updated, overwrite=True)
+    await variable_upsert("data_last_updated", current_updated)
     logger.info("Metadata: %s", metadata)
     logger.info("Wide DataFrame:\n%s", df_wide.head())
     logger.info("Long DataFrame:\n%s", df_long.head())

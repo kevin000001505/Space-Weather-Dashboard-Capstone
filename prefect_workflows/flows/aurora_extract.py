@@ -1,6 +1,7 @@
 from prefect import flow
 from shared.logger import get_logger
 from prefect.variables import Variable
+from shared.prefect_utils import variable_upsert
 from shared.db_utils import get_connection
 from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_aurora_data
 
@@ -30,5 +31,5 @@ async def aurora_extract_flow():
     logger.info("Broadcasting new aurora data to redis...")
     await broadcast_aurora_to_redis(data)
 
-    await Variable.set("aurora_last_observation_time", current_observation, overwrite=True)
+    await variable_upsert("aurora_last_observation_time", current_observation)
     logger.info("Aurora forecast extraction flow completed successfully!")
