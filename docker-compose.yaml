@@ -30,7 +30,7 @@ services:
     image: postgis/postgis:16-3.4
     container_name: postgis
     restart: unless-stopped  # Auto-restart if crashes
-    stop_grace_period: 30s   # Clean shutdown
+    stop_grace_period: 60s   # Clean shutdown
     command: >
       postgres
       -c shared_buffers=8GB
@@ -54,10 +54,10 @@ services:
       - "127.0.0.1:5432:5432" # Bind to localhost for local development
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prefect -d prefect -h 127.0.0.1 -p 5432"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 60s  
+      retries: 30
+      start_period: 120s  
     networks:
       - postgis_external  # must be first so port publishing works (data_network is internal)
       - data_network
