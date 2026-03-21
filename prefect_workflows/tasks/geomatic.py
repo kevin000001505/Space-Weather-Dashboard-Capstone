@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 
@@ -72,6 +73,7 @@ def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> Lis
                 latitude=coords[1],
                 ex=props["Ex"],
                 ey=props["Ey"],
+                e_magnitude=np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
                 quality_flag=props["quality_flag"],
                 distance_nearest_station=props["distance_nearest_station"],
             )
@@ -119,10 +121,22 @@ async def broadcast_geoelectric_to_redis(
 
     try:
         client = get_redis_client()
+        # Enrich features with e_magnitude before caching
+        enriched = []
+        for feature in features:
+            props = feature["properties"]
+            enriched.append({
+                **feature,
+                "properties": {
+                    **props,
+                    "e_magnitude": np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
+                }
+            })
+
         payload = json.dumps({
             "observed_at": observed_at.isoformat(),
-            "count": len(features),
-            "features": features,
+            "count": len(enriched),
+            "features": enriched,
         })
         await client.set(GEOELECTRIC_CACHE_KEY, payload, ex=MEDIUM_TTL)
         await client.publish(GEOELECTRIC_CHANNEL, "new_data")

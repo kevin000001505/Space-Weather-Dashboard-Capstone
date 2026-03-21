@@ -52,7 +52,7 @@ def fetch_kp_index() -> List[KPIndexRecord]:
     return records
 
 
-@task(cache_policy=NO_CACHE)
+@task(cache_policy=NO_CACHE, retries = 3)
 async def store_kp_index(kp_records: List[KPIndexRecord], conn: Connection) -> None:
     """Bulk insert Kp index records into the database."""
     logger = get_logger(__name__)

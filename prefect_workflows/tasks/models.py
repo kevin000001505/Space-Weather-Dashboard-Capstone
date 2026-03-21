@@ -415,6 +415,7 @@ class GeoelectricRecord(BaseModel):
     latitude: float = Field(ge=-90, le=90, description="Latitude")
     ex: float = Field(description="North-South electric field component (mV/m)")
     ey: float = Field(description="East-West electric field component (mV/m)")
+    e_magnitude: float = Field(description="sqrt of Ex and Ey")
     quality_flag: int = Field(ge=0, description="Data quality flag")
     distance_nearest_station: float = Field(
         ge=0, description="Distance to nearest magnetometer station (km)"
@@ -428,6 +429,7 @@ class GeoelectricRecord(BaseModel):
             self.latitude,
             self.ex,
             self.ey,
+            self.e_magnitude,
             self.quality_flag,
             self.distance_nearest_station,
         )

@@ -970,6 +970,7 @@ CREATE TABLE IF NOT EXISTS geoelectric_field (
     location                 GEOGRAPHY(Point, 4326) NOT NULL,
     ex                       DOUBLE PRECISION       NOT NULL,  -- North-South electric field (mV/m)
     ey                       DOUBLE PRECISION       NOT NULL,  -- East-West electric field (mV/m)
+    e_magnitude              DOUBLE PRECISION       NOT NULL,  -- Magnitude of electric field (mV/m)
     quality_flag             SMALLINT               NOT NULL,
     distance_nearest_station DOUBLE PRECISION       NOT NULL,  -- Distance to nearest magnetometer station (km)
     PRIMARY KEY (observed_at, location)
@@ -986,6 +987,7 @@ CREATE TEMP TABLE geoelectric_field_staging (
     latitude                 DOUBLE PRECISION NOT NULL,
     ex                       DOUBLE PRECISION NOT NULL,
     ey                       DOUBLE PRECISION NOT NULL,
+    e_magnitude              DOUBLE PRECISION NOT NULL,
     quality_flag             SMALLINT         NOT NULL,
     distance_nearest_station DOUBLE PRECISION NOT NULL
 ) ON COMMIT DROP
@@ -993,17 +995,18 @@ CREATE TEMP TABLE geoelectric_field_staging (
 
 GEOELECTRIC_STAGING_COLUMNS = [
     "observed_at", "longitude", "latitude",
-    "ex", "ey", "quality_flag", "distance_nearest_station",
+    "ex", "ey", "e_magnitude", "quality_flag", "distance_nearest_station",
 ]
 
 GEOELECTRIC_TRANSFORM_SQL = """
 INSERT INTO geoelectric_field
-    (observed_at, location, ex, ey, quality_flag, distance_nearest_station)
+    (observed_at, location, ex, ey, e_magnitude, quality_flag, distance_nearest_station)
 SELECT
     observed_at,
     ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
     ex,
     ey,
+    e_magnitude,
     quality_flag,
     distance_nearest_station
 FROM geoelectric_field_staging

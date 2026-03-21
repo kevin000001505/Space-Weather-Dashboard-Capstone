@@ -23,12 +23,12 @@ def extract_data():
     return data_string
 
 
-@task(log_prints=True, retries=3, retry_delay_seconds=5)
+@task(log_prints=True, retry_delay_seconds=5)
 def transform_data(data_string):
     metadata, df_wide, df_long = transformers.parse_drap_data(data_string)
     return (metadata, df_wide, df_long)
 
-@task(log_prints=True, cache_policy=NO_CACHE)
+@task(log_prints=True, retries = 3, cache_policy=NO_CACHE)
 async def load_data(df_long: DataFrame, conn: Connection):
     """Load data into PostgreSQL."""
     logger = get_logger(__name__)
