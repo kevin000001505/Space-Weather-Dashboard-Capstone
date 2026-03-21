@@ -16,7 +16,7 @@ from database.queries import (
     FLIGHT_PATH_QUERY,
     KP_INDEX_RANGE_QUERY,
     LATEST_DRAP_QUERY,
-    DRAP_QUERY,
+    DRAP_RANGE_QUERY,
     XRAY_FLUX_RANGE_QUERY,
     PROTON_FLUX_RANGE_QUERY,
 )
@@ -24,6 +24,7 @@ from config import (
     AuroraResponse,
     FlightStatesResponse,
     DRAPResponse,
+    DRAPRangeResponse,
     FlightPathResponse,
     ActivateFlightState,
     Airport,
@@ -51,6 +52,9 @@ def _iso_now() -> str:
 def _iso_days_ago(days: int) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%dT%H:00:00Z")
 
+def _iso_hours_ago(hours: int) -> str:
+    return (datetime.now(timezone.utc) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:00:00Z")
+
 def _normalize_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
@@ -61,25 +65,39 @@ def _resolve_time_window(
     start: Optional[datetime],
     end: Optional[datetime],
     min_time: Optional[int] = 1,
-    default_days: int = 3,
+    default_hours: int = 3,
 ) -> tuple[datetime, datetime]:
 
-    now = datetime.now(timezone.utc)  
+    now = datetime.now(timezone.utc)
+    default_delta = timedelta(hours=default_hours)
+
+    # Validate: don't allow future timestamps
+    if end and end > now:
+        raise HTTPException(
+            status_code=400,
+            detail=f"query_time cannot be in the future (requested: {end}, now: {now})"
+        )
+
+    if start and start > now:
+        raise HTTPException(
+            status_code=400,
+            detail=f"query_time cannot be in the future (requested: {start}, now: {now})"
+        )
 
     if start is None:
         if end is None:
-            # Default: last 3 days to now
-            return now - timedelta(days=default_days), now
-        
+            return now - default_delta, now
+
         else:
-            # Only end provided: 3 days before end → end
+            # Only end provided: default window before end → end
             end_utc = _normalize_utc(end)
-            return end_utc - timedelta(days=default_days), end_utc
+            return end_utc - default_delta, end_utc
     
     else:
         if end is None:
             # Only start provided: start → now
             return _normalize_utc(start), now
+    
 
     # Both provided: full validation
     start_utc = _normalize_utc(start)
@@ -427,50 +445,88 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/drap", response_model=DRAPResponse)
-async def drap(
-    query_time: Optional[datetime] = Query(
-        default=None,
-        description="Snapshot time (ISO 8601 UTC). Defaults to latest available.",
-    )
-):
-    start_time = time.time()
-
+@app.get("/api/v1/drap/latest", response_model=DRAPResponse)
+async def latest_drap():
     try:
-        query_start = time.time()
-
         async with get_connection() as conn:
-            rows = await conn.fetch(DRAP_QUERY, query_time)
+            rows = await conn.fetch(LATEST_DRAP_QUERY)
 
         if not rows:
-            raise HTTPException(status_code=404, detail="No DRAP data available")
+            raise HTTPException(status_code=404, detail="No D-RAP data available")
 
-        query_time_ms = round((time.time() - query_start) * 1000, 2)
-        total_time_ms = round((time.time() - start_time) * 1000, 2)
+        timestamp = rows[0]["observed_at"]
+        points = [[row["lat"], row["lon"], row["intensity"]] for row in rows]
 
-        return DRAPResponse(
-            timestamp=rows[0]["observed_at"],
-            count=len(rows),
-            points=[[r["lat"], r["lon"], r["intensity"]] for r in rows],
-            query_time_ms=query_time_ms,
-            total_time_ms=total_time_ms,
-        )
+        return DRAPResponse(timestamp=timestamp, count=len(points), points=points)
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching DRAP data: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+@app.get("/api/v1/drap", response_model=DRAPRangeResponse)
+async def drap_range(
+    start: Optional[datetime] = Query(
+        default=None,
+        description="Start of time range (ISO 8601 UTC). Defaults to 1 hour before end.",
+        openapi_examples={
+            "1_hour_ago": {"summary": "1 hour ago", "value": _iso_hours_ago(1)},
+            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
+        },
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="End of time range (ISO 8601 UTC). Defaults to now.",
+        openapi_examples={
+            "now": {"summary": "Current time", "value": _iso_now()},
+        },
+    ),
+):
+    """
+    Retrieve D-RAP absorption data for a time range.
+
+    - **start** and **end**: Optional custom range. Defaults to the last 1 hour.
+    - Returns snapshots grouped by observed_at timestamp, each with absorption points.
+    """
+    try:
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
+
+        async with get_connection() as conn:
+            rows = await conn.fetch(DRAP_RANGE_QUERY, start_utc, end_utc)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No D-RAP data available for the given range")
+
+        # Group rows by observed_at timestamp
+        snapshots_map: dict = {}
+        for row in rows:
+            ts = row["observed_at"]
+            if ts not in snapshots_map:
+                snapshots_map[ts] = []
+            snapshots_map[ts].append([row["lat"], row["lon"], row["intensity"]])
+
+        snapshots = [
+            DRAPResponse(timestamp=ts, count=len(points), points=points)
+            for ts, points in snapshots_map.items()
+        ]
+
+        return DRAPRangeResponse(count=len(snapshots), snapshots=snapshots)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching D-RAP range data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @app.get("/api/v1/kp-index", response_model=KpIndexListResponse)
 async def kp_index(
     start: Optional[datetime] = Query(
         default=None,
-        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 hours before end.",
         openapi_examples={
-            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
-            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
+            "6_hours_ago": {"summary": "6 hours ago", "value": _iso_hours_ago(6)},
         },
     ),
     end: Optional[datetime] = Query(
@@ -488,7 +544,7 @@ async def kp_index(
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     try:
-        start_utc, end_utc = _resolve_time_window(start, end, 3)
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=3)
 
         async with get_connection() as conn:
             rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
@@ -516,10 +572,10 @@ async def kp_index(
 async def xray_flux(
     start: Optional[datetime] = Query(
         default=None,
-        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 hours before end.",
         openapi_examples={
-            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
-            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
+            "6_hours_ago": {"summary": "6 hours ago", "value": _iso_hours_ago(6)},
         },
     ),
     end: Optional[datetime] = Query(
@@ -567,10 +623,10 @@ async def xray_flux(
 async def proton_flux(
     start: Optional[datetime] = Query(
         default=None,
-        description="Start of time range (ISO 8601 UTC). Defaults to 3 days before end.",
+        description="Start of time range (ISO 8601 UTC). Defaults to 3 hours before end.",
         openapi_examples={
-            "3_day_ago": {"summary": "3-day ago", "value": _iso_days_ago(3)},
-            "7_day_ago": {"summary": "7-day ago", "value": _iso_days_ago(7)},
+            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
+            "6_hours_ago": {"summary": "6 hours ago", "value": _iso_hours_ago(6)},
         },
     ),
     end: Optional[datetime] = Query(

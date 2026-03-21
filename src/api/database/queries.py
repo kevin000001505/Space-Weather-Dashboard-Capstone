@@ -157,26 +157,14 @@ LATEST_DRAP_QUERY = """
     JOIN latest_time lt ON d.observed_at = lt.max_ts;
 """
 
-DRAP_QUERY = """
-    WITH resolved_time AS (
-        SELECT
-            CASE
-                WHEN $1::timestamptz IS NULL THEN MAX(observed_at)
-                WHEN EXISTS (
-                    SELECT 1 FROM drap_region WHERE observed_at = $1::timestamptz
-                ) THEN $1::timestamptz
-                ELSE MAX(observed_at)
-            END AS ts
-        FROM drap_region
-    )
-    SELECT
-        d.observed_at,
-        ST_Y(d.location::geometry) AS lat,
-        ST_X(d.location::geometry) AS lon,
-        COALESCE(d.absorption, 0)  AS intensity
-    FROM drap_region d
-    JOIN resolved_time rt ON d.observed_at = rt.ts;
+
+DRAP_RANGE_QUERY = """
+SELECT observed_at, ST_Y(location::geometry) AS lat, ST_X(location::geometry) AS lon, COALESCE(absorption, 0) AS intensity
+FROM drap_region
+WHERE observed_at BETWEEN $1 AND $2
+ORDER BY observed_at DESC
 """
+
 
 KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count

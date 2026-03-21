@@ -7,8 +7,11 @@ class DRAPResponse(BaseModel):
     timestamp: datetime
     count: int
     points: List[List[float]]  # [lat, lon, intensity]
-    query_time_ms: Optional[float] = None
-    total_time_ms: Optional[float] = None
+
+
+class DRAPRangeResponse(BaseModel):
+    count: int
+    snapshots: List[DRAPResponse]
 
 
 class FlightPathResponse(BaseModel):

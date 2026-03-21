@@ -34,12 +34,10 @@ def fetch_aurora_data() -> dict:
             f"{len(data.get('coordinates', []))} coordinate points"
         )
         return data
-    except requests.exceptions.JSONDecodeError:
-        error_pos = 918616
-        logger.info("--- RAW CONTENT AROUND ERROR ---")
-        logger.error(response.text[error_pos - 50 : error_pos + 50]) 
-        logger.debug("RAW data:", response.text)
-        raise 
+    except requests.exceptions.JSONDecodeError as e:
+        logger.error(f"JSON parse failed at pos {e.pos}/{len(response.text)}: {e}")
+        logger.error(f"Full response text:\n{response.text}")
+        raise
 
 
 @task(log_prints=True, cache_policy=NO_CACHE)
