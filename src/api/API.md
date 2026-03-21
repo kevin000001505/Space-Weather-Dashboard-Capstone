@@ -24,6 +24,39 @@ Simple liveness probe.
 
 ---
 
+## Live Stream
+
+### `GET /api/v1/stream/live`
+Server-Sent Events (SSE) stream that pushes real-time updates for all data types. Each event has a named type and a JSON payload. A `: heartbeat` comment is sent every ~15 seconds to keep the connection alive.
+
+**No parameters.**
+
+**Event types**
+
+| Event | Description |
+|-------|-------------|
+| `planes` | Latest active flight states |
+| `aurora` | Latest aurora forecast |
+| `drap` | Latest D-RAP grid |
+| `xray` | Latest X-ray flux readings |
+| `protonflux` | Latest proton flux readings |
+| `kpindex` | Latest Kp index readings |
+| `alerts` | Latest space weather alerts |
+| `geoelectric` | Latest geoelectric field data |
+
+**Example stream**
+```
+event: planes
+data: {"timestamp": "...", "count": 5000, "flights": [...]}
+
+event: aurora
+data: {"observation_time": "...", "forecast_time": "...", "count": 18840, "coordinates": [...]}
+
+: heartbeat
+```
+
+---
+
 ## Airports
 
 ### `GET /api/v1/airports`
@@ -39,6 +72,7 @@ Returns all airports from the database.
 {
   "airports": [
     {
+      "ident": "KLAX",
       "name": "Los Angeles International Airport",
       "iata_code": "LAX",
       "gps_code": "KLAX",
@@ -55,6 +89,7 @@ Returns all airports from the database.
 
 | Field | Type | Nullable | Description |
 |-------|------|----------|-------------|
+| `ident` | string | No | ICAO identifier |
 | `name` | string | No | Full airport name |
 | `iata_code` | string | Yes | IATA 3-letter code |
 | `gps_code` | string | Yes | ICAO GPS code |
@@ -64,6 +99,107 @@ Returns all airports from the database.
 | `elevation_ft` | int | Yes | Elevation in feet |
 | `lat` | float | No | Latitude (3 decimal places) |
 | `lon` | float | No | Longitude (3 decimal places) |
+
+---
+
+### `GET /api/v1/airport/{ident}`
+Returns detailed information for a single airport including runways, frequencies, navaids, and comments.
+
+**Path Parameters**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `ident` | string | ICAO identifier (case-insensitive, e.g. `KLAX`) |
+
+**Response** — `AirportDetailResponse`
+```json
+{
+  "id": 26434,
+  "ident": "KLAX",
+  "type": "large_airport",
+  "name": "Los Angeles International Airport",
+  "elevation_ft": 125,
+  "continent": "NA",
+  "iso_country": "US",
+  "iso_region": "US-CA",
+  "municipality": "Los Angeles",
+  "scheduled_service": true,
+  "icao_code": "KLAX",
+  "iata_code": "LAX",
+  "gps_code": "KLAX",
+  "local_code": "LAX",
+  "home_link": "https://www.flylax.com/",
+  "wikipedia_link": "https://en.wikipedia.org/wiki/Los_Angeles_International_Airport",
+  "keywords": null,
+  "geom": { "type": "Point", "coordinates": [-118.408, 33.943] },
+  "country_name": "United States",
+  "region_name": "California",
+  "runways": [
+    {
+      "id": 1,
+      "length_ft": 12091,
+      "width_ft": 200,
+      "surface": "ASP",
+      "lighted": true,
+      "closed": false,
+      "le_ident": "06L",
+      "le_elevation_ft": 126,
+      "le_heading_degt": 69.0,
+      "le_displaced_threshold_ft": null,
+      "le_geom": null,
+      "he_ident": "24R",
+      "he_elevation_ft": 119,
+      "he_heading_degt": 249.0,
+      "he_displaced_threshold_ft": null,
+      "he_geom": null
+    }
+  ],
+  "frequencies": [
+    {
+      "id": 1,
+      "type": "APP",
+      "description": "LOS ANGELES APPROACH",
+      "frequency_mhz": 124.5
+    }
+  ],
+  "navaids": [
+    {
+      "id": 1,
+      "ident": "LAX",
+      "name": "LOS ANGELES",
+      "type": "VORTAC",
+      "frequency_khz": 113700
+    }
+  ],
+  "comments": []
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `id` | int | No | Internal database ID |
+| `ident` | string | No | ICAO identifier |
+| `type` | string | Yes | Airport type |
+| `name` | string | No | Full airport name |
+| `elevation_ft` | float | Yes | Elevation in feet |
+| `continent` | string | Yes | Continent code |
+| `iso_country` | string | Yes | ISO 2-letter country code |
+| `iso_region` | string | Yes | ISO region code |
+| `municipality` | string | Yes | City |
+| `scheduled_service` | bool | Yes | Whether scheduled service operates |
+| `icao_code` | string | Yes | ICAO code |
+| `iata_code` | string | Yes | IATA 3-letter code |
+| `gps_code` | string | Yes | GPS code |
+| `local_code` | string | Yes | Local code |
+| `home_link` | string | Yes | Airport website URL |
+| `wikipedia_link` | string | Yes | Wikipedia URL |
+| `keywords` | string | Yes | Search keywords |
+| `geom` | GeoJSON Point | Yes | Airport geometry |
+| `country_name` | string | Yes | Full country name |
+| `region_name` | string | Yes | Full region name |
+| `runways` | array | No | List of runway objects (may be empty) |
+| `frequencies` | array | No | List of radio frequency objects (may be empty) |
+| `navaids` | array | No | List of navaid objects (may be empty) |
+| `comments` | array | No | List of comment objects (may be empty) |
 
 ---
 
@@ -117,7 +253,7 @@ Returns currently active airborne flights from the last 20 minutes.
 ---
 
 ### `GET /api/v1/flight-path/{icao24}`
-Returns the recorded flight path for a specific aircraft as a GeoJSON LineString.
+Returns the recorded flight path for a specific aircraft as an ordered list of coordinate points.
 
 **Path Parameters**
 | Parameter | Type | Description |
@@ -130,13 +266,10 @@ Returns the recorded flight path for a specific aircraft as a GeoJSON LineString
   "icao24": "a1b2c3",
   "callsign": "UAL123",
   "number_of_points": 2,
-  "path_geojson": {
-    "type": "LineString",
-    "coordinates": [
-      [-118.408, 33.943],
-      [-117.500, 34.100]
-    ]
-  }
+  "path_points": [
+    [-118.408, 33.943],
+    [-117.500, 34.100]
+  ]
 }
 ```
 
@@ -145,16 +278,25 @@ Returns the recorded flight path for a specific aircraft as a GeoJSON LineString
 | `icao24` | string | No | ICAO transponder address |
 | `callsign` | string | Yes | Flight callsign |
 | `number_of_points` | int | No | Number of coordinate points in the path |
-| `path_geojson` | object | No | GeoJSON LineString of the flight path |
+| `path_points` | `[[float, float]]` | No | Ordered list of `[longitude, latitude]` coordinate pairs |
 
 ---
 
 ## D-RAP (HF Radio Absorption)
 
-### `GET /api/v1/drap/latest`
-Returns the latest D-RAP (D-Region Absorption Prediction) grid as a list of weighted points.
+### `GET /api/v1/drap`
+Returns a D-RAP (D-Region Absorption Prediction) grid as a list of weighted points. Defaults to the latest available snapshot.
 
-**No parameters.**
+**Query Parameters**
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `query_time` | datetime (ISO 8601) | No | latest | — | Snapshot time in UTC (e.g. `2026-03-13T06:00:00Z`) |
+
+**Examples**
+```
+GET /api/v1/drap
+GET /api/v1/drap?query_time=2026-03-13T06:00:00Z
+```
 
 **Response** — `DRAPResponse`
 ```json
@@ -307,12 +449,12 @@ Returns GOES solar proton flux readings across multiple energy channels over a t
 ---
 
 ### `GET /api/v1/aurora`
-Returns aurora forecast data for a specific observation time.
+Returns aurora forecast data. With no parameters, returns the latest available data from cache/database.
 
 **Query Parameters**
 | Parameter | Type | Required | Default | Constraints | Description |
 |-----------|------|----------|---------|-------------|-------------|
-| `utc_time` | string (ISO 8601) | **Yes** | — | — | Observation time in UTC (e.g. `2026-03-13T06:17:00Z`) |
+| `utc_time` | string (ISO 8601) | No | latest | — | Observation time in UTC (e.g. `2026-03-13T06:17:00Z`) |
 
 **Response** — `AuroraResponse`
 ```json
@@ -334,7 +476,7 @@ Returns aurora forecast data for a specific observation time.
 | `observation_time` | datetime | No | Observation time of the aurora snapshot (UTC) |
 | `forecast_time` | datetime | No | Forecast issue time (UTC) |
 | `count` | int | No | Number of coordinate points |
-| `coordinates` | `[[lon, int, aurora]]` | No | Each element is `[longitude, latitude, aurora intensity]` |
+| `coordinates` | `[[lon, lat, aurora]]` | No | Each element is `[longitude, latitude, aurora intensity]` |
 | `query_time_ms` | float | Yes | SQL query execution time |
 | `total_time_ms` | float | Yes | Total endpoint execution time |
 
@@ -374,7 +516,7 @@ All endpoints return standard error objects on failure:
 | Status | Meaning |
 |--------|---------|
 | `404` | No data found for the given parameters |
-| `422` | Invalid or missing parameters (e.g. `utc_time` not provided, time range too short, `end` ≤ `start`) |
+| `422` | Invalid or missing parameters (e.g. invalid time format, time range too short, `end` ≤ `start`) |
 | `500` | Internal database or server error |
 
 ```json

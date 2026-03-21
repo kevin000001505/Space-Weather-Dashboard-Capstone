@@ -194,6 +194,15 @@ jobs:
           echo "${{ secrets.ENV_FILE }}" > .env
           mkdir -p ./secrets
           echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
+      
+      - name: Write env file
+        run: |
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
 
       - name: Build and Deploy Containers
         env:

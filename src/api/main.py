@@ -16,6 +16,7 @@ from database.queries import (
     FLIGHT_PATH_QUERY,
     KP_INDEX_RANGE_QUERY,
     LATEST_DRAP_QUERY,
+    DRAP_QUERY,
     XRAY_FLUX_RANGE_QUERY,
     PROTON_FLUX_RANGE_QUERY,
 )
@@ -426,37 +427,39 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/drap/latest", response_model=DRAPResponse)
-async def latest_drap():
+@app.get("/api/v1/drap", response_model=DRAPResponse)
+async def drap(
+    query_time: Optional[datetime] = Query(
+        default=None,
+        description="Snapshot time (ISO 8601 UTC). Defaults to latest available.",
+    )
+):
     start_time = time.time()
 
     try:
         query_start = time.time()
 
         async with get_connection() as conn:
-            payload = await conn.fetchval(LATEST_DRAP_QUERY)
+            rows = await conn.fetch(DRAP_QUERY, query_time)
 
-        query_time_ms = (time.time() - query_start) * 1000
+        if not rows:
+            raise HTTPException(status_code=404, detail="No DRAP data available")
 
-        if isinstance(payload, str):
-            payload = json.loads(payload)
+        query_time_ms = round((time.time() - query_start) * 1000, 2)
+        total_time_ms = round((time.time() - start_time) * 1000, 2)
 
-        if (
-            not payload
-            or payload.get("count", 0) == 0
-            or payload.get("timestamp") is None
-        ):
-            raise HTTPException(status_code=404, detail="No D-RAP data available")
-
-        total_time_ms = (time.time() - start_time) * 1000
-        payload["query_time_ms"] = round(query_time_ms, 2)
-        payload["total_time_ms"] = round(total_time_ms, 2)
-
-        return payload
+        return DRAPResponse(
+            timestamp=rows[0]["observed_at"],
+            count=len(rows),
+            points=[[r["lat"], r["lon"], r["intensity"]] for r in rows],
+            query_time_ms=query_time_ms,
+            total_time_ms=total_time_ms,
+        )
 
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error fetching DRAP data: {e}")
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
@@ -490,19 +493,15 @@ async def kp_index(
         async with get_connection() as conn:
             rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
 
-        if not rows:
-            raise HTTPException(status_code=404, detail="No Kp index data available")
-
-        indices = []
-        for row in rows:
-            indices.append(
-                KpIndexResponse(
-                    time_tag=row["time_tag"],
-                    kp=row["kp"],
-                    a_running=row.get("a_running"),
-                    station_count=row.get("station_count"),
-                )
+        indices = [
+            KpIndexResponse(
+                time_tag=row["time_tag"],
+                kp=row["kp"],
+                a_running=row.get("a_running"),
+                station_count=row.get("station_count"),
             )
+            for row in rows
+        ]
 
         return KpIndexListResponse(indices=indices)
 
@@ -541,14 +540,9 @@ async def xray_flux(
 
         async with get_connection() as conn:
             rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
-
-        if not rows:
-            raise HTTPException(status_code=404, detail="No X-ray flux data available")
-
-        xray_fluxes = []
-        for row in rows:
-            xray_fluxes.append(
-                XRayResponse(
+        
+        xray_fluxes = [
+            XRayResponse(
                     time_tag=row["time_tag"],
                     satellite=row["satellite"],
                     flux=row["flux"],
@@ -557,7 +551,8 @@ async def xray_flux(
                     electron_contamination=row["electron_contamination"],
                     energy=row["energy"],
                 )
-            )
+            for row in rows
+        ]
 
         return XRayListResponse(xray_fluxes=xray_fluxes)
 
@@ -596,13 +591,8 @@ async def proton_flux(
         async with get_connection() as conn:
             rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
 
-        if not rows:
-            raise HTTPException(status_code=404, detail="No proton flux data available")
-
-        data = []
-        for row in rows:
-            data.append(
-                ProtonFluxResponse(
+        data = [
+            ProtonFluxResponse(
                     time_tag=row["time_tag"],
                     satellite=row["satellite"],
                     flux_10_mev=row.get("flux_10_mev"),
@@ -610,7 +600,8 @@ async def proton_flux(
                     flux_100_mev=row.get("flux_100_mev"),
                     flux_500_mev=row.get("flux_500_mev"),
                 )
-            )
+            for row in rows
+        ]
 
         return ProtonFluxListResponse(data=data)
 

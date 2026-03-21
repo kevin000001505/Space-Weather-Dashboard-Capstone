@@ -52,11 +52,11 @@ deployments:
 
   - name: Kp Index Extract
     entrypoint: flows/kp_index.py:ingest_kp_index_flow
-    description: "Fetches live Kp index data from NOAA every 3 hours"
+    description: "Fetches live Kp index data from NOAA every 1 hours"
     work_pool:
       name: NOAA-pool
     schedules:
-      - cron: "0 */3 * * *"
+      - cron: "0 */1 * * *"
         timezone: UTC
 
   - name: Alert Extract
@@ -97,13 +97,13 @@ deployments:
 
   # --- Data Maintenance Flows ---
 
-  - name: DRAP Cleanup
-    entrypoint: flows/db_maintain.py:db_maintenance_flow
-    work_pool:
-      name: NOAA-pool
-    schedules:
-      - cron: "0 0 * * *"
-        timezone: UTC
+  # - name: DRAP Cleanup
+  #   entrypoint: flows/db_maintain.py:db_maintenance_flow
+  #   work_pool:
+  #     name: NOAA-pool
+  #   schedules:
+  #     - cron: "0 0 * * *"
+  #       timezone: UTC
 
   - name: flightdata-daily-maintenance
     entrypoint: flows/flights_capture.py:maintenance_flow

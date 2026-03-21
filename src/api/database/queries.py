@@ -145,28 +145,37 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
 
 LATEST_DRAP_QUERY = """
     WITH latest_time AS (
-      SELECT MAX(observed_at) AS max_ts
-      FROM drap_region
-    ),
-    latest_rows AS (
-      SELECT d.observed_at, d.absorption, d.location
-      FROM drap_region d
-      JOIN latest_time lt ON d.observed_at = lt.max_ts
-    ),
-    pts AS (
-      SELECT jsonb_build_array(
-        ST_Y(location::geometry),          -- lat
-        ST_X(location::geometry),          -- lon
-        COALESCE(absorption, 0)         -- intensity (already normalized)
-      ) AS p
-      FROM latest_rows
+        SELECT MAX(observed_at) AS max_ts
+        FROM drap_region
     )
-    SELECT jsonb_build_object(
-      'timestamp', (SELECT max_ts FROM latest_time),
-      'count', (SELECT COUNT(*) FROM latest_rows),
-      'points', COALESCE(jsonb_agg(p), '[]'::jsonb)
-    ) AS payload
-    FROM pts;
+    SELECT
+        d.observed_at,
+        ST_Y(d.location::geometry) AS lat,
+        ST_X(d.location::geometry) AS lon,
+        COALESCE(d.absorption, 0)   AS intensity
+    FROM drap_region d
+    JOIN latest_time lt ON d.observed_at = lt.max_ts;
+"""
+
+DRAP_QUERY = """
+    WITH resolved_time AS (
+        SELECT
+            CASE
+                WHEN $1::timestamptz IS NULL THEN MAX(observed_at)
+                WHEN EXISTS (
+                    SELECT 1 FROM drap_region WHERE observed_at = $1::timestamptz
+                ) THEN $1::timestamptz
+                ELSE MAX(observed_at)
+            END AS ts
+        FROM drap_region
+    )
+    SELECT
+        d.observed_at,
+        ST_Y(d.location::geometry) AS lat,
+        ST_X(d.location::geometry) AS lon,
+        COALESCE(d.absorption, 0)  AS intensity
+    FROM drap_region d
+    JOIN resolved_time rt ON d.observed_at = rt.ts;
 """
 
 KP_INDEX_RANGE_QUERY = """

@@ -33,12 +33,12 @@ services:
     stop_grace_period: 60s   # Clean shutdown
     command: >
       postgres
-      -c shared_buffers=8GB
-      -c work_mem=128MB
-      -c effective_cache_size=23GB
-      -c maintenance_work_mem=2GB
-      -c wal_buffers=64MB
-      -c checkpoint_completion_target=0.9
+      -c shared_buffers=${PG_SHARED_BUFFERS:-256MB}
+      -c work_mem=${PG_WORK_MEM:-4MB}
+      -c effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-512MB}
+      -c maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-64MB}
+      -c wal_buffers=${PG_WAL_BUFFERS:-7864kB}
+      -c checkpoint_completion_target=${PG_CHECKPOINT_COMPLETION_TARGET:-0.9}
     environment:
       - POSTGRES_USER=prefect
       - POSTGRES_PASSWORD=prefect
@@ -250,6 +250,7 @@ services:
       PYTHONPATH: /app
     ports:
       - "127.0.0.1:8000:8000"
+    restart: unless-stopped
     volumes:
       - ./src/api:/app
       - ./shared:/app/shared

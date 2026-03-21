@@ -27,7 +27,7 @@ export const fetchDRAP = createAsyncThunk(
   "drap/fetchDRAP",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/drap/latest`);
+      const response = await fetch(`${API_BASE_URL}/drap`);
       if (!response.ok) {
         throw new Error("Failed to fetch DRAP data");
       }
