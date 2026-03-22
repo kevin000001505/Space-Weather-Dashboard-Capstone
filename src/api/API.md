@@ -284,27 +284,16 @@ Returns the recorded flight path for a specific aircraft as an ordered list of c
 
 ## D-RAP (HF Radio Absorption)
 
-### `GET /api/v1/drap`
-Returns a D-RAP (D-Region Absorption Prediction) grid as a list of weighted points. Defaults to the latest available snapshot.
+### `GET /api/v1/drap/latest`
+Returns the most recent D-RAP (D-Region Absorption Prediction) grid snapshot.
 
-**Query Parameters**
-| Parameter | Type | Required | Default | Constraints | Description |
-|-----------|------|----------|---------|-------------|-------------|
-| `query_time` | datetime (ISO 8601) | No | latest | — | Snapshot time in UTC (e.g. `2026-03-13T06:00:00Z`) |
-
-**Examples**
-```
-GET /api/v1/drap
-GET /api/v1/drap?query_time=2026-03-13T06:00:00Z
-```
+**No parameters.**
 
 **Response** — `DRAPResponse`
 ```json
 {
   "timestamp": "2026-03-08T12:00:00Z",
   "count": 3240,
-  "query_time_ms": 45.2,
-  "total_time_ms": 48.1,
   "points": [
     [45.0, -93.0, 0.75],
     [46.0, -93.0, 0.50]
@@ -316,9 +305,56 @@ GET /api/v1/drap?query_time=2026-03-13T06:00:00Z
 |-------|------|----------|-------------|
 | `timestamp` | datetime | No | Observation time of this D-RAP snapshot |
 | `count` | int | No | Number of grid points |
-| `query_time_ms` | float | Yes | SQL query execution time |
-| `total_time_ms` | float | Yes | Total endpoint execution time |
 | `points` | `[[lat, lon, intensity]]` | No | Each element is `[latitude, longitude, absorption (0–1)]` |
+
+---
+
+### `GET /api/v1/drap`
+Returns D-RAP snapshots over a time range, grouped by observation timestamp.
+
+**Query Parameters**
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `start` | datetime (ISO 8601) | No | 1 hour before `end` | — | Start of time range (e.g. `2026-03-13T05:00:00Z`) |
+| `end` | datetime (ISO 8601) | No | now | — | End of time range (e.g. `2026-03-13T06:00:00Z`) |
+
+**Time window rules:**
+- Neither provided → last 1 hour up to now
+- Only `end` → 1 hour before `end` up to `end`
+- Only `start` → `start` up to now
+- Both provided → exact range
+
+**Examples**
+```
+GET /api/v1/drap
+GET /api/v1/drap?start=2026-03-13T05:00:00Z&end=2026-03-13T06:00:00Z
+```
+
+**Response** — `DRAPRangeResponse`
+```json
+{
+  "count": 2,
+  "snapshots": [
+    {
+      "timestamp": "2026-03-13T05:00:00Z",
+      "count": 3240,
+      "points": [[45.0, -93.0, 0.75]]
+    },
+    {
+      "timestamp": "2026-03-13T05:05:00Z",
+      "count": 3240,
+      "points": [[45.0, -93.0, 0.80]]
+    }
+  ]
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `count` | int | No | Number of snapshots returned |
+| `snapshots[].timestamp` | datetime | No | Observation time of this snapshot |
+| `snapshots[].count` | int | No | Number of grid points in this snapshot |
+| `snapshots[].points` | `[[lat, lon, intensity]]` | No | Each element is `[latitude, longitude, absorption (0–1)]` |
 
 ---
 
@@ -506,6 +542,82 @@ Returns space weather alert records.
 |-------|------|----------|-------------|
 | `data[].time` | datetime | No | Alert issue time (UTC) |
 | `data[].message` | string | No | Full alert message text |
+
+---
+
+## Geoelectric Field
+
+### `GET /api/v1/geoelectric/latest`
+Returns the most recent geoelectric field snapshot.
+
+**No parameters.**
+
+**Response** — `GeoelectricResponse`
+```json
+{
+  "timestamp": "2026-03-08T12:00:00Z",
+  "count": 1024,
+  "points": [
+    [45.0, -93.0, 0.42, 1],
+    [46.0, -93.0, 0.31, 0]
+  ]
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `timestamp` | datetime | No | Observation time of this snapshot |
+| `count` | int | No | Number of data points |
+| `points` | `[[lat, lon, e_magnitude, quality_flag]]` | No | Each element is `[latitude, longitude, electric field magnitude, quality flag]` |
+
+---
+
+### `GET /api/v1/geoelectric`
+Returns geoelectric field snapshots over a time range, grouped by observation timestamp.
+
+**Query Parameters**
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `start` | datetime (ISO 8601) | No | 1 hour before `end` | — | Start of time range (e.g. `2026-03-13T05:00:00Z`) |
+| `end` | datetime (ISO 8601) | No | now | — | End of time range (e.g. `2026-03-13T06:00:00Z`) |
+
+**Time window rules:**
+- Neither provided → last 1 hour up to now
+- Only `end` → 1 hour before `end` up to `end`
+- Only `start` → `start` up to now
+- Both provided → exact range
+
+**Examples**
+```
+GET /api/v1/geoelectric
+GET /api/v1/geoelectric?start=2026-03-13T05:00:00Z&end=2026-03-13T06:00:00Z
+```
+
+**Response** — `GeoelectricRangeResponse`
+```json
+{
+  "count": 2,
+  "snapshots": [
+    {
+      "timestamp": "2026-03-13T05:00:00Z",
+      "count": 1024,
+      "points": [[45.0, -93.0, 0.42, 1]]
+    },
+    {
+      "timestamp": "2026-03-13T05:05:00Z",
+      "count": 1024,
+      "points": [[45.0, -93.0, 0.45, 1]]
+    }
+  ]
+}
+```
+
+| Field | Type | Nullable | Description |
+|-------|------|----------|-------------|
+| `count` | int | No | Number of snapshots returned |
+| `snapshots[].timestamp` | datetime | No | Observation time of this snapshot |
+| `snapshots[].count` | int | No | Number of data points in this snapshot |
+| `snapshots[].points` | `[[lat, lon, e_magnitude, quality_flag]]` | No | Each element is `[latitude, longitude, electric field magnitude, quality flag]` |
 
 ---
 

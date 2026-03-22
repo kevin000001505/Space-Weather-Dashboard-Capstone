@@ -243,3 +243,28 @@ FROM alerts
 WHERE issue_datetime >= date_trunc('day', NOW()) - (($1 - 1) * INTERVAL '1 day')
 ORDER BY issue_datetime DESC
 """
+
+LATEST_GEOELECTRIC_QUERY = """
+    SELECT
+        g.observed_at,
+        ST_Y(g.location::geometry) AS lat,
+        ST_X(g.location::geometry) AS lon,
+        g.e_magnitude,
+        quality_flag
+    FROM geoelectric_field g
+    WHERE g.observed_at = (
+        SELECT MAX(observed_at) FROM geoelectric_field
+    );
+"""
+
+GEOELECTRIC_RANGE_QUERY = """
+    SELECT
+        g.observed_at,
+        ST_Y(g.location::geometry) AS lat,
+        ST_X(g.location::geometry) AS lon,
+        g.e_magnitude,
+        quality_flag
+    FROM geoelectric_field g
+    WHERE g.observed_at BETWEEN $1 AND $2
+    ORDER BY g.observed_at DESC
+"""

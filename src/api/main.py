@@ -19,6 +19,8 @@ from database.queries import (
     DRAP_RANGE_QUERY,
     XRAY_FLUX_RANGE_QUERY,
     PROTON_FLUX_RANGE_QUERY,
+    LATEST_GEOELECTRIC_QUERY,
+    GEOELECTRIC_RANGE_QUERY,
 )
 from config import (
     AuroraResponse,
@@ -38,6 +40,8 @@ from config import (
     ProtonFluxListResponse,
     AlertResponse,
     AlertListResponse,
+    GeoelectricResponse,
+    GeoelectricRangeResponse
 )
 import shared.redis as redis_config # Pull from the shared volume
 import logging, json, time
@@ -764,4 +768,71 @@ async def get_alerts(days: int = Query(default=1, ge=1, le=30)):
         ])
     except Exception as e:
         logger.error(f"Error fetching alerts: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@app.get("/api/v1/geoelectric/latest", response_model=GeoelectricResponse)
+async def latest_geoelectric():
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(LATEST_GEOELECTRIC_QUERY)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No Geoelectric data available")
+
+        timestamp = rows[0]["observed_at"]
+        points = [[row["lat"], row["lon"], row["e_magnitude"], row["quality_flag"]] for row in rows]
+
+        return GeoelectricResponse(timestamp=timestamp, count=len(points), points=points)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+@app.get("/api/v1/geoelectric", response_model=GeoelectricRangeResponse)
+async def geoelectric_range(
+    start: Optional[datetime] = Query(
+        default=None,
+        description="Start of time range (ISO 8601 UTC). Defaults to 1 hour before end.",
+        openapi_examples={
+            "1_hour_ago": {"summary": "1 hour ago", "value": _iso_hours_ago(1)},
+            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
+        },
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="End of time range (ISO 8601 UTC). Defaults to now.",
+        openapi_examples={
+            "now": {"summary": "Current time", "value": _iso_now()},
+        },
+    ),
+):
+    try:
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
+
+        async with get_connection() as conn:
+            rows = await conn.fetch(GEOELECTRIC_RANGE_QUERY, start_utc, end_utc)
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No Geoelectric data available for the given range")
+
+        # Group rows by observed_at timestamp
+        snapshots_map: dict = {}
+        for row in rows:
+            ts = row["observed_at"]
+            if ts not in snapshots_map:
+                snapshots_map[ts] = []
+            snapshots_map[ts].append([row["lat"], row["lon"], row["e_magnitude"], row["quality_flag"]])
+
+        snapshots = [
+            GeoelectricResponse(timestamp=ts, count=len(points), points=points)
+            for ts, points in snapshots_map.items()
+        ]
+
+        return GeoelectricRangeResponse(count=len(snapshots), snapshots=snapshots)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching D-RAP range data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")

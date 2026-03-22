@@ -195,3 +195,15 @@ class AlertResponse(BaseModel):
 
 class AlertListResponse(BaseModel):
     data: List[AlertResponse]
+
+
+class GeoelectricResponse(BaseModel):
+    timestamp: datetime
+    count: int
+    points: List[List[float]] 
+
+    
+
+class GeoelectricRangeResponse(BaseModel):
+    count: int
+    snapshots: List[GeoelectricResponse]
