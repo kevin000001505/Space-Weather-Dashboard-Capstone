@@ -224,7 +224,6 @@ export const buildDeckLayers = ({
         pickable: true,
         onHover: ({ object }) => {
           setHoveredRunwayId(object ? object.id : null);
-          if (object) console.log("Hovering over runway ID:", object.id);
         },
         updateTriggers: {
           getWidth: [hoveredRunwayId],

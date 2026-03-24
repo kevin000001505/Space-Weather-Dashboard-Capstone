@@ -31,16 +31,15 @@ const TopBar = ({ onToggleSidebar, onToggleDarkMode }) => {
         left: 0,
         width: "100vw",
         height: 64,
-        backgroundColor: darkMode ? "#18191b" : "#f7f7fa",
+        backgroundColor: darkMode ? "#000" : "#f7f7fa",
         color: darkMode ? "#f7f7fa" : "#181a1b",
+        borderBottom: `1px solid ${darkMode ? "#333" : "#ddd"}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         px: 4,
         zIndex: 1000,
-        boxShadow: darkMode
-          ? "0 2px 8px #111"
-          : "0 2px 8px rgba(0,0,0,0.08)",
+        boxShadow: darkMode ? "0 2px 8px #111" : "0 2px 8px rgba(0,0,0,0.08)",
       }}
     >
       <Typography variant="h6" sx={{ fontWeight: 600 }}>

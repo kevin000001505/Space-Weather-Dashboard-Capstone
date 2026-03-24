@@ -9,12 +9,8 @@ const planesSlice = createSlice({
     count: 0,
     loading: false,
     error: null,
-    isSidebarOpen: false,
   },
   reducers: {
-    toggleSidebar: (state, action) => {
-      state.isSidebarOpen = action.payload;
-    },
     injectLivePlanes: (state, action) => {
       state.data = action.payload.flights; 
     }
@@ -38,5 +34,5 @@ const planesSlice = createSlice({
   }
 });
 
-export const { toggleSidebar, injectLivePlanes } = planesSlice.actions;
+export const { injectLivePlanes } = planesSlice.actions;
 export default planesSlice.reducer;

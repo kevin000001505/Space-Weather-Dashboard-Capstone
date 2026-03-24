@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { toggleSidebar } from "../../store/slices/planesSlice";
+import { toggleSidebar } from "../../store/slices/sidebarSlice";
 import {
   setDarkMode,
   setShowAltitudeLegend,

@@ -6,6 +6,7 @@ import uiReducer from './slices/uiSlice';
 import flightPathReducer from './slices/flightPathSlice';
 import chartsReducer from './slices/chartsSlice';
 import auroraReducer from './slices/auroraSlice';
+import sidebarReducer from './slices/sidebarSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     flightPath: flightPathReducer,
     charts: chartsReducer,
     aurora: auroraReducer,
+    sidebar: sidebarReducer,
   },
 });

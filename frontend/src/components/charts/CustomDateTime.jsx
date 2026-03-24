@@ -70,7 +70,6 @@ const CustomDateTime = ({
   }, [dialogOpen, customdt.start, customdt.end, dispatch, earliest, latest]);
 
   const handleButtonChange = (e, newValue) => {
-    console.log(e);
     if (e.target.value === "custom" || newValue === "custom") {
       setAnchorEl(e.currentTarget);
       dispatch(setShowCustomDateDialog(true));

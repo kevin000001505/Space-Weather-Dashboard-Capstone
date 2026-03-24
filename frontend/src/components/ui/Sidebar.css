@@ -1,40 +1,120 @@
-/* Sidebar CSS variables for light/dark mode */
-:root {
-  --sidebar-bg-dark: linear-gradient(135deg, #232526 0%, #414345 100%);
-  --sidebar-bg-light: linear-gradient(135deg, #f7fafc 0%, #e3e8ee 100%);
-  --sidebar-color-dark: #fff;
-  --sidebar-color-light: #232526;
-  --sidebar-icon-dark: #90caf9;
-  --sidebar-icon-light: #1976d2;
-  --sidebar-hover-dark: rgba(255,255,255,0.08);
-  --sidebar-hover-light: rgba(25, 118, 210, 0.08);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --sidebar-bg: var(--sidebar-bg-light);
-    --sidebar-color: var(--sidebar-color-light);
-    --sidebar-icon: var(--sidebar-icon-light);
-    --sidebar-hover: var(--sidebar-hover-light);
-  }
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --sidebar-bg: var(--sidebar-bg-dark);
-    --sidebar-color: var(--sidebar-color-dark);
-    --sidebar-icon: var(--sidebar-icon-dark);
-    --sidebar-hover: var(--sidebar-hover-dark);
-  }
-}
-
+/* Custom scrollbar for sidebar */
 .sidebar-drawer {
-  background: var(--sidebar-bg);
-  color: var(--sidebar-color);
+  scrollbar-width: thin;
+  scrollbar-color: #1976d2 #fff;
+}
+.sidebar-drawer.sidebar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #a78bfa #18181b;
+}
+
+.sidebar-drawer::-webkit-scrollbar {
+  width: 8px;
+  background: #1976d2;
+}
+.sidebar-drawer::-webkit-scrollbar {
+  width: 8px;
+  background: #18181b;
+}
+.sidebar-drawer::-webkit-scrollbar-thumb {
+  background: #1976d2; /* blue for light mode */
+  border-radius: 6px;
+}
+.sidebar-drawer::-webkit-scrollbar-thumb:hover {
+  background: #115293;
+}
+
+.sidebar-drawer.sidebar-dark::-webkit-scrollbar-thumb {
+  background: #a78bfa; /* purple for dark mode */
+}
+.sidebar-drawer.sidebar-dark::-webkit-scrollbar-thumb:hover {
+  background: #7c5fd3;
+}
+/* App icon and name header */
+
+.sidebar-app-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 18px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.sidebar-app-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #e3e8ee 0%, #f7fafc 100%);
+  box-shadow: 0 2px 12px 0 rgba(25, 118, 210, 0.13);
+  padding: 6px;
+  transition: box-shadow 0.2s;
+}
+.sidebar-app-title-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.sidebar-app-dashboard {
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: #1976d2;
+  opacity: 0.85;
+  margin-top: 2px;
+  letter-spacing: 0.03em;
+  font-family: "Segoe UI", "Roboto", "Arial", sans-serif;
+}
+
+.sidebar-drawer.sidebar-dark .sidebar-app-dashboard {
+  color: #a78bfa;
+  opacity: 0.92;
+}
+
+.sidebar-drawer.sidebar-dark .sidebar-app-icon {
+  background: #18181b;
+  box-shadow: 0 2px 12px 0 rgba(167, 139, 250, 0.18);
+}
+
+.sidebar-app-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #1976d2;
+  font-family: "Segoe UI", "Roboto", "Arial", sans-serif;
+  text-shadow: 0 1px 4px rgba(25, 118, 210, 0.08);
+}
+
+.sidebar-drawer.sidebar-dark .sidebar-app-name {
+  color: #a78bfa;
+  text-shadow: 0 1px 6px #a78bfa44;
+}
+/* Remove focus outline from all MUI IconButton components globally */
+.MuiIconButton-root:focus,
+.MuiIconButton-root:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+/* Default (light mode) */
+.sidebar-drawer {
+  background: #fff;
+  color: #232526;
   height: 100%;
-  box-shadow: 2px 0 12px rgba(0,0,0,0.15);
-  border-top-left-radius: 16px;
-  border-bottom-left-radius: 16px;
-  overflow: hidden;
+  max-height: 100vh;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  padding: 8px 8px 0px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Dark mode override */
+.sidebar-drawer.sidebar-dark {
+  background: #080808;
+  color: #a78bfa;
 }
 
 .sidebar-header {
@@ -45,24 +125,124 @@
 }
 
 .sidebar-list {
-  margin-top: 24px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .sidebar-list .MuiListItemButton-root {
   border-radius: 8px;
-  margin: 4px 12px;
   transition: background 0.2s;
 }
-
-.sidebar-list .MuiListItemButton-root:hover {
-  background: var(--sidebar-hover);
+.sidebar-list .MuiListItemIcon-root {
+  width: 35%;
+}
+.sidebar-list .sidebar-tutorial {
+ margin-top: 4px;
+}
+.sidebar-list .sidebar-tutorial .MuiListItemIcon-root {
+  width: 35%;
+  display: flex;
+  margin-right: 16px;
+  justify-content: end;
+  align-items: center;
 }
 
+.sidebar-menu-selected,
+.sidebar-list .MuiListItemButton-root.selected,
+.sidebar-list .MuiListItemButton-root.sidebar-menu-selected {
+  background: rgba(25, 118, 210, 0.18); /* darker than hover */
+  color: #1976d2 !important;
+  border-right: 2px solid #1976d2;
+  border-bottom: 1px solid #1976d2;
+  font-weight: 700;
+}
+
+.sidebar-drawer.sidebar-dark .sidebar-menu-selected,
+.sidebar-drawer.sidebar-dark .MuiListItemButton-root.selected,
+.sidebar-drawer.sidebar-dark .MuiListItemButton-root.sidebar-menu-selected {
+  background: rgba(167, 139, 250, 0.28); /* darker than hover */
+  color: #a78bfa !important;
+  border-right: 2px solid #a78bfa;
+  border-bottom: 1px solid #a78bfa;
+}
+
+/* Light mode hover */
+
+.sidebar-list .MuiListItemButton-root:hover {
+  background: rgba(25, 118, 210, 0.1);
+  border-right: 2px solid #1976d2;
+  border-bottom: 1px solid #1976d2;
+  box-shadow: 0 2px 8px 0 rgba(25, 118, 210, 0.1);
+  transform: scale(1.03);
+  transition: all 0.18s cubic-bezier(0.4, 2, 0.6, 1);
+}
+
+/* Prevent hover styling on selected menu item (light mode) */
+.sidebar-list .MuiListItemButton-root.sidebar-menu-selected:hover,
+.sidebar-list .MuiListItemButton-root.selected:hover {
+  background: rgba(25, 118, 210, 0.18) !important;
+  color: #1976d2 !important;
+  border-right: 2px solid #1976d2;
+  border-bottom: 1px solid #1976d2;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Dark mode hover */
+
+.sidebar-drawer.sidebar-dark .sidebar-list .MuiListItemButton-root:hover {
+  background: rgba(167, 139, 250, 0.16);
+  border-right: 2px solid #a78bfa;
+  border-bottom: 1px solid #a78bfa;
+  box-shadow:
+    0 2px 12px 0 rgba(167, 139, 250, 0.18),
+    0 0 8px 1px #a78bfa44;
+  transform: scale(1.04);
+  transition: all 0.18s cubic-bezier(0.4, 2, 0.6, 1);
+}
+
+/* Prevent hover styling on selected menu item (dark mode) */
+.sidebar-drawer.sidebar-dark
+  .sidebar-list
+  .MuiListItemButton-root.sidebar-menu-selected:hover,
+.sidebar-drawer.sidebar-dark
+  .sidebar-list
+  .MuiListItemButton-root.selected:hover {
+  background: rgba(167, 139, 250, 0.28) !important;
+  color: #a78bfa !important;
+  border-right: 2px solid #a78bfa;
+  border-bottom: 1px solid #a78bfa;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Light mode icon */
 .sidebar-list .MuiListItemIcon-root {
-  color: var(--sidebar-icon);
+  color: #1976d2;
+}
+
+/* Dark mode icon */
+.sidebar-drawer.sidebar-dark .sidebar-list .MuiListItemIcon-root {
+  color: #a78bfa;
 }
 
 .sidebar-list .MuiListItemText-primary {
   font-weight: 500;
   letter-spacing: 0.02em;
+}
+
+.sidebar-list.sidebar-bottom-list {
+  margin-top: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.sidebar-tutorial-list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }

@@ -1,0 +1,138 @@
+.noaa-scales-predicted.noaa-scales-dark .MuiIconButton-root {
+  color: #a78bfa;
+}
+.noaa-scales-predicted .MuiIconButton-root {
+  color: #1976d2;
+}
+.noaa-scales-predicted .Mui-disabled {
+  color: #888 !important;
+  opacity: 0;
+}
+.noaa-simple-box {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.noaa-simple-box-label {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
+.noaa-simple-box-text {
+  color: #fff;
+  font-weight: 600;
+  font-size: 12px;
+  text-align: center;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+}
+@media screen and (min-height: 800px) {
+  .noaa-simple-box {
+    width: 72px;
+    height: 72px;
+  }
+  .noaa-simple-box-label {
+    font-size: 20px;
+  }
+  .noaa-simple-box-text {
+    font-size: 14px;
+  }
+}
+@media screen and (min-height: 960px) {
+  .noaa-simple-box {
+    width: 90px;
+    height: 90px;
+  }
+  .noaa-simple-box-label {
+    font-size: 24px;
+  }
+  .noaa-simple-box-text {
+    font-size: 18px;
+  }
+}
+.noaa-scales-root {
+  width: 100%;
+  font-family: "Segoe UI", "Roboto", "Arial", sans-serif;
+  color: #a78bfa;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  flex: 1;
+}
+.noaa-scales-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #a78bfa;
+  margin-bottom: 6px;
+}
+.noaa-scales-link {
+  color: #a78bfa;
+  font-weight: 400;
+  font-size: 0.95em;
+  margin-left: 4px;
+  cursor: pointer;
+}
+.noaa-scales-section {
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.noaa-scales-label {
+  font-size: 1.1em;
+  font-weight: 500;
+  margin: 4px;
+  color: #a78bfa;
+}
+.noaa-scales-row {
+  display: flex;
+  margin-top: 8px;
+  align-items: flex-end;
+  gap: 8px;
+}
+.noaa-scales-predicted {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+.noaa-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 3px;
+  min-width: 60px;
+  min-height: 48px;
+  padding: 2px 8px 2px 8px;
+  background: #e0f2e9;
+  border: none;
+  box-shadow: none;
+  margin-bottom: 2px;
+}
+.noaa-box-green {
+  background: #16931c;
+}
+.noaa-box-yellow {
+  background: #fbc02d;
+}
+.noaa-box-orange {
+  background: #ef6c00;
+}
+.noaa-box-red {
+  background: #b71c1c;
+}

@@ -3,17 +3,19 @@ import { useDispatch, useSelector } from "react-redux";
 import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
-import { Card, CardContent, Box } from "@mui/material";
+import { Card, CardContent, Box, CardHeader } from "@mui/material";
 import {
   formatChartLabel,
   sortByTimeTag,
   formatSciNotation,
   filterLabelsByInterval,
   getIntervalMs,
+  getUniqueTimeTags,
 } from "./helpers";
 import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 import { S_LEVELS, MAJOR_TIMEZONES } from "./constants";
+import { debounce } from "lodash";
 
 Chart.register(annotationPlugin);
 
@@ -37,25 +39,29 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
     [backgroundBandsOpacity],
   );
 
-  const dispatch = useDispatch();
-
-  const protonFlux = useSelector((state) => state.charts?.protonFlux);
+  const rawProtonFlux = useSelector((state) => state.charts.protonFlux);
+  const [protonFlux, setProtonFlux] = React.useState(
+    sortByTimeTag(rawProtonFlux),
+  );
   const darkMode = useSelector((state) => state.ui.darkMode);
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
-
-  const sortedProtonFlux = sortByTimeTag(protonFlux);
-  const selectedRange = useSelector(
-    (state) => state.charts?.customdt?.range || "3days",
+  const debouncedSetProtonFlux = React.useMemo(
+    () => debounce((data) => setProtonFlux(sortByTimeTag(data)), 200),
+    [],
   );
-  const uniqueTimeTags = Array.from(
-    new Set(sortedProtonFlux.map((item) => item.time_tag)),
-  ).sort((a, b) => new Date(a) - new Date(b));
-  const fluxLabels = filterLabelsByInterval(uniqueTimeTags, selectedRange);
+  React.useEffect(() => {
+    debouncedSetProtonFlux(rawProtonFlux);
+    return () => debouncedSetProtonFlux.cancel();
+  }, [rawProtonFlux, debouncedSetProtonFlux]);
+
+  const customdt = useSelector((state) => state.charts.customdt);
+  const uniqueTimeTags = getUniqueTimeTags(protonFlux);
+  const fluxLabels = filterLabelsByInterval(uniqueTimeTags, customdt.range);
 
   function getFlux(time_tag, key) {
-    const found = sortedProtonFlux.find((item) => item.time_tag === time_tag);
+    const found = protonFlux.find((item) => item.time_tag === time_tag);
     return found ? found[key] : null;
   }
 
@@ -123,10 +129,8 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
       },
     ],
   };
-
   // Chart ref for reset zoom or export
-  const internalChartRef = React.useRef();
-  const chartRef = externalChartRef || internalChartRef;
+  const chartRef = externalChartRef;
 
   // Persistent label box plugin
   const mousePosRef = React.useRef({ x: null, y: null, inside: false });
@@ -138,29 +142,26 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
         mousePosRef,
         labelBoxSize,
         getLabelLines: ({ chart, nearestIndex }) => {
-          const point = sortedProtonFlux[nearestIndex];
-          let label = "";
-          if (point && point.time_tag) {
-            const date = new Date(point.time_tag);
-            const month = date.toLocaleString("en-US", {
-              month: "short",
-              timeZone:
-                selectedTimezone === "local" ? undefined : selectedTimezone,
-            });
-            const day = date.toLocaleString("en-US", {
-              day: "2-digit",
-              timeZone:
-                selectedTimezone === "local" ? undefined : selectedTimezone,
-            });
-            const time = date.toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-              timeZone:
-                selectedTimezone === "local" ? undefined : selectedTimezone,
-            });
-            label = `${month} ${day}, ${time}`;
-          }
+          const labelIso = fluxLabels[nearestIndex];
+          const date = new Date(labelIso);
+          const month = date.toLocaleString("en-US", {
+            month: "short",
+            timeZone:
+              selectedTimezone === "local" ? undefined : selectedTimezone,
+          });
+          const day = date.toLocaleString("en-US", {
+            day: "2-digit",
+            timeZone:
+              selectedTimezone === "local" ? undefined : selectedTimezone,
+          });
+          const time = date.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+            timeZone:
+              selectedTimezone === "local" ? undefined : selectedTimezone,
+          });
+          const label = `${month} ${day}, ${time}`;
           const lines = [];
           lines.push({ type: "time", text: label });
 
@@ -181,7 +182,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
           return lines;
         },
       }),
-    [mousePosRef, sortedProtonFlux, selectedTimezone],
+    [mousePosRef, protonFlux, selectedTimezone],
   );
 
   React.useEffect(() => {
@@ -208,8 +209,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
       canvas.removeEventListener("mousemove", handleMove);
       canvas.removeEventListener("mouseleave", handleLeave);
     };
-  }, [sortedProtonFlux, selectedTimezone]);
-
+  }, [protonFlux, selectedTimezone]);
   return (
     <Card
       sx={{
@@ -218,6 +218,16 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
     >
+      <CardHeader
+        title="PROTON FLUX"
+        disableTypography
+        sx={{
+          color: darkMode ? "#e0e0e0" : "#333",
+          fontSize: "1.25rem",
+          fontWeight: "bold",
+          borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
+        }}
+      />
       <CardContent
         sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
@@ -242,11 +252,14 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                     font: { size: axisLabelSize, weight: "bold" },
                   },
                 },
+                tooltip: {
+                  enabled: false,
+                },
                 annotation: (() => {
                   const dateLines = {};
                   let prevDateStr = null;
-                  sortedProtonFlux.forEach((point, idx) => {
-                    const date = new Date(point?.time_tag);
+                  fluxLabels.forEach((labelIso, idx) => {
+                    const date = new Date(labelIso);
                     const currDateStr =
                       selectedTimezone === "local"
                         ? date.toLocaleString("en-US", {
@@ -275,7 +288,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                           content: currDateStr,
                           position: "end",
                           color: darkMode ? "#23272e" : "#fff",
-                          font: { weight: "bold", size: axisLabelSize },
+                          font: { weight: "bold", size: axisLabelSize - 4 },
                           backgroundColor: darkMode ? "#90caf9" : "#1976d2",
                           borderRadius: 8,
                           padding: 4,
@@ -315,13 +328,13 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                 x: {
                   ticks: {
                     color: darkMode ? "#e0e0e0" : "#333",
+                    autoSkip: true,
+                    maxTicksLimit: 18,
                     font: {
                       size: axisLabelSize,
                     },
                     callback: function (value, index) {
-                      const iso = fluxLabels[index];
-                      if (!iso) return "";
-                      const date = new Date(iso);
+                      const date = new Date(fluxLabels[index]);
                       if (selectedTimezone === "local") {
                         return date.toLocaleTimeString("en-US", {
                           hour: "2-digit",
@@ -337,6 +350,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                         });
                       }
                     },
+                    includeBounds: true,
                   },
                   title: {
                     display: true,

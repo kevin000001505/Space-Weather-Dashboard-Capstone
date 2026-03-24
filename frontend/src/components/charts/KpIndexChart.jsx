@@ -1,7 +1,8 @@
 // Add import for datalabels plugin
+import ChartDataLabels from "chartjs-plugin-datalabels";
 import React from "react";
-import { Line } from "react-chartjs-2";
-import { Card, CardContent, Box } from "@mui/material";
+import { Bar } from "react-chartjs-2";
+import { Card, CardContent, Box, CardHeader } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Chart } from "chart.js";
@@ -14,15 +15,21 @@ Chart.register(annotationPlugin, zoomPlugin);
 
 import { G_LEVELS, KP_COLORS, MAJOR_TIMEZONES } from "./constants";
 const KpIndexChart = ({ chartRef }) => {
-  const backgroundBandsOpacity = useSelector((state) => state.charts.backgroundBandsOpacity);
-  const kpGLevelBackgroundPlugin = React.useMemo(() => chartBackgroundBandsPlugin(G_LEVELS, {
-    id: "kpGLevelBackground",
-    font: "bold 16px sans-serif",
-    textAlign: "right",
-    labelPosition: "left",
-    labelOffset: 25,
-    alpha: backgroundBandsOpacity,
-  }), [backgroundBandsOpacity]);
+  const backgroundBandsOpacity = useSelector(
+    (state) => state.charts.backgroundBandsOpacity,
+  );
+  const kpGLevelBackgroundPlugin = React.useMemo(
+    () =>
+      chartBackgroundBandsPlugin(G_LEVELS, {
+        id: "kpGLevelBackground",
+        font: "bold 16px sans-serif",
+        textAlign: "right",
+        labelPosition: "left",
+        labelOffset: 25,
+        alpha: backgroundBandsOpacity,
+      }),
+    [backgroundBandsOpacity],
+  );
   const kpIndex = useSelector((state) => state.charts?.kpIndex);
   const darkMode = useSelector((state) => state.ui.darkMode);
   const selectedTimezone = useSelector(
@@ -37,17 +44,18 @@ const KpIndexChart = ({ chartRef }) => {
   const kpData = sortedKpIndex.map((item) => item.kp);
   // Kp scale colors
 
-  const kpLineColor = "#ff9800";
-  const aRunningLineColor = "#1976d2";
+  const kpBarColor = "#ff9800";
+  const aRunningBarColor = "#1976d2";
 
+  // Use G_LEVELS colors for bars to match background bands
   function getKpColor(kp) {
-    if (kp < 5) return KP_COLORS[0];
-    if (kp >= 5) return KP_COLORS[1];
-    if (kp >= 6) return KP_COLORS[2];
-    if (kp >= 7) return KP_COLORS[3];
-    if (kp >= 8) return KP_COLORS[4];
-    if (kp >= 9.0) return KP_COLORS[5];
-    return KP_COLORS[0];
+    if (kp < 5) return G_LEVELS[0].color;
+    if (kp >= 5 && kp < 6) return G_LEVELS[1].color;
+    if (kp >= 6 && kp < 7) return G_LEVELS[2].color;
+    if (kp >= 7 && kp < 8) return G_LEVELS[3].color;
+    if (kp >= 8 && kp < 9) return G_LEVELS[4].color;
+    if (kp >= 9) return G_LEVELS[5].color;
+    return G_LEVELS[0].color;
   }
 
   const kpChartData = {
@@ -56,15 +64,10 @@ const KpIndexChart = ({ chartRef }) => {
       {
         label: "Kp Index",
         data: kpData,
-        borderColor: kpLineColor,
-        backgroundColor: "rgba(255, 152, 0, 0.2)",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        pointBackgroundColor: kpData.map(getKpColor),
-        pointBorderColor: kpData.map(getKpColor),
+        backgroundColor: kpData.map(getKpColor),
+        borderColor: kpData.map(getKpColor),
+        borderWidth: 1,
       },
-      // Ap Index is omitted from datasets, but will be shown in the label box
     ],
   };
 
@@ -110,7 +113,7 @@ const KpIndexChart = ({ chartRef }) => {
           // Kp Index
           lines.push({
             type: "dataset",
-            color: kpLineColor,
+            color: kpBarColor,
             label: "Kp Index",
             value:
               point && point.kp !== undefined && point.kp !== null
@@ -121,7 +124,7 @@ const KpIndexChart = ({ chartRef }) => {
           // Ap Index
           lines.push({
             type: "dataset",
-            color: aRunningLineColor,
+            color: aRunningBarColor,
             label: "Ap Index",
             value:
               point && point.a_running !== undefined && point.a_running !== null
@@ -144,6 +147,16 @@ const KpIndexChart = ({ chartRef }) => {
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
     >
+      <CardHeader
+        title="PLANETARY K-INDEX"
+        disableTypography
+        sx={{
+          color: darkMode ? "#e0e0e0" : "#333",
+          fontSize: "1.25rem",
+          fontWeight: "bold",
+          borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
+        }}
+      />
       <CardContent
         sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
@@ -154,7 +167,7 @@ const KpIndexChart = ({ chartRef }) => {
             borderRadius: 2,
           }}
         >
-          <Line
+          <Bar
             key={`kpchart-${kpLabels.length}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
             ref={chartRef}
             data={kpChartData}
@@ -163,9 +176,21 @@ const KpIndexChart = ({ chartRef }) => {
               maintainAspectRatio: false,
               plugins: {
                 legend: {
-                  labels: {
-                    color: darkMode ? "#e0e0e0" : "#333",
-                    font: { size: axisLabelSize, weight: "bold" },
+                  display: false,
+                },
+                tooltip: {
+                  enabled: false,
+                },
+                datalabels: {
+                  anchor: "end",
+                  align: "end",
+                  color: darkMode ? "#e0e0e0" : "#333",
+                  font: {
+                    weight: "bold",
+                    size: axisLabelSize,
+                  },
+                  formatter: function (value) {
+                    return value;
                   },
                 },
                 annotation: {
@@ -294,9 +319,9 @@ const KpIndexChart = ({ chartRef }) => {
               kpGLevelBackgroundPlugin,
               annotationPlugin,
               persistentLabelBoxPlugin,
+              ChartDataLabels,
             ]}
             onPointerMove={(event) => {
-              // react-chartjs-2 v5+ chartRef.current is a wrapper, get .canvas and .chart
               const chartWrapper = chartRef.current;
               const chart = chartWrapper?.chart || chartWrapper;
               if (!chart || !chart.canvas) return;

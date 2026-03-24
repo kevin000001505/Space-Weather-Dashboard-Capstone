@@ -32,7 +32,6 @@ const ChartSettingsPanel = ({ open, onClose }) => {
     const height = SETTINGS_HEIGHT;
     const x = Math.max((window.innerWidth - width) / 2, 0);
     const y = Math.max((window.innerHeight - height) / 2, 0) + window.scrollY;
-    console.log(window.scrollY);
     return { x, y };
   };
   return (

@@ -186,3 +186,17 @@ export const fetchProtonFlux = createAsyncThunk(
     }
   },
 );
+
+export const fetchNoAAScales = createAsyncThunk(
+  "noaa/fetchNoAAScales",
+  async (airportIdent, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`https://services.swpc.noaa.gov/products/noaa-scales.json`);
+      if (!response.ok) throw new Error("Failed to fetch NOOA scales");
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);

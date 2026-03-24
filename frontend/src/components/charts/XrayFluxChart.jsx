@@ -18,7 +18,7 @@ import {
 
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { Card, CardContent, Box } from "@mui/material";
+import { Card, CardContent, Box, CardHeader } from "@mui/material";
 import {
   sortByTimeTag,
   getUniqueTimeTags,
@@ -53,7 +53,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
 
   const debouncedSetXrayFlux = React.useMemo(
     () => debounce((data) => setXrayFlux(sortByTimeTag(data)), 200),
-    []
+    [],
   );
 
   React.useEffect(() => {
@@ -218,8 +218,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
     ],
   };
   // Chart ref for reset zoom or export
-  const internalChartRef = React.useRef();
-  const chartRef = externalChartRef || internalChartRef;
+  const chartRef = externalChartRef;
 
   // Track mouse position and force chart redraw on mouse move
   React.useEffect(() => {
@@ -256,6 +255,16 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
     >
+      <CardHeader
+        title="XRAY FLUX"
+        disableTypography
+        sx={{
+          color: darkMode ? "#e0e0e0" : "#333",
+          fontSize: "1.25rem",
+          fontWeight: "bold",
+          borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
+        }}
+      />
       <CardContent
         sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >

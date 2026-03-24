@@ -31,7 +31,7 @@ import {
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 
-import { toggleSidebar } from "./store/slices/planesSlice";
+import { toggleSidebar } from "./store/slices/sidebarSlice";
 
 import KpIndexChart from "./components/charts/KpIndexChart";
 import XrayFluxChart from "./components/charts/XrayFluxChart";
@@ -112,11 +112,29 @@ export default function Charts() {
     // Polling fetch for the active tab, with polling: true
     const interval = setInterval(() => {
       if (tab === 0) {
-        dispatch(fetchKpIndex({ start: customdt.start, end: customdt.end, polling: true }));
+        dispatch(
+          fetchKpIndex({
+            start: customdt.start,
+            end: customdt.end,
+            polling: true,
+          }),
+        );
       } else if (tab === 1) {
-        dispatch(fetchXrayFlux({ start: customdt.start, end: customdt.end, polling: true }));
+        dispatch(
+          fetchXrayFlux({
+            start: customdt.start,
+            end: customdt.end,
+            polling: true,
+          }),
+        );
       } else if (tab === 2) {
-        dispatch(fetchProtonFlux({ start: customdt.start, end: customdt.end, polling: true }));
+        dispatch(
+          fetchProtonFlux({
+            start: customdt.start,
+            end: customdt.end,
+            polling: true,
+          }),
+        );
       }
     }, 60000); // 1 minute
     return () => clearInterval(interval);
@@ -198,6 +216,7 @@ export default function Charts() {
               textColor={darkMode ? "inherit" : "primary"}
               indicatorColor={darkMode ? "secondary" : "primary"}
             >
+              <Tab label="All Plots" />
               <Tab label="Kp Index" />
               <Tab label="X-ray Flux" />
               <Tab label="Proton Flux" />
@@ -339,22 +358,38 @@ export default function Charts() {
           sx={{
             position: "relative",
             minHeight: "100vh",
-            backgroundColor: darkMode ? "#23272e" : "#fff",
+            backgroundColor: darkMode ? "#181a1b" : "#fff",
             color: darkMode ? "#f7f7fa" : "#181a1b",
             transition: "background-color 0.3s, color 0.3s",
             pt: 20,
           }}
         >
-          <Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
             {loading ? (
               <ChartLoader darkMode={darkMode} />
             ) : (
               <>
-                {tab === 0 && <KpIndexChart key={tab} chartRef={kpChartRef} />}
-                {tab === 1 && (
+                {tab === 0 && (
+                  <>
+                    <KpIndexChart key="all-kp" chartRef={kpChartRef} />
+                    <XrayFluxChart key="all-xray" chartRef={xrayChartRef} />
+                    <ProtonFluxChart
+                      key="all-proton"
+                      chartRef={protonChartRef}
+                    />
+                  </>
+                )}
+                {tab === 1 && <KpIndexChart key={tab} chartRef={kpChartRef} />}
+                {tab === 2 && (
                   <XrayFluxChart key={tab} chartRef={xrayChartRef} />
                 )}
-                {tab === 2 && (
+                {tab === 3 && (
                   <ProtonFluxChart key={tab} chartRef={protonChartRef} />
                 )}
               </>
