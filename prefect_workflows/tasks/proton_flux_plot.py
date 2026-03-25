@@ -13,7 +13,7 @@ from typing import List
 def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
     """Fetch all proton flux plot records from the NOAA API."""
     logger = get_logger(__name__)
-    url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-plot-7-day.json"
+    url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-plot-6-hour.json"
     logger.info(f"Fetching proton flux plot data from {url}")
     response = requests.get(url)
     response.raise_for_status()
