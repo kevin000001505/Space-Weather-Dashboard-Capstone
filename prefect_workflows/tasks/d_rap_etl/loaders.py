@@ -1,6 +1,11 @@
 from datetime import datetime, timezone
 from pandas import DataFrame
-from database.queries import DRAP_STAGING_DDL, DRAP_STAGING_COLUMNS, DRAP_TRANSFORM_SQL
+from database.queries import (
+    CREATE_TABLE_PARTITION_IF_MISSING, 
+    DRAP_STAGING_DDL, 
+    DRAP_STAGING_COLUMNS, 
+    DRAP_TRANSFORM_SQL
+    )
 from asyncpg import Connection
 from tasks.models import DrapRecord
 from shared.logger import get_logger
@@ -10,6 +15,7 @@ async def insert_drap_data(df_long: DataFrame, conn: Connection):
     """Load DRAP data into PostgreSQL."""
     logger = get_logger(__name__)
     observed_at = datetime.now(timezone.utc)
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, "drap_region", observed_at)
     records = []
     for _, row in df_long.iterrows():
         try:

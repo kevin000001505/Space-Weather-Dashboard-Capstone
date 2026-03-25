@@ -13,12 +13,12 @@ from database.queries import (
     AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     KP_INDEX_CREATE_TABLE_SQL,
-    # LATEST_X_RAY_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
 )
+from database.functions import CREATE_PARTITION_FUNCTION_SQL
 from prefect import task
 from shared.logger import get_logger
 from prefect.cache_policies import NO_CACHE
@@ -188,6 +188,19 @@ async def initial_geoelectric_db(conn: Connection):
         raise
 
 
+@task(cache_policy=NO_CACHE)
+async def initial_partition_function(conn: Connection):
+    """Task to create the partition function in Postgres"""
+    logger = get_logger(__name__)
+    try:
+        logger.info("Start creating partition function in Postgres")
+        await conn.execute(CREATE_PARTITION_FUNCTION_SQL)
+        logger.info("Function create done")
+    except Exception as e:
+        logger.error(f"Failed to create partition function: {e}")
+        raise
+
+# -----
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)
 async def cleanup_old_drap_data(conn: Connection, older_than_days: int = 1):

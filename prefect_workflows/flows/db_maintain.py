@@ -7,7 +7,7 @@ from tasks.db import (
     initial_activate_flight_db,
     initial_airport_db,
     cleanup_old_drap_data,
-    # initial_latest_xray_db,
+    initial_partition_function,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
@@ -41,17 +41,25 @@ async def initialize_db_flow():
             await initial_drap_db(conn)
             await initial_airport_db(conn)
             await initial_activate_flight_db(conn)
-            # await initial_latest_xray_db(conn)
             await initial_proton_flux_plot_db(conn)
             await initial_kp_index_db(conn)
             await initial_alert_db(conn)
             await initial_xray_6hour_db(conn)
             await initial_aurora_db(conn)
             await initial_geoelectric_db(conn)
+            await initial_partition_function(conn)
             logger.info("Database initialization completed successfully!")
 
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
+
+
+@flow(log_prints=True)
+async def partition_maintain():
+    """Create each table datetime partition."""
+    logger = get_logger(__name__)
+    logger.info("Starting all database partition")
+
 
 
 if __name__ == "__main__":

@@ -10,6 +10,12 @@ SELECT create_partition_if_missing($1)
 """
 
 
+CREATE_TABLE_PARTITION_IF_MISSING = """
+SELECT create_monthly_partition_if_missing($1, $2)
+"""
+
+
+
 ACTIVATE_FLIGHT_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS activate_flight (
     time        TIMESTAMPTZ NOT NULL, -- Maps to 'timestamp' (last_contact)
@@ -223,14 +229,12 @@ CREATE INDEX idx_runways_he_geom ON runways USING GIST(he_geom);
 DRAP_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS drap_region (
     observed_at TIMESTAMPTZ NOT NULL,
+    lat DOUBLE PRECISION NOT NULL,
+    long DOUBLE PRECISION NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL,
     absorption double precision NOT NULL,
-    PRIMARY KEY (observed_at, location)
-);
-
-CREATE INDEX IF NOT EXISTS absorption_grid_loc_gix
-ON drap_region
-USING GIST (location);
+    PRIMARY KEY (observed_at, lat, long)
+)PARTITION BY RANGE (observed_at);
 
 CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
 ON drap_region (observed_at);
@@ -467,13 +471,15 @@ CREATE TEMP TABLE drap_region_staging (
 DRAP_STAGING_COLUMNS = ["observed_at", "latitude", "longitude", "absorption"]
 
 DRAP_TRANSFORM_SQL = """
-INSERT INTO drap_region (observed_at, location, absorption)
+INSERT INTO drap_region (observed_at, lat, long, location, absorption)
 SELECT
     observed_at,
+    latitude, 
+    longitude,
     ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
     absorption
 FROM drap_region_staging
-ON CONFLICT (observed_at, location) DO NOTHING
+ON CONFLICT (observed_at, lat, long) DO NOTHING
 """
 
 # --- airports ---
