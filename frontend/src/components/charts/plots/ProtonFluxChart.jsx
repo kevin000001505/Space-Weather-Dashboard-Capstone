@@ -11,12 +11,12 @@ import {
   filterLabelsByInterval,
   getIntervalMs,
   getUniqueTimeTags,
-} from "./helpers";
-import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
-import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
-import { S_LEVELS } from "./constants";
+} from "../helpers/helpers";
+import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
+import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
+import { S_LEVELS } from "../helpers/constants";
 import { debounce } from "lodash";
-import { useAllTimezones } from "../../hooks/useAllTimezones";
+import { useAllTimezones } from "../../../hooks/useAllTimezones";
 
 Chart.register(annotationPlugin);
 

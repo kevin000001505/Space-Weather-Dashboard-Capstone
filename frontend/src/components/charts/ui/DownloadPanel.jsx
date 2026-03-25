@@ -11,7 +11,7 @@ import {
   toXML,
   getChartName,
   formatDateString
-} from "./downloadHelpers";
+} from "../helpers/downloadHelpers";
 import { createContext, useContext } from "react";
 
 function getFilteredData(tab, kpIndex, xrayFlux, protonFlux, customdt) {

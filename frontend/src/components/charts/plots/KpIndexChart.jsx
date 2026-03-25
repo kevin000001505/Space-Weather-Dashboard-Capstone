@@ -7,14 +7,14 @@ import { useSelector, useDispatch } from "react-redux";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Chart } from "chart.js";
 import zoomPlugin from "chartjs-plugin-zoom";
-import { sortByTimeTag } from "./helpers";
-import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
-import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
+import { sortByTimeTag } from "../helpers/helpers";
+import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
+import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 
 Chart.register(annotationPlugin, zoomPlugin);
 
-import { G_LEVELS, KP_COLORS} from "./constants";
-import { useAllTimezones } from "../../hooks/useAllTimezones";
+import { G_LEVELS, KP_COLORS} from "../helpers/constants";
+import { useAllTimezones } from "../../../hooks/useAllTimezones";
 const KpIndexChart = ({ chartRef }) => {
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,

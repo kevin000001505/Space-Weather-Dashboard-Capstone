@@ -11,7 +11,7 @@ import {
   setLabelBoxSize,
   setAxisLabelSize,
   setBorderWidth,
-} from "../../store/slices/chartsSlice";
+} from "../../../store/slices/chartsSlice";
 
 const SETTINGS_WIDTH = 800;
 const SETTINGS_HEIGHT = 600;

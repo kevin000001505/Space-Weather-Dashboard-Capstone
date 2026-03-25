@@ -14,10 +14,10 @@ import {
   setShowChartSettings,
 } from "../../store/slices/chartsSlice";
 import { fetchKpIndex, fetchProtonFlux, fetchXrayFlux } from "../../api/api";
-import { getPresetDateRange } from "./helpers";
-import CustomDateTime from "./CustomDateTime";
-import ChartSettingsPanel from "./ChartSettingsPanel";
-import DownloadPanel from "./DownloadPanel";
+import { getPresetDateRange } from "./helpers/helpers";
+import CustomDateTime from "./ui/CustomDateTime";
+import ChartSettingsPanel from "./ui/ChartSettingsPanel";
+import DownloadPanel from "./ui/DownloadPanel";
 
 const ChartsTabBar = () => {
   const [downloadAnchorEl, setDownloadAnchorEl] = useState(null);

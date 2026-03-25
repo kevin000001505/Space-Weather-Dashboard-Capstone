@@ -11,7 +11,6 @@ import {
   Legend,
 } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
-import TopBar from "./components/charts/TopBar";
 
 ChartJS.register(
   CategoryScale,
@@ -25,7 +24,8 @@ ChartJS.register(
   Legend,
   annotationPlugin,
 );
-import ChartsTabs from "./components/charts/ChartsTabs";
+import ChartsTabs from "./ChartsTabs";
+import TopBar from "./TopBar";
 
 export default function Charts() {
   return (

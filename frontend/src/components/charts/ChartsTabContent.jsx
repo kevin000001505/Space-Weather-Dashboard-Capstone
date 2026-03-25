@@ -1,10 +1,10 @@
 import { Box } from "@mui/material";
 import React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import ChartLoader from "./ChartLoader";
-import KpIndexChart from "./KpIndexChart";
-import XrayFluxChart from "./XrayFluxChart";
-import ProtonFluxChart from "./ProtonFluxChart";
+import ChartLoader from "./plots/ChartLoader";
+import KpIndexChart from "./plots/KpIndexChart";
+import XrayFluxChart from "./plots/XrayFluxChart";
+import ProtonFluxChart from "./plots/ProtonFluxChart";
 
 const ChartsTabContent = ({kpChartRef, xrayChartRef, protonChartRef}) => {
   const dispatch = useDispatch();   

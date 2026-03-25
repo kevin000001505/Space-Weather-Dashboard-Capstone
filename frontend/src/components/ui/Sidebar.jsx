@@ -19,7 +19,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../../store/slices/sidebarSlice";
 import { NOAAScales } from "./NOAAScales";
 import { useNavigate, useLocation } from "react-router-dom";
-import "./Sidebar.css";
+import "./styles/Sidebar.css";
 import { useEffect } from "react";
 import { fetchNoAAScales } from "../../api/api";
 

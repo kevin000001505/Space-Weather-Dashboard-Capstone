@@ -8,16 +8,16 @@ import Map, { Layer, Popup, Source, useControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // API imports
-import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from "./api/api";
+import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from "../../api/api";
 
 // SSE Hook import
-import { useLiveStream } from "./hooks/useLiveStream";
+import { useLiveStream } from "../../hooks/useLiveStream";
 
 // Component imports
-import AltitudeLegend from "./components/ui/AltitudeLegend";
-import SettingsPanel from "./components/ui/SettingsPanel";
-import StatsPanel from "./components/ui/StatsPanel";
-import DateTimeViewer from "./components/ui/DateTimeViewer";
+import AltitudeLegend from "./legends/AltitudeLegend";
+import SettingsPanel from "./SettingsPanel";
+import StatsPanel from "./legends/StatsPanel";
+import DateTimeViewer from "../ui/DateTimeViewer";
 
 // Redux action imports
 import {
@@ -31,7 +31,7 @@ import {
   addAirportPanel,
   removeAirportPanel,
   setHoveredRunwayId,
-} from "./store/slices/uiSlice";
+} from "../../store/slices/uiSlice";
 
 // Utility imports
 import {
@@ -39,22 +39,22 @@ import {
   getSpeedDisplay,
   formatCoord,
   capitalizeWords,
-} from "./utils/mapUtils";
-import { buildDeckLayers } from "./utils/deckLayersConfig";
+} from "../../utils/mapUtils";
+import { buildDeckLayers } from "../../utils/deckLayersConfig";
 
 // DRAP imports
 import {
   getDRAPFilledCellsGeoJSON,
   getDRAPFilledCellsMapLayers,
-} from "./utils/drap";
+} from "../../utils/drap";
 
 // Aurora imports
-import { getAuroraGeoJSON, getAuroraMapLayers } from "./utils/aurora";
+import { getAuroraGeoJSON, getAuroraMapLayers } from "../../utils/aurora";
 
 // Flight details panel imports
-import FlightDetailsPanel from "./components/ui/FlightDetailsPanel";
-import AirportDetailsPanel from "./components/ui/AirporDetailsPanel";
-import SearchBar from "./components/ui/SearchBar";
+import FlightDetailsPanel from "./FlightDetailsPanel";
+import AirportDetailsPanel from "./AirporDetailsPanel";
+import SearchBar from "./SearchBar";
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));

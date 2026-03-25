@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { ChartRefsContext } from "./DownloadPanel";
+import { ChartRefsContext } from "./ui/DownloadPanel";
 import ChartsTabBar from "./ChartsTabBar";
 import ChartsTabContent from "./ChartsTabContent";
 

@@ -26,11 +26,11 @@ import {
   getFlareClass,
   getIntervalMs,
   filterLabelsByInterval,
-} from "./helpers";
-import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
-import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
-import { R_LEVELS } from "./constants";
-import { useAllTimezones } from "../../hooks/useAllTimezones";
+} from "../helpers/helpers";
+import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
+import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
+import { R_LEVELS } from "../helpers/constants";
+import { useAllTimezones } from "../../../hooks/useAllTimezones";
 
 // Register zoom plugin
 Chart.register(

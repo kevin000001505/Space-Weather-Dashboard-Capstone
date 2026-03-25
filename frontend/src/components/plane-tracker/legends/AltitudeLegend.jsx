@@ -1,4 +1,4 @@
-import { getStops } from '../../utils/mapUtils';
+import { getStops } from '../../../utils/mapUtils';
 import { useSelector } from 'react-redux';
 import { useState } from 'react';
 

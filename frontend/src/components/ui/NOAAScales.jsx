@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./NOAAScales.css";
+import "./styles/NOAAScales.css";
 import { useSelector } from "react-redux";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";

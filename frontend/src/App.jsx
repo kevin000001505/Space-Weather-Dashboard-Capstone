@@ -1,11 +1,12 @@
 import "./App.css";
-import PlaneTracker from "./PlaneTracker";
+import PlaneTracker from "./components/plane-tracker/PlaneTracker";
 import { Sidebar } from "./components/ui/Sidebar";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Charts from "./Charts";
+
 import Help from "./components/help/Help";
 import About from "./components/about/About";
 import { Toaster } from "react-hot-toast";
+import Charts from "./components/charts/Charts";
 
 function App() {
   return (
