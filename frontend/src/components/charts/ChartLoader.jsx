@@ -1,12 +1,8 @@
 import React from "react";
 import { Box, Typography, Card, CardContent, Skeleton } from "@mui/material";
 
-const TICK_COUNT = 12; // More ticks for a more chart-like look
-const CHART_HEIGHT = 600; // Match your chart height (adjust as needed)
-const BAR_TOP = 80; // px from top of chart area
-const BAR_HEIGHT = 14;
-const TICK_SIZE = 14;
-const TICK_OFFSET = 18; // px below bar
+const TICK_COUNT = 12;
+const CHART_HEIGHT = 500;
 
 const ChartLoader = ({ darkMode, height = CHART_HEIGHT }) => {
   return (

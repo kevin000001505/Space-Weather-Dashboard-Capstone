@@ -429,11 +429,11 @@ const PlaneTracker = () => {
       <div
         style={{
           backgroundColor: "var(--ui-bg)",
-          padding: "10px",
-          borderRadius: "4px",
+          padding: "2px",
+          borderRadius: "8px",
           boxShadow: "var(--ui-shadow)",
           position: "absolute",
-          top: "10px",
+          top: "4px",
           left: "20px",
           zIndex: 1,
           fontSize: "12px",

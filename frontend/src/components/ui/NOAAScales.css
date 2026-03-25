@@ -40,18 +40,6 @@
     -1px 1px 0 #000,
     1px 1px 0 #000;
 }
-@media screen and (min-height: 800px) {
-  .noaa-simple-box {
-    width: 72px;
-    height: 72px;
-  }
-  .noaa-simple-box-label {
-    font-size: 20px;
-  }
-  .noaa-simple-box-text {
-    font-size: 14px;
-  }
-}
 @media screen and (min-height: 960px) {
   .noaa-simple-box {
     width: 90px;
@@ -67,21 +55,23 @@
 .noaa-scales-root {
   width: 100%;
   font-family: "Segoe UI", "Roboto", "Arial", sans-serif;
-  color: #a78bfa;
+  color: #232526;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  margin-top: 12px;
   flex: 1;
+}
+.noaa-scales-root.noaa-dark {
+  color: #a78bfa;
 }
 .noaa-scales-title {
   font-size: 1rem;
   font-weight: 700;
-  color: #a78bfa;
   margin-bottom: 6px;
 }
 .noaa-scales-link {
-  color: #a78bfa;
   font-weight: 400;
   font-size: 0.95em;
   margin-left: 4px;
@@ -97,7 +87,6 @@
   font-size: 1.1em;
   font-weight: 500;
   margin: 4px;
-  color: #a78bfa;
 }
 .noaa-scales-row {
   display: flex;
@@ -124,8 +113,11 @@
   box-shadow: none;
   margin-bottom: 2px;
 }
-.noaa-box-green {
+.noaa-box-lightgreen {
   background: #16931c;
+}
+.noaa-box-green {
+  background: #94bc05;
 }
 .noaa-box-yellow {
   background: #fbc02d;

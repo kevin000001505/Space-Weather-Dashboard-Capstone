@@ -13,11 +13,17 @@ import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
 
 Chart.register(annotationPlugin, zoomPlugin);
 
-import { G_LEVELS, KP_COLORS, MAJOR_TIMEZONES } from "./constants";
+import { G_LEVELS, KP_COLORS} from "./constants";
+import { useAllTimezones } from "../../hooks/useAllTimezones";
 const KpIndexChart = ({ chartRef }) => {
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,
   );
+  const borderWidth = useSelector(
+    (state) => state.charts.borderWidth,
+  );
+  const timeZones = useAllTimezones();
+
   const kpGLevelBackgroundPlugin = React.useMemo(
     () =>
       chartBackgroundBandsPlugin(G_LEVELS, {
@@ -58,18 +64,19 @@ const KpIndexChart = ({ chartRef }) => {
     return G_LEVELS[0].color;
   }
 
-  const kpChartData = {
-    labels: kpLabels,
-    datasets: [
-      {
-        label: "Kp Index",
-        data: kpData,
-        backgroundColor: kpData.map(getKpColor),
-        borderColor: kpData.map(getKpColor),
-        borderWidth: 1,
-      },
-    ],
-  };
+  const kpChartData = React.useMemo(() => {
+    return {
+      labels: kpLabels,
+      datasets: [
+        {
+          label: "Kp Index",
+          data: kpData,
+          backgroundColor: kpData.map(getKpColor),
+          borderColor: kpData.map(getKpColor),
+        },
+      ],
+    };
+  }, [kpData]);
 
   // chartRef is now passed from parent
   // Track mouse position for persistent label box
@@ -142,7 +149,7 @@ const KpIndexChart = ({ chartRef }) => {
     // Chart ref for reset zoom
     <Card
       sx={{
-        height: 600,
+        height: 500,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -152,13 +159,13 @@ const KpIndexChart = ({ chartRef }) => {
         disableTypography
         sx={{
           color: darkMode ? "#e0e0e0" : "#333",
-          fontSize: "1.25rem",
+          fontSize: "1rem",
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
       />
       <CardContent
-        sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
+        sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
         <Box
           sx={{
@@ -168,7 +175,7 @@ const KpIndexChart = ({ chartRef }) => {
           }}
         >
           <Bar
-            key={`kpchart-${kpLabels.length}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
+            key={`kpchart-${kpLabels.length}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}}`}
             ref={chartRef}
             data={kpChartData}
             options={{
@@ -187,7 +194,7 @@ const KpIndexChart = ({ chartRef }) => {
                   color: darkMode ? "#e0e0e0" : "#333",
                   font: {
                     weight: "bold",
-                    size: axisLabelSize,
+                    size: axisLabelSize - 2,
                   },
                   formatter: function (value) {
                     return value;
@@ -281,7 +288,7 @@ const KpIndexChart = ({ chartRef }) => {
                     display: true,
                     text: `Time (${(() => {
                       const tzMap = Object.fromEntries(
-                        MAJOR_TIMEZONES.map((tz) => [tz.value, tz.label]),
+                        timeZones.map((tz) => [tz.value, tz.label]),
                       );
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,

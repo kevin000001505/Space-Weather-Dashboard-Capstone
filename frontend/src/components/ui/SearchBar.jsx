@@ -1,187 +1,289 @@
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAirportDetails } from '../../api/api';
+import { useEffect, useMemo, useState } from "react";
+import TextField from "@mui/material/TextField";
+import Autocomplete from "@mui/material/Autocomplete";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchAirportDetails } from "../../api/api";
 import {
   setSearchOpen,
-  setSearchQuery,
   setSearchResults,
   setSelectedAirport,
   setSelectedPlane,
   setViewState,
   addAirportPanel,
-} from '../../store/slices/uiSlice';
+} from "../../store/slices/uiSlice";
 
 const SearchBar = () => {
   const dispatch = useDispatch();
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
-  const { searchQuery: query, searchResults: results, isSearchOpen: isOpen, viewState } = useSelector((state) => state.ui);
+  const { viewState } = useSelector((state) => state.ui);
 
-  // Debounce search to avoid lagging while typing
+  const [query, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
   useEffect(() => {
-    if (!query || query.length < 2) {
-      dispatch(setSearchResults([]));
-      dispatch(setSearchOpen(false));
-      return;
-    }
-
     const timer = setTimeout(() => {
-      const lowerQuery = query.toLowerCase();
-      
-      // Search Planes
-      const planeMatches = planes
-        .filter(p =>
-          (p.callsign && p.callsign.toLowerCase().includes(lowerQuery)) ||
-          (p.icao24 && p.icao24.toLowerCase().includes(lowerQuery))
-        )
-        .map(p => ({ type: 'plane', data: p }));
-
-      // Search Airports
-      const airportMatches = airports
-        .filter(a =>
-          (a.iata_code && a.iata_code.toLowerCase().includes(lowerQuery)) ||
-          (a.name && a.name.toLowerCase().includes(lowerQuery)) ||
-          (a.municipality && a.municipality.toLowerCase().includes(lowerQuery))
-        )
-        .map(a => ({ type: 'airport', data: a }));
-
-      dispatch(setSearchResults([...planeMatches, ...airportMatches]));
-      dispatch(setSearchOpen(true));
-    }, 300);
+      setDebouncedQuery(query);
+    }, 250);
 
     return () => clearTimeout(timer);
-  }, [airports, dispatch, planes, query]);
+  }, [query]);
+  const useImperial = useSelector((state) => state.ui.useImperial);
+  const options = useMemo(() => {
+    if (query.trim() === "" || query.trim().length < 3) return [];
+    const lowerQuery = query.toLowerCase();
+    const planeMatches = planes.map((p) => ({
+      type: "plane",
+      data: p,
+      key: `${p.icao24} ${p.callsign}`,
+    }));
+    const airportMatches = airports.map((a) => ({
+      type: "airport",
+      data: a,
+      key: a.ident,
+    }));
+    return [...planeMatches, ...airportMatches];
+  }, [planes, airports, query]);
 
-  const handleSelect = async (item) => {
-    if (item.type === 'plane') {
+  const handleSelect = (event, item) => {
+    if (!item) return;
+    if (item.type === "plane") {
       const plane = item.data;
       if (plane.lat && plane.lon) {
         dispatch(setSelectedPlane(plane));
         dispatch(setSelectedAirport(null));
-        dispatch(setViewState({
-          ...viewState,
-          longitude: plane.lon,
-          latitude: plane.lat,
-          zoom: 10,
-          transitionDuration: 1500,
-        }));
+        dispatch(
+          setViewState({
+            ...viewState,
+            longitude: plane.lon,
+            latitude: plane.lat,
+            zoom: 10,
+            transitionDuration: 1500,
+          }),
+        );
       }
-    } else if (item.type === 'airport') {
+    } else if (item.type === "airport") {
       const airport = item.data;
       const lat = parseFloat(airport.lat);
       const lon = parseFloat(airport.lon);
 
       dispatch(setSelectedAirport(airport));
       dispatch(setSelectedPlane(null));
-      dispatch(setViewState({
-        ...viewState,
-        longitude: lon,
-        latitude: lat,
-        zoom: 10,
-        transitionDuration: 1500,
-      }));
+      dispatch(
+        setViewState({
+          ...viewState,
+          longitude: lon,
+          latitude: lat,
+          zoom: 10,
+          transitionDuration: 1500,
+        }),
+      );
 
       dispatch(addAirportPanel(airport));
       dispatch(fetchAirportDetails(airport.ident));
     }
 
-    dispatch(setSearchQuery(''));
-    dispatch(setSearchResults([]));
-    dispatch(setSearchOpen(false));
+    setSearchQuery("");
   };
 
+  const darkMode = useSelector((state) => state.ui.darkMode);
   return (
-    <div style={{
-      position: 'relative',
-      width: '250px',
-      color: 'var(--ui-text)',
-      backgroundColor: 'var(--ui-bg)',
-      boxShadow: 'var(--ui-shadow)',
-      
+    <Autocomplete
+      freeSolo
+      disableClearable
+      options={options}
+      disableCloseOnSelect
+      getOptionKey={(o) => o.key}
+      getOptionLabel={(option) =>
+        option.type === "plane"
+          ? option.data.callsign || option.data.icao24 || ""
+          : option.data.name ||
+            option.data.iata_code ||
+            option.data.gps_code ||
+            ""
+      }
+      inputValue={query}
+      onInputChange={(_, value, reason) => {
+        if (reason === "input") {
+          setSearchQuery(value);
+        }
       }}
-    >
-      <input
-        type="text"
-        placeholder="Search flight or airport..."
-        value={query}
-        onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-        onFocus={() => query.length >= 2 && dispatch(setSearchOpen(true))}
-        style={{
-          width: '100%',
-          padding: '8px',
-          borderRadius: '4px',
-          border: '1px solid #ccc',
-          boxSizing: 'border-box',
-          color: '#333',
-          backgroundColor: 'white'
-        }}
-      />
-      
-      {isOpen && results.length > 0 && (
-        <ul style={{
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          right: 0,
-          backgroundColor: 'white',
-          border: '1px solid #ddd',
-          borderRadius: '0 0 4px 4px',
-          listStyle: 'none',
-          padding: 0,
-          margin: 0,
-          maxHeight: '300px',
-          overflowY: 'auto',
-          zIndex: 2000,
-          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-        }}>
-          {results.map((item, index) => (
-            <li
-              key={index}
-              onClick={() => handleSelect(item)}
+      blurOnSelect
+      onChange={handleSelect}
+      renderOption={(props, item) => (
+        <li
+          {...props}
+          style={{
+            padding: 0,
+            margin: 0,
+            background: darkMode ? "#23272e" : "#fff",
+            borderBottom: darkMode ? "1px solid #2e2e3a" : "1px solid #e3e6ff",
+            boxShadow: "none",
+            transition: "background 0.2s",
+            minHeight: 0,
+          }}
+        >
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              width: "100%",
+              gap: 8,
+              padding: "8px 12px",
+              background: "none",
+            }}
+          >
+            <span
               style={{
-                padding: '8px 12px',
-                borderBottom: '1px solid #eee',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: '#333'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f5f5f5';
-                e.currentTarget.style.color = 'black';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.color = '#333';
+                fontSize: "1.1em",
+                padding: "2px 6px",
+                borderRadius: "4px",
+                background:
+                  item.type === "plane"
+                    ? darkMode
+                      ? "rgba(21,101,192,0.18)"
+                      : "#e3e6ff"
+                    : darkMode
+                      ? "rgba(46,125,50,0.18)"
+                      : "#e6ffe3",
+                color:
+                  item.type === "plane"
+                    ? darkMode
+                      ? "#7f5cff"
+                      : "#1565c0"
+                    : darkMode
+                      ? "#55ff99"
+                      : "#2e7d32",
+                marginLeft: 8,
+                fontWeight: 700,
+                minWidth: 28,
+                textAlign: "center",
               }}
             >
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#000' }}>
-                  {item.type === 'plane'
-                    ? (item.data.callsign || item.data.icao24)
-                    : (item.data.iata_code || item.data.gps_code)}
-                </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  {item.type === 'plane'
-                    ? `Flight • ${item.data.geo_altitude || 0} ft`
-                    : `${item.data.name}`}
-                </div>
-              </div>
-              <span style={{
-                fontSize: '10px',
-                padding: '2px 4px',
-                borderRadius: '3px',
-                backgroundColor: item.type === 'plane' ? '#e3f2fd' : '#e8f5e9',
-                color: item.type === 'plane' ? '#1565c0' : '#2e7d32'
-              }}>
-                {item.type === 'plane' ? '✈️' : '📍'}
+              {item.type === "plane" ? "✈️" : "📍"}
+            </span>
+            {/* Main label */}
+            <span
+              style={{
+                flex: 1,
+                color: darkMode ? "#fff" : "#23272e",
+                fontSize: "1em",
+                fontWeight: 600,
+                letterSpacing: 0.1,
+              }}
+            >
+              {item.type === "plane"
+                ? item.data.callsign || item.data.icao24
+                : item.data.name}
+            </span>
+            {/* Altitude badge for planes */}
+            {item.type === "plane" && (
+              <span
+                style={{
+                  background: darkMode ? "rgba(127,92,255,0.15)" : "#e3e6ff",
+                  color: darkMode ? "#fff" : "#22234a",
+                  border: darkMode ? "1px solid #7f5cff" : "1px solid #bfcaff",
+                  borderRadius: "4px",
+                  padding: "2px 8px",
+                  fontSize: "0.95em",
+                  marginLeft: 8,
+                  fontWeight: 600,
+                  minWidth: 56,
+                  textAlign: "center",
+                  letterSpacing: 0.5,
+                  boxShadow: darkMode
+                    ? "0 1px 2px #0002"
+                    : "0 1px 2px #bfcaff44",
+                }}
+              >
+                {useImperial
+                  ? `${Math.round((item.data.geo_altitude || 0) * 3.28084)} ft`
+                  : `${Math.round(item.data.geo_altitude || 0)} m`}
               </span>
-            </li>
-          ))}
-        </ul>
+            )}
+            {/* Airport code badge for airports */}
+            {item.type === "airport" && (
+              <span
+                style={{
+                  background: darkMode ? "rgba(46,125,50,0.15)" : "#e6ffe3",
+                  color: darkMode ? "#55ff99" : "#2e7d32",
+                  padding: "2px 8px",
+                  fontSize: "0.95em",
+                  marginLeft: 8,
+                  fontWeight: 600,
+                  minWidth: 40,
+                  textAlign: "center",
+                  letterSpacing: 0.5,
+                  boxShadow: darkMode
+                    ? "0 1px 2px #0002"
+                    : "0 1px 2px #bfffc944",
+                }}
+              >
+                {item.data.iata_code || item.data.gps_code}
+              </span>
+            )}
+          </span>
+        </li>
       )}
-    </div>
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          size="small"
+          fullWidth
+          placeholder="Search flight or airport..."
+          sx={{
+            height: "40px",
+            m: 0,
+            width: "100%",
+            "& .MuiInputBase-root": {
+              color: darkMode ? "#fff" : "#222",
+              background: darkMode ? "rgba(60,60,80,0.7)" : "#f7f7fa",
+              borderRadius: "8px",
+              height: "40px",
+              fontSize: "1em",
+            },
+            "& .MuiOutlinedInput-notchedOutline": {
+              borderColor: darkMode ? "#7f5cff" : "#1976d2",
+            },
+            "& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline": {
+              borderColor: darkMode ? "#7f5cff" : "#1976d2",
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: darkMode ? "#fff" : "#888",
+              opacity: 1,
+            },
+          }}
+          slotProps={{
+            htmlInput: {
+              ...params.inputProps,
+              style: {
+                fontSize: 14,
+                color: darkMode ? "#fff" : "#222",
+                padding: "8px",
+              },
+              autoComplete: "off",
+            },
+          }}
+        />
+      )}
+      sx={{
+        width: "340px",
+        color: darkMode ? "#fff" : "#222",
+        backgroundColor: darkMode ? "#23272e" : "#fff",
+        boxShadow: "var(--ui-shadow)",
+        borderRadius: "8px",
+      }}
+      slotProps={{
+        listbox: {
+          sx: {
+            p: 0,
+            "& .MuiAutocomplete-groupUl": {
+              p: 0,
+            },
+          },
+        },
+      }}
+    />
   );
 };
 

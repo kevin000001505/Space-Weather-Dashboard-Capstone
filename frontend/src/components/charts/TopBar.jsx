@@ -4,23 +4,29 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useSelector, useDispatch } from "react-redux";
+import DateTimeViewer from "../ui/DateTimeViewer";
+import { toggleSidebar } from "../../store/slices/sidebarSlice";
 
-const TopBar = ({ onToggleSidebar, onToggleDarkMode }) => {
+const TopBar = () => {
+  const dispatch = useDispatch();
   const darkMode = useSelector((state) => state.ui.darkMode);
   const btnStyle = {
-    width: "45px",
-    height: "45px",
+    width: "54px",
+    height: "54px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: "0px",
+    border: "1.5px solid rgba(255,255,255,0.25)",
     fontSize: "20px",
-    boxShadow: "var(--ui-shadow)",
-    backdropFilter: "blur(4px)",
-    backgroundColor: darkMode ? "#23272e" : "#fff",
-    border: `1px solid ${darkMode ? "#555" : "#ccc"}`,
+    backdropFilter: "blur(12px) saturate(1.4)",
+    color: darkMode ? "#f7f7fa" : "#f0f0f0",
+    backgroundColor: darkMode ? "#000000" : "#1976d2",
+
+    boxShadow: "0 6px 32px 0 rgba(0,0,0,0.28), 0 0 32px 6px #a78bfa44",
     "&:hover": {
-      backgroundColor: darkMode ? "#2a2d34" : "#f0f0f0",
+      backgroundColor: darkMode ? "#2a2d34" : "#0266ca",
     },
   };
   return (
@@ -30,14 +36,15 @@ const TopBar = ({ onToggleSidebar, onToggleDarkMode }) => {
         top: 0,
         left: 0,
         width: "100vw",
-        height: 64,
-        backgroundColor: darkMode ? "#000" : "#f7f7fa",
-        color: darkMode ? "#f7f7fa" : "#181a1b",
+        height: 56,
+        backgroundColor: darkMode ? "#000" : "#1976d2",
+        color: "#f7f7fa",
         borderBottom: `1px solid ${darkMode ? "#333" : "#ddd"}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        px: 4,
+        pl: 3,
+        pr: 1,
         zIndex: 1000,
         boxShadow: darkMode ? "0 2px 8px #111" : "0 2px 8px rgba(0,0,0,0.08)",
       }}
@@ -45,15 +52,14 @@ const TopBar = ({ onToggleSidebar, onToggleDarkMode }) => {
       <Typography variant="h6" sx={{ fontWeight: 600 }}>
         ANALYTICS DASHBOARD
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <DateTimeViewer />
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         <IconButton
-          onClick={onToggleDarkMode}
+          onClick={() =>
+            dispatch({ type: "ui/setDarkMode", payload: !darkMode })
+          }
           sx={{
             ...btnStyle,
-            color: darkMode ? "#f7f7fa" : "#181a1b",
-            backgroundColor: darkMode ? "#23272f" : "#e0e0e0",
-            mr: 1,
-            pt: 0.5,
           }}
           disableRipple
           title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
@@ -61,11 +67,9 @@ const TopBar = ({ onToggleSidebar, onToggleDarkMode }) => {
           {darkMode ? "🌙" : "☀️"}
         </IconButton>
         <IconButton
-          onClick={onToggleSidebar}
+          onClick={() => dispatch(toggleSidebar(true))}
           sx={{
             ...btnStyle,
-            color: darkMode ? "#f7f7fa" : "#181a1b",
-            backgroundColor: darkMode ? "#23272f" : "#e0e0e0",
           }}
           title="Toggle Sidebar"
         >

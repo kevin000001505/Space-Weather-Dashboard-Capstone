@@ -17,7 +17,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 const buttonSx = (darkMode) => ({
   fontWeight: "bold",
-  fontSize: 13,
+  fontSize: "10px",
   color: darkMode ? "#e0e0e0" : "#222",
   borderColor: darkMode ? "#555" : "#ccc",
   "&.Mui-selected": {
@@ -29,7 +29,7 @@ const buttonSx = (darkMode) => ({
 
 const groupSx = (darkMode) => ({
   ml: 1,
-  height: "100%",
+  height: "43px",
   background: darkMode ? "#23272e" : "#fff",
   borderRadius: 1,
   border: `1px solid ${darkMode ? "#555" : "#ccc"}`,
@@ -155,9 +155,9 @@ const CustomDateTime = ({
           slotProps={{
             paper: {
               sx: {
-                width: { xs: 340, sm: 600 },
+                width: { xs: 340, sm: 520 },
                 maxWidth: "98vw",
-                p: 2,
+                p: 1,
                 mt: 1.5,
                 backgroundColor: darkMode ? "#23272e" : "#fff",
                 color: darkMode ? "#e0e0e0" : "#181a1b",
@@ -170,7 +170,7 @@ const CustomDateTime = ({
             },
           }}
         >
-          <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`, paddingBottom: 4  }}>
             Custom Date Range
           </div>
           <div
@@ -179,7 +179,7 @@ const CustomDateTime = ({
               flexDirection: "row",
               gap: 16,
               flexWrap: "wrap",
-              justifyContent: "space-between",
+              justifyContent: "center",
             }}
           >
             <DateTimePicker

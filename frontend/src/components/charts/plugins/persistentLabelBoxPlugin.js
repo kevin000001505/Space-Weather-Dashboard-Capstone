@@ -46,8 +46,8 @@ export default function persistentLabelBoxPlugin({
       const lines = getLabelLines({ chart, nearestIndex });
       // Box dimensions
       ctx.save();
-      const fontTime = `bold ${14 * labelBoxSize}px sans-serif`;
-      const fontDataset = `${14 * labelBoxSize}px sans-serif`;
+      const fontTime = `bold ${12 * labelBoxSize}px sans-serif`;
+      const fontDataset = `${12 * labelBoxSize}px sans-serif`;
       const paddingX = 14 * labelBoxSize;
       const paddingY = 12 * labelBoxSize;
       const lineHeight = 18 * labelBoxSize;
@@ -66,7 +66,7 @@ export default function persistentLabelBoxPlugin({
           let valueWidth = ctx.measureText(labelText + valueText).width;
           let extraWidth = 0;
           if (line.extra) {
-            ctx.font = "bold 10px sans-serif";
+            ctx.font = "bold 14px sans-serif";
             extraWidth = ctx.measureText(` (${line.extra})`).width + 8;
             ctx.font = fontDataset;
           }
@@ -76,7 +76,7 @@ export default function persistentLabelBoxPlugin({
       });
       ctx.font = fontTime;
       const boxWidth = maxWidth + 2 * paddingX;
-      const boxHeight = lines.length * lineHeight + 2 * paddingY - 6;
+      const boxHeight = lines.length * lineHeight + 2 * paddingY - 12;
       let boxX = x + 12;
       let boxY = y - boxHeight / 2;
       if (boxX + boxWidth > chartArea.right) boxX = x - boxWidth - 12;

@@ -10,6 +10,7 @@ import {
   setBackgroundBandsOpacity,
   setLabelBoxSize,
   setAxisLabelSize,
+  setBorderWidth,
 } from "../../store/slices/chartsSlice";
 
 const SETTINGS_WIDTH = 800;
@@ -18,11 +19,10 @@ const SETTINGS_HEIGHT = 600;
 const ChartSettingsPanel = ({ open, onClose }) => {
   const darkMode = useSelector((state) => state.ui.darkMode);
   const dispatch = useDispatch();
-  const backgroundBandsOpacity = useSelector(
-    (state) => state.charts.backgroundBandsOpacity,
-  );
+  const backgroundBandsOpacity = useSelector((state) => state.charts.backgroundBandsOpacity);
   const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
   const axisLabelSize = useSelector((state) => state.charts.axisLabelSize);
+  const borderWidth = useSelector((state) => state.charts.borderWidth);
 
   if (!open) return null;
   // Centered modal position helper
@@ -77,7 +77,7 @@ const ChartSettingsPanel = ({ open, onClose }) => {
             height: "100%",
             overflowY: "auto",
             zIndex: 3000,
-            fontSize: "0.92rem",
+            fontSize: "0.8rem",
             boxSizing: "border-box",
             backgroundColor: darkMode ? "#181a1b" : "#f7f7fa",
             color: darkMode ? "#f7f7fa" : "#181a1b",
@@ -148,6 +148,14 @@ const ChartSettingsPanel = ({ open, onClose }) => {
               sliderProps={{ min: 10, max: 32, step: 1 }}
               darkMode={darkMode}
               ariaLabel="Axis Label Size"
+            />
+            <ChartFilterCard
+              label="Line Thickness"
+              value={borderWidth}
+              onChange={(_, value) => dispatch(setBorderWidth(value))}
+              sliderProps={{ min: 1, max: 6, step: 1 }}
+              darkMode={darkMode}
+              ariaLabel="Line Thickness"
             />
           </div>
         </Paper>

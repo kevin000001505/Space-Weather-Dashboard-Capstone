@@ -1,20 +1,20 @@
 import React, { useState } from "react";
 import "./NOAAScales.css";
 import { useSelector } from "react-redux";
-import ArrowLeftIcon from '@mui/icons-material/ArrowLeft';
-import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { IconButton } from "@mui/material";
 // Helper to get color by scale
 const getBoxColor = (scale, type) => {
   if (scale === null || scale === undefined || scale === "0" || scale === 0)
-    return "noaa-box-green";
-  if (type === "G" && scale === "2") return "noaa-box-yellow";
-  if (type === "G" && scale === "3") return "noaa-box-orange";
-  if (type === "G" && scale === "4") return "noaa-box-red";
-  if (type === "G" && scale === "5") return "noaa-box-red";
-  if (type === "R" && scale >= 3) return "noaa-box-red";
-  if (type === "S" && scale >= 3) return "noaa-box-red";
-  return "noaa-box-green";
+    return "noaa-box-lightgreen";
+  const num = parseFloat(scale);
+  if (num === 1) return "noaa-box-green";
+  if (num === 2) return "noaa-box-green";
+  if (num === 3) return "noaa-box-yellow";
+  if (num === 4) return "noaa-box-orange";
+  if (num === 5) return "noaa-box-red";
+  return "noaa-box-lightgreen";
 };
 
 const getPercentageColor = (percent) => {
@@ -47,9 +47,12 @@ export const NOAAScales = () => {
     .map(Number)
     .filter((k) => k > 0)
     .sort((a, b) => a - b);
-  const maxPredictedIdx = predictedKeys.length > 0 ? predictedKeys[predictedKeys.length - 1] : 1;
+  const maxPredictedIdx =
+    predictedKeys.length > 0 ? predictedKeys[predictedKeys.length - 1] : 1;
   const minPredictedIdx = predictedKeys.length > 0 ? predictedKeys[0] : 1;
-  const predicted = noaaScales[predictedIndex]?.DateStamp ? noaaScales[predictedIndex] : noaaScales["1"];
+  const predicted = noaaScales[predictedIndex]?.DateStamp
+    ? noaaScales[predictedIndex]
+    : noaaScales["1"];
 
   const handlePrev = () => {
     setPredictedIndex((prev) => (prev > minPredictedIdx ? prev - 1 : prev));
@@ -59,7 +62,7 @@ export const NOAAScales = () => {
   };
 
   return (
-    <div className="noaa-scales-root">
+    <div className={`noaa-scales-root ${darkMode ? "noaa-dark" : ""}`}>
       <div className="noaa-scales-title">CURRENT SPACE WEATHER CONDITIONS</div>
       <div className="noaa-scales-section">
         <div className="noaa-scales-label">24-Hour Observed Maximums</div>
@@ -123,19 +126,30 @@ export const NOAAScales = () => {
         <div className="noaa-scales-label">
           Predicted {predicted?.DateStamp} UTC
         </div>
-        <div className={`noaa-scales-predicted ${darkMode ? "noaa-scales-dark" : ""}`} style={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={handlePrev} disabled={predictedIndex <= minPredictedIdx} aria-label="Previous prediction">
+        <div
+          className={`noaa-scales-predicted ${darkMode ? "noaa-scales-dark" : ""}`}
+          style={{ display: "flex", alignItems: "center" }}
+        >
+          <IconButton
+            onClick={handlePrev}
+            disabled={predictedIndex <= minPredictedIdx}
+            aria-label="Previous prediction"
+          >
             <ArrowLeftIcon fontSize="large" />
           </IconButton>
           <div>
             <div className="noaa-scales-row">
-              <div className={`noaa-simple-box ${getPercentageColor(predicted?.R?.MinorProb)}`}>
+              <div
+                className={`noaa-simple-box ${getPercentageColor(predicted?.R?.MinorProb)}`}
+              >
                 <div className="noaa-simple-box-label">R1-R2</div>
                 <div className="noaa-simple-box-text">
                   {formatString(predicted?.R?.MinorProb || "none")}%
                 </div>
               </div>
-              <div className={`noaa-simple-box ${getPercentageColor(predicted?.R?.MajorProb)}`}>
+              <div
+                className={`noaa-simple-box ${getPercentageColor(predicted?.R?.MajorProb)}`}
+              >
                 <div className="noaa-simple-box-label">R3-R5</div>
                 <div className="noaa-simple-box-text">
                   {formatString(predicted?.R?.MajorProb || "none")}%
@@ -143,21 +157,31 @@ export const NOAAScales = () => {
               </div>
             </div>
             <div className="noaa-scales-row">
-              <div className={`noaa-simple-box ${getBoxColor(predicted?.S?.Scale, "S")}`}>
+              <div
+                className={`noaa-simple-box ${getBoxColor(predicted?.S?.Scale, "S")}`}
+              >
                 <div className="noaa-simple-box-label">S1+</div>
                 <div className="noaa-simple-box-text">
                   {formatString(predicted?.S?.Prob || "none")}%
                 </div>
               </div>
-              <div className={`noaa-simple-box ${getBoxColor(predicted?.G?.Scale, "G")}`}>
-                <div className="noaa-simple-box-label">G{predicted?.G?.Scale}</div>
+              <div
+                className={`noaa-simple-box ${getBoxColor(predicted?.G?.Scale, "G")}`}
+              >
+                <div className="noaa-simple-box-label">
+                  G{predicted?.G?.Scale}
+                </div>
                 <div className="noaa-simple-box-text">
                   {formatString(predicted?.G?.Text || "none")}
                 </div>
               </div>
             </div>
           </div>
-          <IconButton onClick={handleNext} disabled={predictedIndex >= maxPredictedIdx} aria-label="Next prediction">
+          <IconButton
+            onClick={handleNext}
+            disabled={predictedIndex >= maxPredictedIdx}
+            aria-label="Next prediction"
+          >
             <ArrowRightIcon fontSize="large" />
           </IconButton>
         </div>

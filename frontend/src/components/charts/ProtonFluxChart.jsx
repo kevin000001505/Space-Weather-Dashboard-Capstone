@@ -14,8 +14,9 @@ import {
 } from "./helpers";
 import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
-import { S_LEVELS, MAJOR_TIMEZONES } from "./constants";
+import { S_LEVELS } from "./constants";
 import { debounce } from "lodash";
+import { useAllTimezones } from "../../hooks/useAllTimezones";
 
 Chart.register(annotationPlugin);
 
@@ -25,6 +26,8 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,
   );
+  const borderWidth = useSelector((state) => state.charts.borderWidth);
+
   const protonSLevelBackgroundPlugin = React.useMemo(
     () =>
       chartBackgroundBandsPlugin(S_LEVELS, {
@@ -39,100 +42,133 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
     [backgroundBandsOpacity],
   );
 
-  const rawProtonFlux = useSelector((state) => state.charts.protonFlux);
-  const [protonFlux, setProtonFlux] = React.useState(
-    sortByTimeTag(rawProtonFlux),
-  );
+  const protonFlux = useSelector((state) => state.charts.protonFlux);
   const darkMode = useSelector((state) => state.ui.darkMode);
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
-  const debouncedSetProtonFlux = React.useMemo(
-    () => debounce((data) => setProtonFlux(sortByTimeTag(data)), 200),
-    [],
-  );
-  React.useEffect(() => {
-    debouncedSetProtonFlux(rawProtonFlux);
-    return () => debouncedSetProtonFlux.cancel();
-  }, [rawProtonFlux, debouncedSetProtonFlux]);
-
   const customdt = useSelector((state) => state.charts.customdt);
-  const uniqueTimeTags = getUniqueTimeTags(protonFlux);
-  const fluxLabels = filterLabelsByInterval(uniqueTimeTags, customdt.range);
+  const timeZones = useAllTimezones();
 
-  function getFlux(time_tag, key) {
-    const found = protonFlux.find((item) => item.time_tag === time_tag);
-    return found ? found[key] : null;
-  }
+  const [chartData, fluxLabels] = React.useMemo(() => {
+    const intervalMs = getIntervalMs(customdt.range);
+    const intervalMap = new Map();
+    const intervalLabelSet = new Set();
 
-  const flux10Mev = fluxLabels.map((time_tag) =>
-    getFlux(time_tag, "flux_10_mev"),
-  );
-  const flux50Mev = fluxLabels.map((time_tag) =>
-    getFlux(time_tag, "flux_50_mev"),
-  );
-  const flux100Mev = fluxLabels.map((time_tag) =>
-    getFlux(time_tag, "flux_100_mev"),
-  );
-  const flux500Mev = fluxLabels.map((time_tag) =>
-    getFlux(time_tag, "flux_500_mev"),
-  );
+    for (const item of protonFlux) {
+      const date = new Date(item.time_tag);
+      const intervalStart =
+        Math.floor(date.getTime() / intervalMs) * intervalMs;
+      const labelIso = new Date(intervalStart).toISOString();
+      intervalLabelSet.add(labelIso);
+      if (!intervalMap.has(labelIso)) {
+        intervalMap.set(labelIso, {
+          flux_10_mev: item.flux_10_mev,
+          flux_50_mev: item.flux_50_mev,
+          flux_100_mev: item.flux_100_mev,
+          flux_500_mev: item.flux_500_mev,
+        });
+      } else {
+        const prev = intervalMap.get(labelIso);
+        intervalMap.set(labelIso, {
+          flux_10_mev: Math.max(
+            prev.flux_10_mev ?? -Infinity,
+            item.flux_10_mev ?? -Infinity,
+          ),
+          flux_50_mev: Math.max(
+            prev.flux_50_mev ?? -Infinity,
+            item.flux_50_mev ?? -Infinity,
+          ),
+          flux_100_mev: Math.max(
+            prev.flux_100_mev ?? -Infinity,
+            item.flux_100_mev ?? -Infinity,
+          ),
+          flux_500_mev: Math.max(
+            prev.flux_500_mev ?? -Infinity,
+            item.flux_500_mev ?? -Infinity,
+          ),
+        });
+      }
+    }
 
-  const fluxChartData = {
-    labels: fluxLabels,
-    datasets: [
-      {
-        label: "Proton Flux (10 MeV)",
-        data: flux10Mev,
-        borderColor: "#9400D3",
-        backgroundColor: "rgba(148,0,211,0.2)",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-      },
-      {
-        label: "Proton Flux (50 MeV)",
-        data: flux50Mev,
-        borderColor: darkMode ? "#0d47a1" : "#1976d2",
-        backgroundColor: darkMode
-          ? "rgba(13,71,161,0.5)"
-          : "rgba(25,118,210,0.2)",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-      },
-      {
-        label: "Proton Flux (100 MeV)",
-        data: flux100Mev,
-        borderColor: darkMode ? "#ff6f00" : "#ff9800",
-        backgroundColor: darkMode
-          ? "rgba(255,111,0,0.5)"
-          : "rgba(255,152,0,0.2)",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-      },
-      {
-        label: "Proton Flux (500 MeV)",
-        data: flux500Mev,
-        borderColor: darkMode ? "#b71c1c" : "#d32f2f",
-        backgroundColor: darkMode
-          ? "rgba(183,28,28,0.5)"
-          : "rgba(211,47,47,0.2)",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 0,
-      },
-    ],
-  };
-  // Chart ref for reset zoom or export
+    let labels = Array.from(intervalLabelSet);
+    labels.sort();
+    labels = filterLabelsByInterval(labels, customdt.range);
+
+    const flux10Mev = [];
+    const flux50Mev = [];
+    const flux100Mev = [];
+    const flux500Mev = [];
+    for (let i = 0; i < labels.length; i++) {
+      const labelIso = labels[i];
+      const peak = intervalMap.get(labelIso);
+      flux10Mev.push(peak ? peak.flux_10_mev : null);
+      flux50Mev.push(peak ? peak.flux_50_mev : null);
+      flux100Mev.push(peak ? peak.flux_100_mev : null);
+      flux500Mev.push(peak ? peak.flux_500_mev : null);
+    }
+
+    const fluxChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: "Proton Flux (10 MeV)",
+          data: flux10Mev,
+          borderColor: "#9400D3",
+          backgroundColor: "rgba(148,0,211,0.2)",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "Proton Flux (50 MeV)",
+          data: flux50Mev,
+          borderColor: darkMode ? "#0d47a1" : "#1976d2",
+          backgroundColor: darkMode
+            ? "rgba(13,71,161,0.5)"
+            : "rgba(25,118,210,0.2)",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "Proton Flux (100 MeV)",
+          data: flux100Mev,
+          borderColor: darkMode ? "#ff6f00" : "#ff9800",
+          backgroundColor: darkMode
+            ? "rgba(255,111,0,0.5)"
+            : "rgba(255,152,0,0.2)",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "Proton Flux (500 MeV)",
+          data: flux500Mev,
+          borderColor: darkMode ? "#b71c1c" : "#d32f2f",
+          backgroundColor: darkMode
+            ? "rgba(183,28,28,0.5)"
+            : "rgba(211,47,47,0.2)",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          borderWidth: borderWidth,
+        },
+      ],
+    };
+
+    return [fluxChartData, labels];
+  }, [protonFlux, customdt, selectedTimezone, borderWidth]);
+
   const chartRef = externalChartRef;
 
-  // Persistent label box plugin
   const mousePosRef = React.useRef({ x: null, y: null, inside: false });
 
   const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
@@ -185,35 +221,10 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
     [mousePosRef, protonFlux, selectedTimezone],
   );
 
-  React.useEffect(() => {
-    const chart =
-      chartRef.current && chartRef.current.canvas
-        ? chartRef.current
-        : chartRef.current?.chartInstance || chartRef.current;
-    if (!chart || !chart.canvas) return;
-    const canvas = chart.canvas;
-    const handleMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      mousePosRef.current = { x, y, inside: true };
-      chart.update("none");
-    };
-    const handleLeave = (e) => {
-      mousePosRef.current = { x: null, y: null, inside: false };
-      chart.update("none");
-    };
-    canvas.addEventListener("mousemove", handleMove);
-    canvas.addEventListener("mouseleave", handleLeave);
-    return () => {
-      canvas.removeEventListener("mousemove", handleMove);
-      canvas.removeEventListener("mouseleave", handleLeave);
-    };
-  }, [protonFlux, selectedTimezone]);
   return (
     <Card
       sx={{
-        height: 600,
+        height: 500,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
@@ -223,13 +234,13 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
         disableTypography
         sx={{
           color: darkMode ? "#e0e0e0" : "#333",
-          fontSize: "1.25rem",
+          fontSize: "1rem",
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
       />
       <CardContent
-        sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
+        sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
         <Box
           sx={{
@@ -239,9 +250,9 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
           }}
         >
           <Line
-            key={`protonfluxchart-${fluxLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
+            key={`protonfluxchart-${fluxLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}-${borderWidth}`}
             ref={chartRef}
-            data={fluxChartData}
+            data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -250,6 +261,15 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                   labels: {
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { size: axisLabelSize, weight: "bold" },
+                  },
+                  onHover: (e) => {
+                    const target = e?.native?.target || e?.chart?.canvas;
+                    console.log(target);
+                    if (target) target.style.cursor = "pointer";
+                  },
+                  onLeave: (e) => {
+                    const target = e?.native?.target || e?.chart?.canvas;
+                    if (target) target.style.cursor = "";
                   },
                 },
                 tooltip: {
@@ -356,7 +376,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                     display: true,
                     text: `Time (${(() => {
                       const tzMap = Object.fromEntries(
-                        MAJOR_TIMEZONES.map((tz) => [tz.value, tz.label]),
+                        timeZones.map((tz) => [tz.value, tz.label]),
                       );
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
@@ -404,8 +424,23 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
               annotationPlugin,
               persistentLabelBoxPlugin,
             ]}
-            onPointerMove={undefined}
-            onPointerOut={undefined}
+            onPointerMove={(event) => {
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              const rect = chart.canvas.getBoundingClientRect();
+              const x = event.clientX - rect.left;
+              const y = event.clientY - rect.top;
+              mousePosRef.current = { x, y, inside: true };
+              chart.update("none");
+            }}
+            onPointerOut={() => {
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              mousePosRef.current = { x: null, y: null, inside: false };
+              chart.update("none");
+            }}
           />
         </Box>
       </CardContent>

@@ -29,7 +29,8 @@ import {
 } from "./helpers";
 import persistentLabelBoxPluginFactory from "./plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "./plugins/chartBackgroundBandsPlugin";
-import { R_LEVELS, MAJOR_TIMEZONES } from "./constants";
+import { R_LEVELS } from "./constants";
+import { useAllTimezones } from "../../hooks/useAllTimezones";
 
 // Register zoom plugin
 Chart.register(
@@ -48,34 +49,19 @@ Chart.register(
 );
 
 const XrayFluxChart = ({ chartRef: externalChartRef }) => {
-  const rawXrayFlux = useSelector((state) => state.charts?.xrayFlux);
-  const [xrayFlux, setXrayFlux] = React.useState(sortByTimeTag(rawXrayFlux));
-
-  const debouncedSetXrayFlux = React.useMemo(
-    () => debounce((data) => setXrayFlux(sortByTimeTag(data)), 200),
-    [],
-  );
-
-  React.useEffect(() => {
-    debouncedSetXrayFlux(rawXrayFlux);
-    return () => debouncedSetXrayFlux.cancel();
-  }, [rawXrayFlux, debouncedSetXrayFlux]);
-
+  const xrayFlux = useSelector((state) => state.charts.xrayFlux);
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const showDate = useSelector((state) => state.charts.showDate);
   const customdt = useSelector((state) => state.charts.customdt);
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
   const axisLabelSize = useSelector((state) => state.charts.axisLabelSize);
+  const borderWidth = useSelector((state) => state.charts.borderWidth);
+  const timeZones = useAllTimezones();
   const dispatch = useDispatch();
 
-  // Track mouse position over the canvas
-  const mousePosRef = React.useRef({ x: null, y: null, inside: false });
+  const mousePosRef = React.useRef({ x: null, y: null, inside: false }); // Track mouse position over the canvas
 
-  // Persistent label box plugin (shared, now generic)
-
-  // R-levels: [min, max, color, label]
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,
   );
@@ -90,34 +76,95 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
         alpha: backgroundBandsOpacity,
       }),
     [backgroundBandsOpacity],
-  );
+  ); // R-levels: [min, max, color, label]
 
-  // Build unique time_tag list (chronological)
-  const uniqueTimeTags = getUniqueTimeTags(xrayFlux);
-  const xrayLabels = filterLabelsByInterval(uniqueTimeTags, customdt.range);
+  const [chartData, xrayLabels] = React.useMemo(() => {
+    const intervalMs = getIntervalMs(customdt.range);
+    const intervalMap = new Map();
+    const intervalLabelSet = new Set();
 
-  function getFlux(time_tag, satellite, energy) {
-    const found = xrayFlux.find(
-      (item) =>
-        item.time_tag === time_tag &&
-        item.satellite === satellite &&
-        item.energy === energy,
-    );
-    return found ? found.flux : null;
-  }
+    for (const item of xrayFlux) {
+      const date = new Date(item.time_tag);
+      const intervalStart =
+        Math.floor(date.getTime() / intervalMs) * intervalMs;
+      const labelIso = new Date(intervalStart).toISOString();
+      intervalLabelSet.add(labelIso);
+      const key = `${labelIso}|${item.satellite}|${item.energy}`;
+      if (!intervalMap.has(key) || item.flux > intervalMap.get(key).flux) {
+        intervalMap.set(key, { flux: item.flux, time_tag: item.time_tag });
+      }
+    }
 
-  const goes18Long = xrayLabels.map((time_tag) =>
-    getFlux(time_tag, 18, "0.1-0.8nm"),
-  );
-  const goes18Short = xrayLabels.map((time_tag) =>
-    getFlux(time_tag, 18, "0.05-0.4nm"),
-  );
-  const goes19Long = xrayLabels.map((time_tag) =>
-    getFlux(time_tag, 19, "0.1-0.8nm"),
-  );
-  const goes19Short = xrayLabels.map((time_tag) =>
-    getFlux(time_tag, 19, "0.05-0.4nm"),
-  );
+    let labels = Array.from(intervalLabelSet);
+    labels.sort();
+
+    labels = filterLabelsByInterval(labels, customdt.range);
+
+    function getPeakFlux(labelIso, satellite, energy) {
+      const key = `${labelIso}|${satellite}|${energy}`;
+      return intervalMap.has(key) ? intervalMap.get(key).flux : null;
+    }
+
+    const goes18Long = [];
+    const goes18Short = [];
+    const goes19Long = [];
+    const goes19Short = [];
+    for (let i = 0; i < labels.length; i++) {
+      const labelIso = labels[i];
+      goes18Long.push(getPeakFlux(labelIso, 18, "0.1-0.8nm"));
+      goes18Short.push(getPeakFlux(labelIso, 18, "0.05-0.4nm"));
+      goes19Long.push(getPeakFlux(labelIso, 19, "0.1-0.8nm"));
+      goes19Short.push(getPeakFlux(labelIso, 19, "0.05-0.4nm"));
+    }
+
+    const xrayChartData = {
+      labels: labels,
+      datasets: [
+        {
+          label: "GOES-18 Long (0.1-0.8nm)",
+          data: goes18Long,
+          borderColor: "#ff9800",
+          backgroundColor: "#ff980033",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "GOES-18 Short (0.05-0.4nm)",
+          data: goes18Short,
+          borderColor: "#f44336",
+          backgroundColor: "#f4433633",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "GOES-19 Long (0.1-0.8nm)",
+          data: goes19Long,
+          borderColor: "#1976d2",
+          backgroundColor: "#1976d233",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: borderWidth,
+        },
+        {
+          label: "GOES-19 Short (0.05-0.4nm)",
+          data: goes19Short,
+          borderColor: "#b39ddb",
+          backgroundColor: "#ede7f6",
+          fill: false,
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: borderWidth,
+        },
+      ],
+    };
+
+    return [xrayChartData, labels];
+  }, [xrayFlux, customdt, selectedTimezone, borderWidth]);
 
   const labelBoxSize = useSelector((state) => state.charts.labelBoxSize);
   const persistentLabelBoxPlugin = React.useMemo(
@@ -173,100 +220,32 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           return lines;
         },
       }),
-    [mousePosRef, xrayLabels, selectedTimezone],
+    [mousePosRef, xrayLabels],
   );
 
-  const xrayChartData = {
-    labels: xrayLabels,
-    datasets: [
-      {
-        label: "GOES-18 Long (0.1-0.8nm)",
-        data: goes18Long,
-        borderColor: "#ff9800",
-        backgroundColor: "#ff980033",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-      {
-        label: "GOES-18 Short (0.05-0.4nm)",
-        data: goes18Short,
-        borderColor: "#f44336",
-        backgroundColor: "#f4433633",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-      {
-        label: "GOES-19 Long (0.1-0.8nm)",
-        data: goes19Long,
-        borderColor: "#1976d2",
-        backgroundColor: "#1976d233",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-      {
-        label: "GOES-19 Short (0.05-0.4nm)",
-        data: goes19Short,
-        borderColor: "#b39ddb",
-        backgroundColor: "#ede7f6",
-        fill: false,
-        tension: 0.4,
-        pointRadius: 0,
-      },
-    ],
-  };
   // Chart ref for reset zoom or export
   const chartRef = externalChartRef;
-
-  // Track mouse position and force chart redraw on mouse move
-  React.useEffect(() => {
-    const chart =
-      chartRef.current && chartRef.current.canvas
-        ? chartRef.current
-        : chartRef.current?.chartInstance || chartRef.current;
-    if (!chart || !chart.canvas) return;
-    const canvas = chart.canvas;
-    const handleMove = (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      mousePosRef.current = { x, y, inside: true };
-      chart.update("none");
-    };
-    const handleLeave = (e) => {
-      mousePosRef.current = { x: null, y: null, inside: false };
-      chart.update("none");
-    };
-    canvas.addEventListener("mousemove", handleMove);
-    canvas.addEventListener("mouseleave", handleLeave);
-    return () => {
-      canvas.removeEventListener("mousemove", handleMove);
-      canvas.removeEventListener("mouseleave", handleLeave);
-    };
-  }, [xrayLabels, selectedTimezone]);
 
   return (
     <Card
       sx={{
-        height: 600,
+        height: 500,
         backgroundColor: darkMode ? "#23272e" : "#fff",
         boxShadow: darkMode ? "0 2px 8px #111" : undefined,
       }}
     >
       <CardHeader
-        title="XRAY FLUX"
+        title="X-RAY FLUX"
         disableTypography
         sx={{
           color: darkMode ? "#e0e0e0" : "#333",
-          fontSize: "1.25rem",
+          fontSize: "1rem",
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
       />
       <CardContent
-        sx={{ height: "100%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
+        sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}
       >
         <Box
           sx={{
@@ -276,9 +255,9 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           }}
         >
           <Line
-            key={`xraychart-${xrayLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}`}
+            key={`xraychart-${xrayLabels.join("-")}-${selectedTimezone}-${backgroundBandsOpacity}-${labelBoxSize}-${borderWidth}`}
             ref={chartRef}
-            data={xrayChartData}
+            data={chartData}
             options={{
               responsive: true,
               maintainAspectRatio: false,
@@ -287,6 +266,14 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
                   labels: {
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { size: axisLabelSize, weight: "bold" },
+                  },
+                  onHover: (e) => {
+                    const target = e?.native?.target || e?.chart?.canvas;
+                    if (target) target.style.cursor = 'pointer';
+                  },
+                  onLeave: (e) => {
+                    const target = e?.native?.target || e?.chart?.canvas;
+                    if (target) target.style.cursor = '';
                   },
                 },
                 tooltip: {
@@ -325,7 +312,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
                     display: true,
                     text: `Time (${(() => {
                       const tzMap = Object.fromEntries(
-                        MAJOR_TIMEZONES.map((tz) => [tz.value, tz.label]),
+                        timeZones.map((tz) => [tz.value, tz.label]),
                       );
                       return tzMap[selectedTimezone] || selectedTimezone;
                     })()})`,
@@ -547,6 +534,23 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
               radioBlackoutBackgroundPlugin,
               persistentLabelBoxPlugin,
             ]}
+            onPointerMove={(event) => {
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              const rect = chart.canvas.getBoundingClientRect();
+              const x = event.clientX - rect.left;
+              const y = event.clientY - rect.top;
+              mousePosRef.current = { x, y, inside: true };
+              chart.update("none");
+            }}
+            onPointerOut={() => {
+              const chartWrapper = chartRef.current;
+              const chart = chartWrapper?.chart || chartWrapper;
+              if (!chart || !chart.canvas) return;
+              mousePosRef.current = { x: null, y: null, inside: false };
+              chart.update("none");
+            }}
           />
         </Box>
       </CardContent>

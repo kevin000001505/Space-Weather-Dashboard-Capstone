@@ -1,16 +1,51 @@
-// Major timezones for chart selection
-export const MAJOR_TIMEZONES = [
-  { label: "Local Time", value: "local" },
-  { label: "UTC (GMT+0)", value: "UTC" },
-  { label: "US/Eastern (GMT-5)", value: "America/New_York" },
-  { label: "US/Central (GMT-6)", value: "America/Chicago" },
-  { label: "US/Mountain (GMT-7)", value: "America/Denver" },
-  { label: "US/Pacific (GMT-8)", value: "America/Los_Angeles" },
-  { label: "Europe/London (GMT+0)", value: "Europe/London" },
-  { label: "Europe/Paris (GMT+1)", value: "Europe/Paris" },
-  { label: "Asia/Tokyo (GMT+9)", value: "Asia/Tokyo" },
-  { label: "Australia/Sydney (GMT+10)", value: "Australia/Sydney" },
-];
+// Dynamically generate all IANA timezones for dropdowns, with Local/UTC at the top
+export function getAllTimezones() {
+  function getGmtOffset(tzValue) {
+    if (tzValue === "local") return "";
+    if (tzValue === "UTC") return "GMT+00:00";
+    try {
+      const now = new Date();
+      const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone: tzValue,
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      });
+      const parts = dtf.formatToParts(now);
+      const tzName = parts.find(p => p.type === 'timeZoneName')?.value || '';
+      const match = tzName.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
+      if (match) {
+        const sign = match[1];
+        const hour = match[2].padStart(2, '0');
+        const min = match[3] ? match[3] : '00';
+        return `GMT${sign}${hour}:${min}`;
+      }
+      if (tzName === 'UTC') return 'GMT+00:00';
+      return '';
+    } catch {
+      return '';
+    }
+  }
+
+  const topZones = [
+    { label: "Local Time", value: "local", gmtOffset: "" },
+    { label: "UTC (GMT+0)", value: "UTC", gmtOffset: "GMT+00" },
+  ];
+  let tzList = [];
+  if (typeof Intl.supportedValuesOf === "function") {
+    tzList = Intl.supportedValuesOf("timeZone").map((tz) => ({
+      label: tz,
+      value: tz,
+      gmtOffset: getGmtOffset(tz),
+    }));
+  } else {
+    tzList = [
+      { label: "America/New_York", value: "America/New_York", gmtOffset: getGmtOffset("America/New_York") },
+      { label: "Europe/London", value: "Europe/London", gmtOffset: getGmtOffset("Europe/London") },
+    ];
+  }
+  return [...topZones, ...tzList];
+}
 // Kp Index G-levels
 export const G_LEVELS = [
   { min: 0, max: 4.99, color: "#40cc47", label: "G0" },
@@ -49,3 +84,4 @@ export const R_LEVELS = [
   { min: 1e-3, max: 2e-3, color: "#ff6803", label: "R4" },
   { min: 2e-3, max: 1e-1, color: "#ff0000", label: "R5" },
 ];
+

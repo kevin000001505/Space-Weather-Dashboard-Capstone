@@ -23,7 +23,7 @@ import "./Sidebar.css";
 import { useEffect } from "react";
 import { fetchNoAAScales } from "../../api/api";
 
-const drawerWidth = 340;
+const drawerWidth = 280;
 
 export const Sidebar = () => {
   const dispatch = useDispatch();
