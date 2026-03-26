@@ -1,5 +1,7 @@
 """SQL queries for creating tables, indexes, performing upserts, and latest queries to insert into redis for the space weather data pipeline."""
 
+PARTITION_TABLE_LISTS = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]
+
 CLEANUP_OLD_FLIGHT_DATA_QUERY = """
 DELETE FROM flight_states WHERE time < $1
 """

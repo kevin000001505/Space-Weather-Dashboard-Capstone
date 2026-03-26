@@ -101,7 +101,7 @@ deployments:
     work_pool:
       name: NOAA-pool
     schedules:
-      - cron: "0 0 * 2 *"
+      - cron: "0 0 1,15 * *"
         timezone: UTC
 
   # --- Data Maintenance Flows ---

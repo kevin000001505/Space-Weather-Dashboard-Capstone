@@ -7,18 +7,16 @@ from tasks.db import (
     initial_drap_db,
     initial_activate_flight_db,
     initial_airport_db,
-    # initial_latest_xray_db,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
-    cleanup_old_drap_data,
     initial_geoelectric_db,
     initial_aurora_db,
     initial_xray_6hour_db,
     initial_partition_function,
 )
 from flows.db_maintain import initialize_db_flow, partition_maintain
-
+from database.queries import PARTITION_TABLE_LISTS
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -96,13 +94,6 @@ class TestInitialActivateFlightDb:
     async def test_creates_table(self, conn):
         await initial_activate_flight_db.fn(conn)
         assert await table_exists(conn, "activate_flight")
-
-
-# class TestInitialLatestXrayDb:
-#     @pytest.mark.asyncio
-#     async def test_creates_table(self, conn):
-#         await initial_latest_xray_db.fn(conn)
-#         assert await table_exists(conn, "goes_xray_events")
 
 
 class TestInitialProtonFluxPlotDb:
@@ -207,7 +198,7 @@ class TestInitializeDbFlow:
             await partition_maintain.fn()
 
         now = datetime.now(timezone.utc)
-        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]:
+        for table_name in PARTITION_TABLE_LISTS:
             partition_name = f"{table_name}_{now.strftime('%Y_%m')}"
             assert await table_exists(conn, partition_name), f"Missing partition: {partition_name}"
 
