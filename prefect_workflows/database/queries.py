@@ -270,10 +270,9 @@ CREATE TABLE IF NOT EXISTS goes_proton_flux (
   flux_500_mev     double precision CHECK (flux_500_mev >= 0),  -- Proton flux >500 MeV
 
   CONSTRAINT goes_proton_flux_pkey PRIMARY KEY (time_tag, satellite)
-);
+)PARTITION BY RANGE (time_tag);
 
 CREATE INDEX IF NOT EXISTS ix_goes_proton_flux_time_tag ON goes_proton_flux (time_tag);
-CREATE INDEX IF NOT EXISTS ix_goes_proton_flux_satellite ON goes_proton_flux (satellite);
 """
 
 
@@ -285,7 +284,7 @@ CREATE TABLE IF NOT EXISTS kp_index (
   station_count    integer           CHECK (station_count >= 0),   -- Number of stations reporting
 
   CONSTRAINT kp_index_pkey PRIMARY KEY (time_tag)
-);
+)PARTITION BY RANGE (time_tag);
 
 CREATE INDEX IF NOT EXISTS ix_kp_index_time_tag ON kp_index (time_tag);
 """

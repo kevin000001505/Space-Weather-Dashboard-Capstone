@@ -16,9 +16,8 @@ from tasks.db import (
     initial_aurora_db,
     initial_xray_6hour_db,
     initial_partition_function,
-    create_tables_partition,
 )
-from flows.db_maintain import initialize_db_flow
+from flows.db_maintain import initialize_db_flow, partition_maintain
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -156,16 +155,6 @@ class TestFunctionWork:
         )
         assert exists
 
-    @pytest.mark.asyncio
-    async def test_create_tables_partition_creates_partition(self, conn):
-        from datetime import datetime, timezone
-        await initial_drap_db.fn(conn)
-        await initial_partition_function.fn(conn)
-        now = datetime.now(timezone.utc)
-        await create_tables_partition.fn(conn, "drap_region", now)
-        partition_name = "drap_region_" + now.strftime("%Y_%m")
-        assert await table_exists(conn, partition_name)
-
 
 # ---------------------------------------------------------------------------
 # Full flow test — patches get_connection to inject test conn
@@ -205,6 +194,23 @@ class TestInitializeDbFlow:
         with patch("flows.db_maintain.get_connection", mock_get_connection):
             await initialize_db_flow.fn()
             await initialize_db_flow.fn()  # second run must not raise
+
+    @pytest.mark.asyncio
+    async def test_partition_maintain_creates_partitions(self, conn):
+        from datetime import datetime, timezone
+
+        @asynccontextmanager
+        async def mock_get_connection():
+            yield conn
+
+        with patch("flows.db_maintain.get_connection", mock_get_connection):
+            await initialize_db_flow.fn()
+            await partition_maintain.fn()
+
+        now = datetime.now(timezone.utc)
+        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index"]:
+            partition_name = f"{table_name}_{now.strftime('%Y_%m')}"
+            assert await table_exists(conn, partition_name), f"Missing partition: {partition_name}"
 
 
 # ---------------------------------------------------------------------------

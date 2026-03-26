@@ -62,7 +62,7 @@ async def initialize_db_flow():
 async def partition_maintain():
     """Create each table datetime partition."""
     date = datetime.now()
-    table_lists = ["drap_region", "goes_xray_6hour"]
+    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index"]
     logger = get_logger(__name__)
     logger.info("Starting all database partition")
     try:
@@ -90,7 +90,6 @@ if __name__ == "__main__":
             await initial_drap_db.fn(conn)
             await initial_airport_db.fn(conn)
             await initial_activate_flight_db.fn(conn)
-            # await initial_latest_xray_db.fn(conn)
             await initial_proton_flux_plot_db.fn(conn)
             await initial_kp_index_db.fn(conn)
             await initial_alert_db.fn(conn)
