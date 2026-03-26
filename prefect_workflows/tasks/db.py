@@ -1,5 +1,7 @@
 """Database initialization and maintenance tasks."""
 
+from datetime import datetime, timedelta
+
 from shared.db_utils import ensure_table_exists, cleanup_old_data
 from database.queries import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
@@ -17,6 +19,7 @@ from database.queries import (
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
+    CREATE_TABLE_PARTITION_IF_MISSING,
 )
 from database.functions import CREATE_PARTITION_FUNCTION_SQL
 from prefect import task
@@ -200,6 +203,13 @@ async def initial_partition_function(conn: Connection):
         logger.error(f"Failed to create partition function: {e}")
         raise
 
+@task(cache_policy=NO_CACHE)
+async def create_tables_partition(conn: Connection, table_name: str, datetime: datetime):
+    """Task to create all the table partition"""
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime)
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30))
+
+    
 # -----
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)

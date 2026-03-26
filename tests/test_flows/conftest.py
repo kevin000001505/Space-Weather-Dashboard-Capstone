@@ -10,6 +10,7 @@ from tasks.drap import extract_data as drap_extract_data, transform_data as drap
 from tasks.aurora import fetch_aurora_data
 from tasks.geomatic import extract_file as geo_extract_file, extract_data as geo_extract_data, transform_data as geo_transform_data
 from tasks.proton_flux_plot import fetch_proton_flux_plot
+from database.functions import CREATE_PARTITION_FUNCTION_SQL
 
 GEOELECTRIC_BASE_URL = "https://services.swpc.noaa.gov/json/lists/rgeojson/US-Canada-1D/"
 

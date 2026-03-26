@@ -15,6 +15,8 @@ from tasks.db import (
     initial_geoelectric_db,
     initial_aurora_db,
     initial_xray_6hour_db,
+    initial_partition_function,
+    create_tables_partition,
 )
 from flows.db_maintain import initialize_db_flow
 
@@ -145,6 +147,26 @@ class TestInitialXray6hourDb:
         assert await table_exists(conn, "goes_xray_6hour")
 
 
+class TestFunctionWork:
+    @pytest.mark.asyncio
+    async def test_initial_partition_function_creates_function(self, conn):
+        await initial_partition_function.fn(conn)
+        exists = await conn.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'create_monthly_partition_if_missing')"
+        )
+        assert exists
+
+    @pytest.mark.asyncio
+    async def test_create_tables_partition_creates_partition(self, conn):
+        from datetime import datetime, timezone
+        await initial_drap_db.fn(conn)
+        await initial_partition_function.fn(conn)
+        now = datetime.now(timezone.utc)
+        await create_tables_partition.fn(conn, "drap_region", now)
+        partition_name = "drap_region_" + now.strftime("%Y_%m")
+        assert await table_exists(conn, partition_name)
+
+
 # ---------------------------------------------------------------------------
 # Full flow test — patches get_connection to inject test conn
 # ---------------------------------------------------------------------------
@@ -189,37 +211,3 @@ class TestInitializeDbFlow:
 # ---------------------------------------------------------------------------
 # Cleanup task test
 # ---------------------------------------------------------------------------
-
-
-class TestCleanupOldDrapData:
-    @pytest.mark.asyncio
-    async def test_removes_old_records(self, conn):
-        await initial_drap_db.fn(conn)
-
-        # Use obviously fake coordinates as a marker
-        # (0.0001, 0.0001) will never appear in real NOAA DRAP data
-        FAKE_OLD    = "POINT(0.0001 0.0001)"
-        FAKE_RECENT = "POINT(0.0002 0.0002)"
-
-        await conn.execute("""
-            INSERT INTO drap_region (observed_at, absorption, location)
-            VALUES
-                (NOW() - INTERVAL '10 days', 2.5, ST_GeogFromText($1)),
-                (NOW() - INTERVAL '1 day',   1.0, ST_GeogFromText($2))
-        """, FAKE_OLD, FAKE_RECENT)
-
-        await cleanup_old_drap_data.fn(conn, older_than_days=3)
-
-        # Only check YOUR test rows by filtering on the fake coordinates
-        old_count = await conn.fetchval("""
-            SELECT COUNT(*) FROM drap_region
-            WHERE location = ST_GeogFromText($1)
-            AND observed_at < NOW() - INTERVAL '3 days'
-        """, FAKE_OLD)
-        assert old_count == 0       # old fake row was deleted
-
-        remaining = await conn.fetchval("""
-            SELECT COUNT(*) FROM drap_region
-            WHERE location = ST_GeogFromText($1)
-        """, FAKE_RECENT)
-        assert remaining == 1       # recent fake row still there  

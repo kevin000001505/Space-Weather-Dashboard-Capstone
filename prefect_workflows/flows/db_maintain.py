@@ -1,3 +1,5 @@
+import datetime
+
 from shared.db_utils import get_connection
 from prefect import flow
 from shared.logger import get_logger
@@ -13,7 +15,9 @@ from tasks.db import (
     initial_alert_db,
     initial_xray_6hour_db,
     initial_geoelectric_db,
+    create_tables_partition,
 )
+
 
 
 
@@ -57,8 +61,21 @@ async def initialize_db_flow():
 @flow(log_prints=True)
 async def partition_maintain():
     """Create each table datetime partition."""
+    date = datetime.now()
+    table_lists = ["drap_region", "goes_xray_events"]
     logger = get_logger(__name__)
     logger.info("Starting all database partition")
+    try:
+        async with get_connection() as conn:
+            for table_name in table_lists:
+                await create_tables_partition(conn, table_name, date)
+
+    except Exception as e:
+        logger.debug(f"Table {table_name} failed to create {date} of partition")
+        logger.error(f"Database Error failed: {e}")
+    
+
+
 
 
 
