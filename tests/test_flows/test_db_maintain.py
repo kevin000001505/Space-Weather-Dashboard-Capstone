@@ -207,7 +207,7 @@ class TestInitializeDbFlow:
             await partition_maintain.fn()
 
         now = datetime.now(timezone.utc)
-        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast"]:
+        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]:
             partition_name = f"{table_name}_{now.strftime('%Y_%m')}"
             assert await table_exists(conn, partition_name), f"Missing partition: {partition_name}"
 

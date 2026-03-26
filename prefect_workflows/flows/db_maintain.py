@@ -62,7 +62,7 @@ async def initialize_db_flow():
 async def partition_maintain():
     """Create each table datetime partition."""
     date = datetime.now(timezone.utc)
-    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast"]
+    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]
     logger = get_logger(__name__)
     logger.info("Starting all database partition")
     try:
@@ -86,7 +86,7 @@ if __name__ == "__main__":
     from datetime import datetime, timezone
 
     date = datetime.now(timezone.utc)
-    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast"]
+    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]
 
     async def run():
         conn = await asyncpg.connect(os.environ["DATABASE_URL"])
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             await initial_aurora_db.fn(conn)
             await initial_geoelectric_db.fn(conn)
             await initial_partition_function.fn(conn)
-            
+
             for table_name in table_lists:
                 await create_tables_partition(conn, table_name, date)
 
