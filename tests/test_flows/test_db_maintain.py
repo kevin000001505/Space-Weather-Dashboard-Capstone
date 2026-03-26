@@ -204,11 +204,10 @@ class TestInitializeDbFlow:
             yield conn
 
         with patch("flows.db_maintain.get_connection", mock_get_connection):
-            await initialize_db_flow.fn()
             await partition_maintain.fn()
 
         now = datetime.now(timezone.utc)
-        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index"]:
+        for table_name in ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast"]:
             partition_name = f"{table_name}_{now.strftime('%Y_%m')}"
             assert await table_exists(conn, partition_name), f"Missing partition: {partition_name}"
 

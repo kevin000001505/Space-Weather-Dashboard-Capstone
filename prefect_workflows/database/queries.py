@@ -810,13 +810,14 @@ AURORA_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS aurora_forecast (
     observation_time TIMESTAMPTZ      NOT NULL,
     forecast_time    TIMESTAMPTZ      NOT NULL,
+    lat              DOUBLE PRECISION NOT NULL,
+    long             DOUBLE PRECISION NOT NULL,
     location         GEOGRAPHY(Point, 4326) NOT NULL,
     aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
-    PRIMARY KEY (observation_time, location)
-);
+    PRIMARY KEY (observation_time, lat, long)
+)PARTITION BY RANGE (observation_time);
 
 CREATE INDEX IF NOT EXISTS ix_aurora_forecast_obs_time ON aurora_forecast (observation_time);
-CREATE INDEX IF NOT EXISTS ix_aurora_forecast_location ON aurora_forecast USING GIST (location);
 """
 
 AURORA_STAGING_DDL = """
@@ -834,14 +835,16 @@ AURORA_STAGING_COLUMNS = [
 ]
 
 AURORA_TRANSFORM_SQL = """
-INSERT INTO aurora_forecast (observation_time, forecast_time, location, aurora)
+INSERT INTO aurora_forecast (observation_time, forecast_time, lat, long, location, aurora)
 SELECT
     observation_time,
     forecast_time,
+    latitude,
+    longitude,
     ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
     aurora
 FROM aurora_forecast_staging
-ON CONFLICT (observation_time, location) DO NOTHING
+ON CONFLICT (observation_time, lat, long) DO NOTHING
 """
 
 # --- goes_xray_6hour ---

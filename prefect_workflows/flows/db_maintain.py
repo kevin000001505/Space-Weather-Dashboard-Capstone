@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timezone
 
 from shared.db_utils import get_connection
 from prefect import flow
@@ -61,8 +61,8 @@ async def initialize_db_flow():
 @flow(log_prints=True)
 async def partition_maintain():
     """Create each table datetime partition."""
-    date = datetime.now()
-    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index"]
+    date = datetime.now(timezone.utc)
+    table_lists = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast"]
     logger = get_logger(__name__)
     logger.info("Starting all database partition")
     try:
