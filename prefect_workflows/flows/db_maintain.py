@@ -97,6 +97,7 @@ if __name__ == "__main__":
             await initial_xray_6hour_db.fn(conn)
             await initial_aurora_db.fn(conn)
             await initial_geoelectric_db.fn(conn)
+            await initial_partition_function.fn(conn)
         finally:
             await conn.close()
 

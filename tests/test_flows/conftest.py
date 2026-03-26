@@ -29,8 +29,14 @@ async def pool():
     yield pool
     await pool.close()
 
+@pytest_asyncio.fixture(scope="session")
+async def db_setup(pool):
+    """Install the partition helper function once for the session."""
+    async with pool.acquire() as connection:
+        await connection.execute(CREATE_PARTITION_FUNCTION_SQL)
+
 @pytest_asyncio.fixture
-async def conn(pool):
+async def conn(pool, db_setup):
     async with pool.acquire() as connection:
         tx = connection.transaction()
         await tx.start()

@@ -186,7 +186,6 @@ class TestInitializeDbFlow:
             "drap_region",
             "activate_flight",
             "airports",
-            # "goes_xray_events",
             "goes_proton_flux",
             "kp_index",
             "alerts",
