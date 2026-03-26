@@ -207,3 +207,15 @@ class GeoelectricResponse(BaseModel):
 class GeoelectricRangeResponse(BaseModel):
     count: int
     snapshots: List[GeoelectricResponse]
+
+class TimeTestingData(BaseModel):
+    start: float
+    query_start: float
+    query_end: float
+    finish: float
+
+    def result(self):
+        return {
+            "total_time_ms": round((self.finish - self.start) * 1000, 3),
+            "query_time_ms": round((self.query_end - self.query_start) * 1000, 3),
+        }

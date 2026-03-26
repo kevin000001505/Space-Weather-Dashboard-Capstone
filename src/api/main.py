@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from shared.db_utils import get_connection, get_pool, close_all_connections
@@ -41,7 +41,8 @@ from config import (
     AlertResponse,
     AlertListResponse,
     GeoelectricResponse,
-    GeoelectricRangeResponse
+    GeoelectricRangeResponse,
+    TimeTestingData,
 )
 import shared.redis as redis_config # Pull from the shared volume
 import logging, json, time
@@ -274,25 +275,32 @@ async def live_dashboard_stream(request: Request):
 
 
 @app.get("/api/v1/airports", response_model=AirportsResponse)
-async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
+async def get_latest_airports(limit: int = Query(None, ge=1, le=200000), debug: bool = Query(False)):
+    t_start = time.perf_counter()
     redis_client = redis_config.get_redis_client()
     try:
         # 1. Attempt to grab the full dataset from Redis RAM
+        t_query_start = time.perf_counter()
         cached_airports = await redis_client.get(redis_config.AIRPORTS_CACHE_KEY)
-        
+
         if cached_airports:
             # CACHE HIT: Parse the JSON string back into a Python list of dicts
             airports_data = json.loads(cached_airports)
-            
+            t_query_end = time.perf_counter()
+
+            if debug:
+                return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+
             # Slice the array if the user provided a limit
             if limit:
                 airports_data = airports_data[:limit]
-                
+
             return AirportsResponse(airports=airports_data)
-        
+
         # 2. CACHE MISS: Query PostgreSQL
         async with get_connection() as conn:
             rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
+            t_query_end = time.perf_counter()
             if not rows:
                 raise HTTPException(status_code=404, detail="No airport data available")
 
@@ -314,12 +322,15 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
                 )
 
             cache_payload = [airport.model_dump() for airport in airports]
-            
+
             await redis_client.set(
-                redis_config.AIRPORTS_CACHE_KEY, 
-                json.dumps(cache_payload), 
+                redis_config.AIRPORTS_CACHE_KEY,
+                json.dumps(cache_payload),
                 ex=redis_config.VERY_LONG_TTL
             )
+
+            if debug:
+                return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
             if limit:
                 return AirportsResponse(airports=airports[:limit])
@@ -337,19 +348,21 @@ async def get_latest_airports(limit: int = Query(None, ge=1, le=200000)):
 
 
 @app.get("/api/v1/airport/{ident}", response_model=AirportDetailResponse)
-async def get_airport_details(ident: str):
+async def get_airport_details(ident: str, debug: bool = Query(False)):
+    t_start = time.perf_counter()
     async with get_connection() as conn:
         try:
-            # Using ident.upper() ensures we match the uppercase data in the DB
+            t_query_start = time.perf_counter()
             row = await conn.fetchrow(AIRPORT_QUERY, ident.upper())
-            
+            t_query_end = time.perf_counter()
+
             if not row:
                 raise HTTPException(status_code=404, detail=f"Airport {ident} not found")
 
-            # Convert the asyncpg Record into a mutable dictionary
-            airport_data = dict(row)
+            if debug:
+                return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-            # Parse the JSONB strings back into native Python objects
+            airport_data = dict(row)
             json_fields = ['geom', 'runways', 'frequencies', 'navaids', 'comments']
             for field in json_fields:
                 val = airport_data.get(field)
@@ -366,12 +379,19 @@ async def get_airport_details(ident: str):
 
 
 @app.get("/api/v1/flight-path/{icao24}", response_model=FlightPathResponse)
-async def get_flight_path(icao24: str):
+async def get_flight_path(icao24: str, debug: bool = Query(False)):
+    t_start = time.perf_counter()
     async with get_connection() as conn:
         try:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(FLIGHT_PATH_QUERY, icao24)
+            t_query_end = time.perf_counter()
+
             if not rows:
                 raise HTTPException(status_code=404, detail="No flight data available")
+
+            if debug:
+                return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
             row = rows[0]
             path_points = row["path_points"] or []
@@ -391,21 +411,19 @@ async def get_flight_path(icao24: str):
 
 
 @app.get("/api/v1/active-flight-states/latest", response_model=FlightStatesResponse)
-async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
+async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000), debug: bool = Query(False)):
     """
     Retrieve all flight states from the most recent timestamp in activate_flight table.
 
     - **limit**: Optional parameter to limit results (e.g., ?limit=50 returns 50 records)
     """
-    start_time = time.time()
+    t_start = time.perf_counter()
 
     async with get_connection() as conn:
         try:
-            query_start = time.time()
-
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
-
-            query_time_ms = (time.time() - query_start) * 1000
+            t_query_end = time.perf_counter()
 
             if not rows:
                 raise HTTPException(status_code=404, detail="No flight data available")
@@ -429,18 +447,19 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
                     )
                 )
 
-            total_time_ms = (time.time() - start_time) * 1000
+            t_finish = time.perf_counter()
+            timing = TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=t_finish)
+            logger.info(f"Retrieved {len(flights)} flights - {timing.result()}")
 
-            logger.info(
-                f"Retrieved {len(flights)} flights - Query: {query_time_ms:.2f}ms, Total: {total_time_ms:.2f}ms"
-            )
+            if debug:
+                return JSONResponse(content=timing.result())
 
             return FlightStatesResponse(
                 timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 count=len(flights),
                 flights=flights,
-                query_time_ms=round(query_time_ms, 2),
-                total_time_ms=round(total_time_ms, 2),
+                query_time_ms=timing.result()["query_time_ms"],
+                total_time_ms=timing.result()["total_time_ms"],
             )
         except HTTPException:
             raise
@@ -450,13 +469,33 @@ async def get_activate_flight_states(limit: int = Query(None, ge=1, le=20000)):
 
 
 @app.get("/api/v1/drap/latest", response_model=DRAPResponse)
-async def latest_drap():
+async def latest_drap(debug: bool = Query(False)):
+    t_start = time.perf_counter()
+    redis_client = redis_config.get_redis_client()
     try:
+        t_query_start = time.perf_counter()
+        cached_drap = await redis_client.get(redis_config.DRAP_CACHE_KEY)
+        t_query_end = time.perf_counter()
+
+        if cached_drap:
+            drap_data = json.loads(cached_drap)
+            timestamp = datetime.strptime(drap_data["timestamp"], "%Y-%m-%d %H:%M UTC").replace(tzinfo=timezone.utc)
+
+            if debug:
+                return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+            
+            return DRAPResponse(timestamp=timestamp, count=drap_data['count'], points=drap_data['points'])
+            
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(LATEST_DRAP_QUERY)
+            t_query_end = time.perf_counter()
 
         if not rows:
             raise HTTPException(status_code=404, detail="No D-RAP data available")
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         timestamp = rows[0]["observed_at"]
         points = [[row["lat"], row["lon"], row["intensity"]] for row in rows]
@@ -485,6 +524,7 @@ async def drap_range(
             "now": {"summary": "Current time", "value": _iso_now()},
         },
     ),
+    debug: bool = Query(False),
 ):
     """
     Retrieve D-RAP absorption data for a time range.
@@ -492,14 +532,20 @@ async def drap_range(
     - **start** and **end**: Optional custom range. Defaults to the last 1 hour.
     - Returns snapshots grouped by observed_at timestamp, each with absorption points.
     """
+    t_start = time.perf_counter()
     try:
         start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
 
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(DRAP_RANGE_QUERY, start_utc, end_utc)
+            t_query_end = time.perf_counter()
 
         if not rows:
             raise HTTPException(status_code=404, detail="No D-RAP data available for the given range")
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         # Group rows by observed_at timestamp
         snapshots_map: dict = {}
@@ -540,6 +586,7 @@ async def kp_index(
             "now": {"summary": "Current time", "value": _iso_now()},
         },
     ),
+    debug: bool = Query(False),
 ):
     """
     Retrieve Kp index data for either:
@@ -547,11 +594,17 @@ async def kp_index(
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
+    t_start = time.perf_counter()
     try:
         start_utc, end_utc = _resolve_time_window(start, end, default_hours=3)
 
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
+            t_query_end = time.perf_counter()
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         indices = [
             KpIndexResponse(
@@ -589,18 +642,25 @@ async def xray_flux(
             "now": {"summary": "Current time", "value": _iso_now()},
         },
     ),
+    debug: bool = Query(False),
 ):
     """
     Retrieve the latest X-ray flux data from the past specified hours.
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
+    t_start = time.perf_counter()
     try:
         start_utc, end_utc = _resolve_time_window(start, end)
 
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
-        
+            t_query_end = time.perf_counter()
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+
         xray_fluxes = [
             XRayResponse(
                     time_tag=row["time_tag"],
@@ -640,16 +700,23 @@ async def proton_flux(
             "now": {"summary": "Current time", "value": _iso_now()},
         },
     ),
+    debug: bool = Query(False),
 ):
     """
     Retrieve proton flux data from the past specified hours.
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
+    t_start = time.perf_counter()
     try:
         start_utc, end_utc = _resolve_time_window(start, end)
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
+            t_query_end = time.perf_counter()
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         data = [
             ProtonFluxResponse(
@@ -682,31 +749,37 @@ async def aurora(
             "earlier": {"summary": "Earlier observation", "value": _iso_days_ago(1)},
         },
     ),
+    debug: bool = Query(False),
 ):
     """Retrieve aurora forecast data.
 
     - With **utc_time** (ISO 8601 UTC): returns data for that observation time.
     """
-    start_time = time.time()
+    t_start = time.perf_counter()
 
     try:
-        query_start = time.time()
+        t_query_start = time.perf_counter()
         # Option A: No time provided? Grab from Redis
         if not utc_time:
             redis_client = redis_config.get_redis_client()
             cached_data = await redis_client.get(redis_config.AURORA_CACHE_KEY)
             await redis_client.aclose()
-            
+
             if cached_data:
+                t_query_end = time.perf_counter()
                 raw_data = json.loads(cached_data)
-                query_time_ms = (time.time() - query_start) * 1000
+
+                if debug:
+                    return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+
+                timing = TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result()
                 payload = {
                     "observation_time": raw_data.get("Observation Time"),
                     "forecast_time": raw_data.get("Forecast Time"),
                     "count": len(raw_data.get("coordinates", [])),
                     "coordinates": raw_data.get("coordinates", []),
-                    "query_time_ms": round(query_time_ms, 2),
-                    "total_time_ms": round(query_time_ms, 2),
+                    "query_time_ms": timing["query_time_ms"],
+                    "total_time_ms": timing["total_time_ms"],
                 }
                 return payload
 
@@ -723,10 +796,9 @@ async def aurora(
 
                 payload = await conn.fetchval(AURORA_QUERY, obs_time)
             else:
-                # Default to latest if no time provided
                 payload = await conn.fetchval(AURORA_QUERY, None)
 
-        query_time_ms = (time.time() - query_start) * 1000
+        t_query_end = time.perf_counter()
 
         if isinstance(payload, str):
             payload = json.loads(payload)
@@ -736,9 +808,12 @@ async def aurora(
                 raise HTTPException(status_code=404, detail=f"No aurora forecast data for {utc_time}")
             raise HTTPException(status_code=404, detail="No aurora forecast data available")
 
-        total_time_ms = (time.time() - start_time) * 1000
-        payload["query_time_ms"] = round(query_time_ms, 2)
-        payload["total_time_ms"] = round(total_time_ms, 2)
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+
+        timing = TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result()
+        payload["query_time_ms"] = timing["query_time_ms"]
+        payload["total_time_ms"] = timing["total_time_ms"]
         return payload
 
     except HTTPException:
@@ -752,32 +827,47 @@ async def aurora(
 
 
 @app.get("/api/v1/alert", response_model=AlertListResponse)
-async def get_alerts(days: int = Query(default=1, ge=1, le=30)):
+async def get_alerts(days: int = Query(default=1, ge=1, le=30), debug: bool = Query(False)):
     """Retrieve alert records with only time and message.
 
     - **days**: Number of days to include ending today (default: 1, today only)
     """
+    t_start = time.perf_counter()
     try:
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(ALERT_QUERY, days)
+            t_query_end = time.perf_counter()
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
+
         return AlertListResponse(data=[
             AlertResponse(
                 time=row["issue_datetime"],
                 message=row["alert_messages"],
             ) for row in rows
         ])
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching alerts: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 @app.get("/api/v1/geoelectric/latest", response_model=GeoelectricResponse)
-async def latest_geoelectric():
+async def latest_geoelectric(debug: bool = Query(False)):
+    t_start = time.perf_counter()
     try:
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(LATEST_GEOELECTRIC_QUERY)
+            t_query_end = time.perf_counter()
 
         if not rows:
             raise HTTPException(status_code=404, detail="No Geoelectric data available")
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         timestamp = rows[0]["observed_at"]
         points = [[row["lat"], row["lon"], row["e_magnitude"], row["quality_flag"]] for row in rows]
@@ -806,15 +896,22 @@ async def geoelectric_range(
             "now": {"summary": "Current time", "value": _iso_now()},
         },
     ),
+    debug: bool = Query(False),
 ):
+    t_start = time.perf_counter()
     try:
         start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
 
         async with get_connection() as conn:
+            t_query_start = time.perf_counter()
             rows = await conn.fetch(GEOELECTRIC_RANGE_QUERY, start_utc, end_utc)
+            t_query_end = time.perf_counter()
 
         if not rows:
             raise HTTPException(status_code=404, detail="No Geoelectric data available for the given range")
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
         # Group rows by observed_at timestamp
         snapshots_map: dict = {}
