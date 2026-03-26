@@ -62,7 +62,7 @@ async def initialize_db_flow():
 async def partition_maintain():
     """Create each table datetime partition."""
     date = datetime.now()
-    table_lists = ["drap_region", "goes_xray_events"]
+    table_lists = ["drap_region", "goes_xray_6hour"]
     logger = get_logger(__name__)
     logger.info("Starting all database partition")
     try:

@@ -240,37 +240,23 @@ CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
 ON drap_region (observed_at);
 """
 
+XRAY_6HOUR_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS goes_xray_6hour (
+  time_tag               timestamptz      NOT NULL,
+  satellite              integer          NOT NULL,
+  flux                   double precision NOT NULL,
+  observed_flux          double precision NOT NULL,
+  electron_correction    double precision NOT NULL,
+  electron_contamination boolean          NOT NULL,
+  energy                 text             NOT NULL,
 
-LATEST_X_RAY_CREATE_TABLE_SQL = """
--- 1) Create table (names match BaseModel exactly)
-CREATE TABLE IF NOT EXISTS goes_xray_events (
-  time_tag         timestamptz NOT NULL,          -- Observation timestamp
-  satellite        integer     NOT NULL,           -- GOES satellite number
+  CONSTRAINT goes_xray_6hour_pkey PRIMARY KEY (time_tag, satellite, energy)
+)PARTITION BY RANGE (time_tag);
 
-  current_class    text        NULL,               -- Current X-ray class
-  current_ratio    double precision NULL CHECK (current_ratio >= 0),
-  current_int_xrlong double precision NULL CHECK (current_int_xrlong >= 0),
-
-  begin_time       timestamptz NULL,               -- Event begin time
-  begin_class      text        NULL,
-
-  max_time         timestamptz NULL,               -- Maximum time
-  max_class        text        NULL,
-  max_xrlong       double precision NULL CHECK (max_xrlong >= 0),
-
-  end_time         timestamptz NULL,               -- Event end time
-  end_class        text        NULL,
-
-  max_ratio_time   timestamptz NULL,               -- Maximum ratio time
-  max_ratio        double precision NULL CHECK (max_ratio >= 0),
-
-  CONSTRAINT goes_xray_events_pkey PRIMARY KEY (time_tag, satellite)
-);
-
--- Helpful indexes for time-range queries
-CREATE INDEX IF NOT EXISTS ix_goes_xray_events_time_tag ON goes_xray_events (time_tag);
-CREATE INDEX IF NOT EXISTS ix_goes_xray_events_satellite ON goes_xray_events (satellite);
+CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_time_tag ON goes_xray_6hour (time_tag);
 """
+
+
 
 
 PROTON_FLUX_CREATE_TABLE_SQL = """
@@ -860,22 +846,7 @@ ON CONFLICT (observation_time, location) DO NOTHING
 """
 
 # --- goes_xray_6hour ---
-XRAY_6HOUR_CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS goes_xray_6hour (
-  time_tag               timestamptz      NOT NULL,
-  satellite              integer          NOT NULL,
-  flux                   double precision NOT NULL,
-  observed_flux          double precision NOT NULL,
-  electron_correction    double precision NOT NULL,
-  electron_contamination boolean          NOT NULL,
-  energy                 text             NOT NULL,
 
-  CONSTRAINT goes_xray_6hour_pkey PRIMARY KEY (time_tag, satellite, energy)
-);
-
-CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_time_tag ON goes_xray_6hour (time_tag);
-CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_satellite ON goes_xray_6hour (satellite);
-"""
 
 XRAY_6HOUR_STAGING_DDL = """
 CREATE TEMP TABLE goes_xray_6hour_staging (
