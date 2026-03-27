@@ -1,5 +1,5 @@
 //Base imports
-import { use, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // MapLibre imports
@@ -8,7 +8,13 @@ import Map, { Layer, Popup, Source, useControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // API imports
-import { fetchPlanes, fetchDRAP, fetchAurora, fetchAirports } from "../../api/api";
+import {
+  fetchPlanes,
+  fetchDRAP,
+  fetchAurora,
+  fetchAirports,
+  fetchGeoelectric,
+} from "../../api/api";
 
 // SSE Hook import
 import { useLiveStream } from "../../hooks/useLiveStream";
@@ -50,6 +56,11 @@ import {
 
 // Aurora imports
 import { getAuroraGeoJSON, getAuroraMapLayers } from "../../utils/aurora";
+// GeoElectric imports
+import {
+  getGeoElectricGeoJSON,
+  getGeoElectricMapLayers,
+} from "../../utils/geoElectric";
 
 // Flight details panel imports
 import FlightDetailsPanel from "./FlightDetailsPanel";
@@ -74,6 +85,11 @@ const PlaneTracker = () => {
   const hoveredRunwayId = useSelector((state) => state.ui.hoveredRunwayId);
   const { points: drapPoints } = useSelector((state) => state.drap);
   const { data: auroraData } = useSelector((state) => state.aurora);
+  const {
+    data: geoelectricData,
+    geoElectricLogRange,
+    showGeoElectric,
+  } = useSelector((state) => state.geoelectric);
   const { data: airports } = useSelector((state) => state.airports);
 
   const flightPath = useSelector((state) => state.flightPath.paths);
@@ -97,8 +113,10 @@ const PlaneTracker = () => {
     isolateMode,
     showAltitudeLegend,
     liveStreamMode,
+    airportIconSize,
+    flightIconSize,
   } = useSelector((state) => state.ui);
-
+  const currentZoom = viewState?.zoom ?? 10;
   const zoomTimeoutRef = useRef(null);
 
   useLiveStream(liveStreamMode); // Custom hook to handle live stream data
@@ -108,6 +126,7 @@ const PlaneTracker = () => {
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
+    dispatch(fetchGeoelectric());
     dispatch(fetchAirports());
   }, [dispatch]);
 
@@ -144,11 +163,13 @@ const PlaneTracker = () => {
   }, [airports, airportFilter, airportAltitudeRange, useImperial]);
   // Isolate mode logic
   const showPlanesIsolate = isolateMode ? true : showPlanes;
-  const showAirportsIsolate = isolateMode ? false : showAirports;
+  const showAirportsIsolate = isolateMode ? true : showAirports;
   const filteredPlanesIsolate = isolateMode
     ? selectedFlightsPanels
     : filteredPlanes;
-  const filteredAirportsIsolate = isolateMode ? [] : filteredAirports;
+  const filteredAirportsIsolate = isolateMode
+    ? selectedAirportsPanels
+    : filteredAirports;
 
   // Draw DRAP regions as filled cells
   const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
@@ -190,6 +211,30 @@ const PlaneTracker = () => {
     };
   }, [auroraData, auroraRegionRange, isZooming]);
 
+  // Draw GeoElectric regions as filled cells
+  const { geoElectricGeoJson, geoElectricMapLayers } = useMemo(() => {
+    if (!geoelectricData || !geoelectricData.points) {
+      return { geoElectricGeoJson: null, geoElectricMapLayers: null };
+    }
+    const [minLog, maxLog] =
+      Array.isArray(geoElectricLogRange) && geoElectricLogRange.length === 2
+        ? geoElectricLogRange
+        : [0, 4];
+    const minMag = Math.pow(10, minLog);
+    const maxMag = Math.pow(10, maxLog);
+    const filteredGeoElectricPoints = geoelectricData.points.filter(
+      ([lat, lon, magnitude, quality]) =>
+        magnitude >= minMag && magnitude <= maxMag,
+    );
+    return {
+      geoElectricGeoJson: getGeoElectricGeoJSON({
+        ...geoelectricData,
+        points: filteredGeoElectricPoints,
+      }),
+      geoElectricMapLayers: getGeoElectricMapLayers(isZooming),
+    };
+  }, [geoelectricData, geoElectricLogRange, isZooming]);
+
   // Plane and Airport layers
   const deckLayers = useMemo(() => {
     const baseLayers = buildDeckLayers({
@@ -201,6 +246,7 @@ const PlaneTracker = () => {
       useImperial,
       selectedPlane,
       selectedAirport,
+      currentZoom,
       isZooming,
       flightPath,
       setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
@@ -212,6 +258,8 @@ const PlaneTracker = () => {
       selectedAirportsPanels,
       hoveredRunwayId,
       setHoveredRunwayId: (id) => dispatch(setHoveredRunwayId(id)),
+      airportIconSize,
+      flightIconSize,
     });
     if (showDRAP && drapDeckLayers && drapDeckLayers.length > 0) {
       return [...drapDeckLayers, ...baseLayers];
@@ -228,12 +276,15 @@ const PlaneTracker = () => {
     useImperial,
     selectedPlane,
     selectedAirport,
+    viewState?.zoom,
     isZooming,
     drapDeckLayers,
     flightPath,
     isolateMode,
     selectedAirportsPanels,
     hoveredRunwayId,
+    airportIconSize,
+    flightIconSize,
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -251,17 +302,9 @@ const PlaneTracker = () => {
     }, 150);
   };
 
-  const themeVars = {
-    "--ui-bg": darkMode ? "rgba(30, 30, 30, 1)" : "rgba(255, 255, 255, 1)",
-    "--ui-text": darkMode ? "#ffffff" : "#000000",
-    "--ui-border": darkMode ? "#555555" : "#cccccc",
-    "--ui-shadow": "0 4px 12px rgba(0,0,0,0.3)",
-  };
-
   return (
     <div
       style={{
-        ...themeVars,
         width: "100%",
         height: "100vh",
         position: "relative",
@@ -298,6 +341,22 @@ const PlaneTracker = () => {
           auroraGeoJson.features?.length > 0 && (
             <Source id="aurora-cells" type="geojson" data={auroraGeoJson}>
               {auroraMapLayers.map((layer) => (
+                <Layer key={layer.id} {...layer} />
+              ))}
+            </Source>
+          )}
+
+        {/* MapLibre-based GeoElectric implementation */}
+        {showGeoElectric &&
+          geoElectricGeoJson &&
+          geoElectricMapLayers &&
+          geoElectricGeoJson.features?.length > 0 && (
+            <Source
+              id="geoelectric-cells"
+              type="geojson"
+              data={geoElectricGeoJson}
+            >
+              {geoElectricMapLayers.map((layer) => (
                 <Layer key={layer.id} {...layer} />
               ))}
             </Source>
@@ -426,22 +485,7 @@ const PlaneTracker = () => {
       {showAltitudeLegend && <AltitudeLegend />}
       <SettingsPanel />
 
-      <div
-        style={{
-          backgroundColor: "var(--ui-bg)",
-          padding: "2px",
-          borderRadius: "8px",
-          boxShadow: "var(--ui-shadow)",
-          position: "absolute",
-          top: "4px",
-          left: "20px",
-          zIndex: 1,
-          fontSize: "12px",
-          color: "var(--ui-text)",
-        }}
-      >
-        <SearchBar />
-      </div>
+      <SearchBar />
     </div>
   );
 };

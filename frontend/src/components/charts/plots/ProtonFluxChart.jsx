@@ -264,7 +264,6 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                   },
                   onHover: (e) => {
                     const target = e?.native?.target || e?.chart?.canvas;
-                    console.log(target);
                     if (target) target.style.cursor = "pointer";
                   },
                   onLeave: (e) => {

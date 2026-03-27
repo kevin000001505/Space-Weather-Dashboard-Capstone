@@ -1,0 +1,9 @@
+
+.MuiTooltip-tooltip {
+  font-size: 1rem !important;
+  max-width: "600px" !important;
+}
+.MuiFab-root {
+  min-height: 45px !important;
+  min-width: 45px !important;
+}

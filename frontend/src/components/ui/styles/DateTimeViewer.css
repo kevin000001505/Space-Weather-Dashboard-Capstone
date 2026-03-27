@@ -9,14 +9,14 @@
   box-shadow: none;
   border: none;
   position: absolute;
-  top: 8px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
 }
 
 .dtv-box {
-  height: 40px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,7 +25,7 @@
   border-right: none;
   color: #fff;
   background: rgba(34, 40, 60, 0.35);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  border: 1.5px solid #7f5cff;
   transition:
     background 0.2s,
     color 0.2s,
@@ -61,19 +61,19 @@
 
 .dtv-date:hover {
   background: rgba(127, 92, 255, 0.18);
-  color: #7f5cff;
-  border: 1.5px solid #7f5cff;
-  box-shadow: 0 2px 12px 0 #836cd633;
+  color: #ffd700;
+  border: 1.5px solid #ffd700;
+  box-shadow: 0 2px 12px 0 #ffd700;
   text-shadow:
-    0 0 8px #ffd70066,
-    0 0 16px #ffd70033;
+    0 0 8px #ffd700,
+    0 0 16px #ffd700;
 }
 
 .dtv-time:hover {
   background: rgba(255, 215, 0, 0.18);
   color: #ffd700;
-  border: 1.5px solid #ffd700;
-  box-shadow: 0 2px 12px 0 #ffd70033;
+  border: 2px solid #ffd700;
+  box-shadow: 0 2px 12px 0 #ffd700;
   text-shadow:
     0 0 16px #ffd700,
     0 0 32px #ffd700;

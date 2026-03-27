@@ -23,7 +23,7 @@ import "./styles/Sidebar.css";
 import { useEffect } from "react";
 import { fetchNoAAScales } from "../../api/api";
 
-const drawerWidth = 280;
+const drawerWidth = 320;
 
 export const Sidebar = () => {
   const dispatch = useDispatch();
@@ -46,7 +46,7 @@ export const Sidebar = () => {
   ];
   const bottomMenuItems = [
     { text: "Help", icon: <HelpOutlineIcon />, path: "/help" },
-    { text: "About", icon: <InfoOutlinedIcon />, path: "/about" },
+    { text: "About Us", icon: <InfoOutlinedIcon />, path: "/about" },
   ];
 
   const drawerContent = (

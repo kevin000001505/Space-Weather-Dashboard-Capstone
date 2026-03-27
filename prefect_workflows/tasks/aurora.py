@@ -102,8 +102,20 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
     try:
         client = get_redis_client()
         
-        # Dump the exact dictionary directly into the cache
-        await client.set(AURORA_CACHE_KEY, json.dumps(data), ex=MEDIUM_TTL)
+        observation_time = data.get("Observation Time")
+        forecast_time = data.get("Forecast Time")
+        
+        # Ensure the timestamp is formatted as ISO 8601 for the frontend
+        formatted_observation_time = observation_time.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(observation_time, "strftime") else str(observation_time)
+        formatted_forecast_time = forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(forecast_time, "strftime") else str(forecast_time)
+
+        payload = {
+            "observation_time": formatted_observation_time,
+            "forecast_time": formatted_forecast_time,
+            "count": len(data.get("coordinates", [])),
+            "coordinates": data.get("coordinates", []),
+        }
+        await client.set(AURORA_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)
         await client.publish(AURORA_CHANNEL, "new_data")
         
         await client.aclose()

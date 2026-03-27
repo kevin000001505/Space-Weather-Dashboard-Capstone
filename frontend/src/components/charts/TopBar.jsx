@@ -11,8 +11,8 @@ const TopBar = () => {
   const dispatch = useDispatch();
   const darkMode = useSelector((state) => state.ui.darkMode);
   const btnStyle = {
-    width: "54px",
-    height: "54px",
+    width: "68px",
+    height: "68px",
     cursor: "pointer",
     display: "flex",
     alignItems: "center",
@@ -36,7 +36,7 @@ const TopBar = () => {
         top: 0,
         left: 0,
         width: "100vw",
-        height: 56,
+        height: 68,
         backgroundColor: darkMode ? "#000" : "#1976d2",
         color: "#f7f7fa",
         borderBottom: `1px solid ${darkMode ? "#333" : "#ddd"}`,

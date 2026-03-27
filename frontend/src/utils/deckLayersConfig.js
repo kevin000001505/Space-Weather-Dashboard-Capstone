@@ -1,4 +1,10 @@
-import { IconLayer, PathLayer, TextLayer, LineLayer, ScatterplotLayer } from "@deck.gl/layers";
+import {
+  IconLayer,
+  PathLayer,
+  TextLayer,
+  LineLayer,
+  ScatterplotLayer,
+} from "@deck.gl/layers";
 import { getAltitudeColor, PLANE_ATLAS, PLANE_OUTLINE_ATLAS } from "./mapUtils";
 import { fetchFlightPath, fetchAirportDetails } from "../api/api";
 
@@ -42,16 +48,28 @@ const AIRPORT_ICONS = Object.fromEntries(
 
 // Vibrant, distinct colors for overlapping runways. Red is reserved.
 const RUNWAY_PALETTE = [
-  [255, 140, 0],   // Orange
-  [46, 204, 113],  // Green
-  [52, 152, 219],  // Blue
-  [155, 89, 182],  // Purple
-  [241, 196, 15],  // Yellow
-  [26, 188, 156],  // Teal
-  [255, 105, 180]  // Pink
+  [255, 140, 0], // Orange
+  [46, 204, 113], // Green
+  [52, 152, 219], // Blue
+  [155, 89, 182], // Purple
+  [241, 196, 15], // Yellow
+  [26, 188, 156], // Teal
+  [255, 105, 180], // Pink
 ];
 
 const DEFAULT_AIRPORT_ICON = AIRPORT_ICONS.small_airport;
+
+function getZoomScale(
+  zoom,
+  minZoom = 3,
+  maxZoom = 15,
+  minScale = 0.5,
+  maxScale = 2,
+) {
+  const clamped = Math.max(minZoom, Math.min(maxZoom, zoom));
+  const t = (clamped - minZoom) / (maxZoom - minZoom);
+  return minScale + t * (maxScale - minScale);
+}
 
 const normalizePathCoordinates = (coordinates) => {
   if (!coordinates || coordinates.length === 0) return coordinates;
@@ -61,7 +79,7 @@ const normalizePathCoordinates = (coordinates) => {
 
   for (let i = 1; i < normalized.length; i++) {
     // Clone the coordinate array to avoid mutating Redux state
-    let coord = [...normalized[i]]; 
+    let coord = [...normalized[i]];
     let lon = coord[0];
 
     // If the longitude jumps more than half the globe, adjust it
@@ -88,6 +106,7 @@ export const buildDeckLayers = ({
   useImperial,
   selectedPlane,
   selectedAirport,
+  currentZoom,
   isZooming,
   flightPath,
   setSelectedPlane,
@@ -99,15 +118,22 @@ export const buildDeckLayers = ({
   selectedAirportsPanels,
   hoveredRunwayId,
   setHoveredRunwayId,
+  airportIconSize,
+  flightIconSize,
 }) => {
   // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
     if (object) {
       setTimeout(() => {
-        const exists = selectedFlightsPanels.some(f => f.icao24 === object.icao24);
+        const exists = selectedFlightsPanels.some(
+          (f) => f.icao24 === object.icao24,
+        );
         addFlightPanel(object);
         if (exists) {
-          dispatch({ type: 'flightPath/removeFlightPath', payload: object.icao24 });
+          dispatch({
+            type: "flightPath/removeFlightPath",
+            payload: object.icao24,
+          });
         } else {
           dispatch(fetchFlightPath(object.icao24));
         }
@@ -137,7 +163,9 @@ export const buildDeckLayers = ({
       setTimeout(() => {
         setSelectedAirport(object);
         setSelectedPlane(null);
-        const exists = selectedAirportsPanels?.some(a => a.ident === object.ident);
+        const exists = selectedAirportsPanels?.some(
+          (a) => a.ident === object.ident,
+        );
         addAirportPanel(object);
         if (!exists) {
           dispatch(fetchAirportDetails(object.ident));
@@ -163,14 +191,14 @@ export const buildDeckLayers = ({
   };
 
   // Extract all runways that have both end coordinates
-  const activeRunways = selectedAirportsPanels.flatMap(a => 
+  const activeRunways = selectedAirportsPanels.flatMap((a) =>
     (a.runways || [])
-      .filter(r => r.le_geom && r.he_geom)
-      .map((r, index) => ({ ...r, colorIndex: index }))
+      .filter((r) => r.le_geom && r.he_geom)
+      .map((r, index) => ({ ...r, colorIndex: index })),
   );
 
   // Extract LE and HE points to draw text labels at the ends of the runways
-  const runwayLabels = activeRunways.flatMap(r => {
+  const runwayLabels = activeRunways.flatMap((r) => {
     const labels = [];
     if (r.le_geom && r.le_ident) {
       labels.push({ coordinates: r.le_geom.coordinates, text: r.le_ident });
@@ -182,11 +210,11 @@ export const buildDeckLayers = ({
   });
 
   // Extract all main antennas and DME antennas into a single list of points
-  const activeNavaidPoints = selectedAirportsPanels.flatMap(a => {
+  const activeNavaidPoints = selectedAirportsPanels.flatMap((a) => {
     const points = [];
     if (!a.navaids) return points;
-    
-    a.navaids.forEach(n => {
+
+    a.navaids.forEach((n) => {
       // Add the main antenna
       if (n.geom && n.geom.coordinates) {
         points.push({ ...n, coordinates: n.geom.coordinates, isDME: false });
@@ -198,16 +226,20 @@ export const buildDeckLayers = ({
     });
     return points;
   });
+  const zoomScale = getZoomScale(currentZoom);
+  const scaledAirportIconSize = airportIconSize * zoomScale;
+  const scaledFlightIconSize = flightIconSize * zoomScale;
 
   return [
     // Runway Lines Layer
-    showAirports && activeRunways.length > 0 &&
+    showAirports &&
+      activeRunways.length > 0 &&
       new LineLayer({
-        id: 'airport-runways-layer',
+        id: "airport-runways-layer",
         data: activeRunways,
-        getSourcePosition: d => d.le_geom.coordinates,
-        getTargetPosition: d => d.he_geom.coordinates,
-        getColor: d => {
+        getSourcePosition: (d) => d.le_geom.coordinates,
+        getTargetPosition: (d) => d.he_geom.coordinates,
+        getColor: (d) => {
           let baseColor;
           if (d.id === hoveredRunwayId) {
             baseColor = [255, 255, 255]; // White hover highlight
@@ -220,7 +252,7 @@ export const buildDeckLayers = ({
           return [...baseColor, isZooming ? 25 : 255];
         },
         getWidth: 8,
-        widthUnits: 'pixels',
+        widthUnits: "pixels",
         pickable: true,
         onHover: ({ object }) => {
           setHoveredRunwayId(object ? object.id : null);
@@ -232,39 +264,47 @@ export const buildDeckLayers = ({
       }),
 
     // Runway End Text Labels
-    showAirports && runwayLabels.length > 0 &&
+    showAirports &&
+      runwayLabels.length > 0 &&
       new TextLayer({
-        id: 'airport-runways-text-layer',
+        id: "airport-runways-text-layer",
         data: runwayLabels,
-        getPosition: d => d.coordinates,
-        getText: d => d.text,
+        getPosition: (d) => d.coordinates,
+        getText: (d) => d.text,
         getSize: 14,
-        getColor: darkMode ? [255, 255, 255, isZooming ? 20 : 255] : [0, 0, 0, isZooming ? 20 : 255],
-        getBackgroundColor: darkMode ? [0, 0, 0, isZooming ? 20 : 200] : [255, 255, 255, isZooming ? 20 : 200],
+        getColor: darkMode
+          ? [255, 255, 255, isZooming ? 20 : 255]
+          : [0, 0, 0, isZooming ? 20 : 255],
+        getBackgroundColor: darkMode
+          ? [0, 0, 0, isZooming ? 20 : 200]
+          : [255, 255, 255, isZooming ? 20 : 200],
         background: true,
         backgroundPadding: [2, 2],
-        fontFamily: 'monospace',
-        fontWeight: 'bold',
-        getTextAnchor: 'middle',
-        getAlignmentBaseline: 'center',
+        fontFamily: "monospace",
+        fontWeight: "bold",
+        getTextAnchor: "middle",
+        getAlignmentBaseline: "center",
         pickable: false,
       }),
 
     // Navaid Points Layer
-    showAirports && activeNavaidPoints.length > 0 &&
+    showAirports &&
+      activeNavaidPoints.length > 0 &&
       new ScatterplotLayer({
-        id: 'airport-navaids-layer',
+        id: "airport-navaids-layer",
         data: activeNavaidPoints,
-        getPosition: d => d.coordinates,
-        getFillColor: d => {
+        getPosition: (d) => d.coordinates,
+        getFillColor: (d) => {
           const color = d.isDME ? [156, 39, 176] : [0, 200, 255];
           return [...color, isZooming ? 25 : 200];
         },
-        getLineColor: darkMode ? [255, 255, 255, isZooming ? 25 : 255] : [0, 0, 0, isZooming ? 25 : 255],
+        getLineColor: darkMode
+          ? [255, 255, 255, isZooming ? 25 : 255]
+          : [0, 0, 0, isZooming ? 25 : 255],
         lineWidthMinPixels: 1,
         stroked: true,
         getRadius: 5,
-        radiusUnits: 'pixels',
+        radiusUnits: "pixels",
         pickable: true,
       }),
 
@@ -275,7 +315,10 @@ export const buildDeckLayers = ({
         data: filteredAirports,
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
         getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
-        getSize: (d) => (selectedAirport && d === selectedAirport ? 28 : 14),
+        getSize: (d) =>
+          selectedAirport && d === selectedAirport
+            ? 2 * scaledAirportIconSize
+            : scaledAirportIconSize,
         getColor: (d) => {
           const color = getAltitudeColor(d.elevation_ft, true, useImperial);
           return isZooming ? [color[0], color[1], color[2], 25] : color;
@@ -286,28 +329,35 @@ export const buildDeckLayers = ({
         onHover: handleAirportHover,
         updateTriggers: {
           getColor: [darkMode, useImperial, isZooming],
-          getSize: selectedAirport,
+          getSize: [selectedAirport, scaledAirportIconSize],
         },
       }),
 
     // Flight Paths Layer
-    ...Object.entries(flightPath || {}).map(([icao24, pathData]) => {
-      if (!pathData || !pathData.path_points || pathData.path_points.length === 0) return null;
-      // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
-      const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
-      return new PathLayer({
-        id: `flight-path-pathlayer-${icao24}`,
-        data: [{ coordinates: normalizePathCoordinates(deckCoords) }],
-        getPath: d => d.coordinates,
-        getColor: [0, 128, 255, 200],
-        getWidth: 4,
-        widthMinPixels: 2,
-        widthMaxPixels: 8,
-        capRounded: true,
-        jointRounded: true,
-        pickable: false,
-      });
-    }).filter(Boolean),
+    ...Object.entries(flightPath || {})
+      .map(([icao24, pathData]) => {
+        if (
+          !pathData ||
+          !pathData.path_points ||
+          pathData.path_points.length === 0
+        )
+          return null;
+        // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
+        const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
+        return new PathLayer({
+          id: `flight-path-pathlayer-${icao24}`,
+          data: [{ coordinates: normalizePathCoordinates(deckCoords) }],
+          getPath: (d) => d.coordinates,
+          getColor: [0, 128, 255, 200],
+          getWidth: 4,
+          widthMinPixels: 2,
+          widthMaxPixels: 8,
+          capRounded: true,
+          jointRounded: true,
+          pickable: false,
+        });
+      })
+      .filter(Boolean),
 
     // Planes Icon Layer
     showPlanes &&
@@ -322,7 +372,7 @@ export const buildDeckLayers = ({
         },
         getIcon: (d) => "plane",
         getPosition: (d) => [d.lon, d.lat],
-        getSize: 30,
+        getSize: scaledFlightIconSize,
         getAngle: (d) => -(d.heading || 0),
         getColor: (d) => {
           const color = getAltitudeColor(d.geo_altitude, false, useImperial);
@@ -349,7 +399,7 @@ export const buildDeckLayers = ({
         },
         getIcon: (d) => "plane",
         getPosition: (d) => [d.lon, d.lat],
-        getSize: 50,
+        getSize: 50 * zoomScale,
         getAngle: (d) => -(d.heading || 0),
         getColor: darkMode ? [255, 255, 255] : [0, 0, 0],
         updateTriggers: {
@@ -369,7 +419,7 @@ export const buildDeckLayers = ({
         },
         getIcon: (d) => "plane",
         getPosition: (d) => [d.lon, d.lat],
-        getSize: 45,
+        getSize: 45 * zoomScale,
         getAngle: (d) => -(d.heading || 0),
         getColor: (d) => getAltitudeColor(d.geo_altitude, false, useImperial),
         updateTriggers: {
@@ -377,22 +427,24 @@ export const buildDeckLayers = ({
         },
       }),
 
-      // Callsign label for selected planes
-    showPlanes && selectedFlightsPanels && selectedFlightsPanels.length > 0 &&
+    // Callsign label for selected planes
+    showPlanes &&
+      selectedFlightsPanels &&
+      selectedFlightsPanels.length > 0 &&
       new TextLayer({
-        id: 'selected-plane-callsign-labels',
+        id: "selected-plane-callsign-labels",
         data: selectedFlightsPanels,
-        getPosition: d => [d.lon, d.lat],
-        getText: d => d.callsign ? d.callsign : d.icao24.toUpperCase(),
+        getPosition: (d) => [d.lon, d.lat],
+        getText: (d) => (d.callsign ? d.callsign : d.icao24.toUpperCase()),
         getSize: () => 12,
         getColor: () => [30, 30, 30, 255],
         getAngle: () => 0,
-        getTextAnchor: () => 'middle',
-        getAlignmentBaseline: () => 'bottom',
+        getTextAnchor: () => "middle",
+        getAlignmentBaseline: () => "bottom",
         getPixelOffset: () => [0, 24], // Move label below icon
         background: true,
         backgroundPadding: [2, 2],
-        getBackgroundColor: () => [255,255,255,200],
+        getBackgroundColor: () => [255, 255, 255, 200],
         pickable: false,
         parameters: {
           depthTest: false,

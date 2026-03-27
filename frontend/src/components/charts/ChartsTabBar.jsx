@@ -39,7 +39,7 @@ const ChartsTabBar = () => {
       const start = new Date(
         now.getTime() - 3 * 24 * 60 * 60 * 1000,
       ).toISOString();
-      const end = now.toISOString();
+      const end = new Date(now.getTime() - 5000).toISOString();
       dispatch(setCustomDateTime({ start, end, range: "3days" }));
       return; // Wait for customdt to be set before fetching
     }
@@ -113,7 +113,7 @@ const ChartsTabBar = () => {
     <Box
       sx={{
         position: "fixed",
-        top: 56,
+        top: 68,
         left: 0,
         width: "100vw",
         zIndex: 1200,

@@ -20,6 +20,8 @@ const initialState = {
   showDRAP: true,
   showAurora: false,
   auroraRegionRange: [0, 100],
+  showGeoelectric: false,
+  geoelectricRegionRange: [0, 100],
   isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,
@@ -37,6 +39,8 @@ const initialState = {
   airportAltitudeRange: [0, 10000],
   drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
   isolateMode: false, // Isolate mode: only show selected planes and paths
+  airportIconSize: 22,
+  flightIconSize: 46,
 };
 const uiSlice = createSlice({
   name: "ui",
@@ -45,8 +49,8 @@ const uiSlice = createSlice({
     setLiveStreamMode: (state, action) => {
       state.liveStreamMode = action.payload;
     },
-    toggleIsolateMode: (state) => {
-      state.isolateMode = !state.isolateMode;
+    toggleIsolateMode: (state, action) => {
+      state.isolateMode = action.payload;
     },
     setUseImperial: (state, action) => {
       state.useImperial = action.payload;
@@ -84,7 +88,9 @@ const uiSlice = createSlice({
     },
     addAirportPanel: (state, action) => {
       // Prevent duplicates if the user clicks the same airport twice
-      const exists = state.selectedAirportsPanels.find(a => a.ident === action.payload.ident);
+      const exists = state.selectedAirportsPanels.find(
+        (a) => a.ident === action.payload.ident,
+      );
       if (!exists) {
         state.selectedAirportsPanels.push(action.payload);
       }
@@ -92,7 +98,7 @@ const uiSlice = createSlice({
     removeAirportPanel: (state, action) => {
       // action.payload is the airport 'ident' string (e.g., "KJFK")
       state.selectedAirportsPanels = state.selectedAirportsPanels.filter(
-        a => a.ident !== action.payload
+        (a) => a.ident !== action.payload,
       );
     },
     setHoveredRunwayId: (state, action) => {
@@ -165,21 +171,27 @@ const uiSlice = createSlice({
     setShowDate: (state, action) => {
       state.showDate = action.payload;
     },
+    setAirportIconSize: (state, action) => {
+      state.airportIconSize = action.payload;
+    },
+    setFlightIconSize: (state, action) => {
+      state.flightIconSize = action.payload;
+    },
   },
 
   extraReducers: (builder) => {
     builder.addCase(fetchAirportDetails.fulfilled, (state, action) => {
       // Find the specific panel in the array
       const airportIndex = state.selectedAirportsPanels.findIndex(
-        (a) => a.ident === action.payload.ident
+        (a) => a.ident === action.payload.ident,
       );
-      
-      // If the panel is still open, seamlessly merge the new rich data 
+
+      // If the panel is still open, seamlessly merge the new rich data
       // into the existing basic airport object
       if (airportIndex !== -1) {
         state.selectedAirportsPanels[airportIndex] = {
           ...state.selectedAirportsPanels[airportIndex],
-          ...action.payload, 
+          ...action.payload,
         };
       }
     });
@@ -220,6 +232,8 @@ export const {
   setHoveredRunwayId,
   clearFlightPanels,
   toggleIsolateMode,
+  setAirportIconSize,
+  setFlightIconSize,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

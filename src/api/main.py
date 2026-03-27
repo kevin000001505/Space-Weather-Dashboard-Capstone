@@ -774,8 +774,8 @@ async def aurora(
 
                 timing = TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result()
                 payload = {
-                    "observation_time": raw_data.get("Observation Time"),
-                    "forecast_time": raw_data.get("Forecast Time"),
+                    "observation_time": raw_data.get("observation_time"),
+                    "forecast_time": raw_data.get("forecast_time"),
                     "count": len(raw_data.get("coordinates", [])),
                     "coordinates": raw_data.get("coordinates", []),
                     "query_time_ms": timing["query_time_ms"],

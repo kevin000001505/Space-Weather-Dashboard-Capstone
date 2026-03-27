@@ -121,6 +121,10 @@ async def broadcast_geoelectric_to_redis(
 
     try:
         client = get_redis_client()
+        
+        # Ensure the timestamp is formatted as ISO 8601 for the frontend
+        formatted_time = observed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(observed_at, "strftime") else str(observed_at)
+        
         # Enrich features with e_magnitude before caching
         enriched = []
         for feature in features:
@@ -132,11 +136,19 @@ async def broadcast_geoelectric_to_redis(
                     "e_magnitude": np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
                 }
             })
-
+        points = [
+            [
+                f["geometry"]["coordinates"][1], 
+                f["geometry"]["coordinates"][0],  
+                f["properties"]["e_magnitude"].astype(float),
+                f["properties"]["quality_flag"],
+            ]
+            for f in enriched
+        ]
         payload = json.dumps({
-            "observed_at": observed_at.isoformat(),
+            "timestamp": formatted_time,
             "count": len(enriched),
-            "features": enriched,
+            "points": points,
         })
         await client.set(GEOELECTRIC_CACHE_KEY, payload, ex=MEDIUM_TTL)
         await client.publish(GEOELECTRIC_CHANNEL, "new_data")

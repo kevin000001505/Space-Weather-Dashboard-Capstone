@@ -59,6 +59,26 @@ export const fetchAurora = createAsyncThunk(
   },
 );
 
+export const fetchGeoelectric = createAsyncThunk(
+  "geoelectric/fetchGeoelectric",
+  async (utc_time = null, { rejectWithValue }) => {
+    try {
+      const url = utc_time
+        ? `${API_BASE_URL}/geoelectric?utc_time=${utc_time}`
+        : `${API_BASE_URL}/geoelectric/latest`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch Geoelectric data");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const fetchAirports = createAsyncThunk(
   "airports/fetchAirports",
   async (_, { rejectWithValue }) => {

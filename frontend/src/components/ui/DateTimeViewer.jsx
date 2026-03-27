@@ -115,9 +115,9 @@ const DateTimeViewer = () => {
         disableRipple
         sx={{
           minWidth: "140px",
-          height: "40px",
+          height: "45px",
           borderRadius: "0 32px 32px 0",
-          border: "1.5px solid rgba(255,255,255,0.25)",
+          border: "1.5px solid #7f5cff",
           background: menuAnchorEl
             ? "rgba(127, 92, 255, 0.18)"
             : "rgba(34, 40, 60, 0.35)",
@@ -135,35 +135,30 @@ const DateTimeViewer = () => {
           WebkitBackdropFilter: "blur(12px) saturate(1.4)",
           textAlign: "center",
           justifyContent: "center",
-          textShadow: menuAnchorEl
-            ? darkMode
-              ? "0 0 8px #ffd70066, 0 0 16px #ffd70033"
-              : "0 0 8px #fff, 0 0 16px #fff"
-            : "none",
           display: "flex",
           alignItems: "center",
           gap: 1,
           "&:hover .MuiSvgIcon-root": {
-            color: darkMode ? "#7f5cff" : "#fff",
+            color: darkMode ? "#ffd700" : "#fff",
           },
           "&:hover": {
             background: "rgba(127, 92, 255, 0.18)",
-            color: darkMode ? "#7f5cff" : "#fff",
-            border: darkMode ? "1.5px solid #7f5cff" : "1.5px solid #fff",
-            boxShadow: "0 2px 12px 0 #836cd633",
+            color: darkMode ? "#ffd700" : "#fff",
+            border: darkMode ? "1.5px solid #ffd700" : "1.5px solid #fff",
+            boxShadow: "0 2px 12px 0 #ffd700",
             textShadow: darkMode
-              ? "0 0 8px #ffd70066, 0 0 16px #ffd70033"
-              : "0 0 8px #fff, 0 0 16px #fff",
+              ? "0 0 8px #ffd700, 0 0 0px #ffd700"
+              : "0 0 8px #fff, 0 0 0px #fff",
           },
           "&:focus": {
             outline: "none",
             boxShadow: "none",
-            border: "1.5px solid rgba(255,255,255,0.25)",
+            border: "1.5px solid #ffd700",
           },
           "&:active": {
             outline: "none",
             boxShadow: "none",
-            border: "1.5px solid rgba(255,255,255,0.25)",
+            border: "1.5px solid #ffd700",
           },
         }}
         onClick={(e) => setMenuAnchorEl(e.currentTarget)}

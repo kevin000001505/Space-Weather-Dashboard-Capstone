@@ -10,7 +10,7 @@ const auroraSlice = createSlice({
   },
   reducers: {
     injectLiveAurora: (state, action) => {
-      state.data = action.payload.aurora; 
+      state.data = action.payload; 
     }
   },
   extraReducers: (builder) => {

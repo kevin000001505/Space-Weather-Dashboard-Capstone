@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { injectLivePlanes } from '../store/slices/planesSlice';
 import { injectLiveDRAP } from '../store/slices/drapSlice';
 import { injectLiveAurora } from '../store/slices/auroraSlice';
+import { injectLiveGeoElectric } from '../store/slices/geoElectricSlice';
 // Import your chart inject actions when ready
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -26,6 +27,10 @@ export const useLiveStream = (isLiveMode = true) => {
 
     sse.addEventListener('aurora', (event) => {
       dispatch(injectLiveAurora(JSON.parse(event.data)));
+    });
+
+    sse.addEventListener('geoelectric', (event) => {
+      dispatch(injectLiveGeoElectric(JSON.parse(event.data)));
     });
 
     // Handle connection drops
