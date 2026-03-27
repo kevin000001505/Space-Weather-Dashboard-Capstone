@@ -135,28 +135,37 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
 
     await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, records[0].time)
 
-    async with conn.transaction():
-        # flight_states
-        await conn.execute(FLIGHT_STATES_STAGING_DDL)
-        await conn.copy_records_to_table(
-            "flight_states_staging",
-            records=tuples,
-            columns=FLIGHT_STATES_STAGING_COLUMNS,
-        )
-        await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
+    try:
+        async with conn.transaction():
+            # flight_states
+            await conn.execute(FLIGHT_STATES_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "flight_states_staging",
+                records=tuples,
+                columns=FLIGHT_STATES_STAGING_COLUMNS,
+            )
+            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
-        # activate_flight
-        await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
-        await conn.copy_records_to_table(
-            "activate_flight_staging",
-            records=tuples,
-            columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
-        )
-        await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
+            # activate_flight
+            await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
+            await conn.copy_records_to_table(
+                "activate_flight_staging",
+                records=tuples,
+                columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
+            )
+            await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
 
-    logger.info(f"Finished inserting {len(records)} records.")
+        logger.info(f"Finished inserting {len(records)} records.")
 
-@task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE)
+    except TimeoutError:
+        logger.warning("Transaction timed out, lock released via rollback.")
+    except Exception as e:
+        logger.error(f"Insert failed: {e}")
+        raise
+
+
+
+@task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE, retries=3)
 async def broadcast_active_flights_to_redis(conn: Connection) -> None:
     """Pull the latest active flights state from Postgres and push to Redis."""
     logger = get_logger(__name__)

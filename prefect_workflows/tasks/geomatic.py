@@ -89,7 +89,7 @@ def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> Lis
     return records
 
 
-@task(log_prints=True, cache_policy=NO_CACHE)
+@task(log_prints=True, cache_policy=NO_CACHE, retries=3)
 async def load_geoelectric_data(records: List[tuple], conn: Connection) -> None:
     """Bulk-insert geoelectric field records into the database."""
     logger = get_logger(__name__)

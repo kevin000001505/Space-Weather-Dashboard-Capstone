@@ -74,7 +74,7 @@ def extract_xray_6hour_data():
     return xray_data
 
 
-@task(log_prints=True, cache_policy=NO_CACHE)
+@task(log_prints=True, cache_policy=NO_CACHE, retries=3)
 async def load_xray_6hour_data(xray_data: list, conn: Connection):
     """Load 6-hour X-ray flux records into the database."""
     logger = get_logger(__name__)

@@ -40,7 +40,7 @@ def fetch_aurora_data() -> dict:
         raise
 
 
-@task(log_prints=True, cache_policy=NO_CACHE)
+@task(log_prints=True, cache_policy=NO_CACHE, retries=3)
 async def load_aurora_data(data: dict, conn: Connection) -> None:
     """Parse and bulk-insert aurora forecast records into the database."""
     logger = get_logger(__name__)
