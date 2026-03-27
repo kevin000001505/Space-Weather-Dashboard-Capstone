@@ -14,7 +14,7 @@ const ChartsTabContent = ({kpChartRef, xrayChartRef, protonChartRef}) => {
 
   return (
     <Box
-      padding={6}
+      padding={4}
       sx={{
         position: "relative",
         minHeight: "100vh",

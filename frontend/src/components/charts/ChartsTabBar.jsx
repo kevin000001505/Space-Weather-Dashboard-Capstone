@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  IconButton,
-  Tabs,
-  Tab,
-} from "@mui/material";
+import { Box, IconButton, Tabs, Tab, Typography } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DownloadIcon from "@mui/icons-material/Download";
 import { useDispatch, useSelector } from "react-redux";
@@ -154,6 +149,7 @@ const ChartsTabBar = () => {
           <Tab label="X-ray Flux" />
           <Tab label="Proton Flux" />
         </Tabs>
+        <Typography variant="h6">ANALYTICS DASHBOARD</Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, height: 48 }}>
           <CustomDateTime
             value={customdt.range}

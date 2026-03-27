@@ -595,13 +595,13 @@ const SettingsPanel = () => {
                         <Slider
                           value={airportAltitudeRange}
                           min={0}
-                          max={useImperial ? 10000 : 3000}
-                          step={useImperial ? 1000 : 300}
+                          max={useImperial ? 18000 : 5500}
+                          step={useImperial ? 1000 : 250}
                           marks={[
                             { value: 0, label: "0" },
                             {
-                              value: useImperial ? 10000 : 3000,
-                              label: useImperial ? "10,000 ft" : "3,000 m",
+                              value: useImperial ? 18000 : 5500,
+                              label: useImperial ? "18,000 ft" : "5,500 m",
                             },
                           ]}
                           valueLabelDisplay="auto"

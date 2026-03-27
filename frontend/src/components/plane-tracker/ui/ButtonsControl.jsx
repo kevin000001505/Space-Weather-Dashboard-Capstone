@@ -63,31 +63,31 @@ const ButtonsControl = ({ settingsRef }) => {
   const visibilityActions = [
     {
       icon: <AirplanemodeActiveIcon sx={{ fontSize: 28 }} />,
-      tooltip: "Toggle Airplanes",
+      tooltip: `${showPlanes ? "Hide" : "Show"} Airplanes`,
       onClick: () => dispatch(setShowPlanes(!showPlanes)),
       active: showPlanes,
     },
     {
       icon: <LocationCityIcon sx={{ fontSize: 28 }} />,
-      tooltip: "Toggle Airports",
+      tooltip: `${showAirports ? "Hide" : "Show"} Airports`,
       onClick: () => dispatch(setShowAirports(!showAirports)),
       active: showAirports,
     },
     {
       icon: <SettingsInputAntennaIcon sx={{ fontSize: 28 }} />,
-      tooltip: "Toggle DRAP Region",
+      tooltip: `${showDRAP ? "Hide" : "Show"} DRAP Region`,
       onClick: () => dispatch(setShowDRAP(!showDRAP)),
       active: showDRAP,
     },
     {
       icon: <AutoAwesomeIcon sx={{ fontSize: 28 }} />,
-      tooltip: "Toggle Aurora",
+      tooltip: `${showAurora ? "Hide" : "Show"} Aurora`,
       onClick: () => dispatch(setShowAurora(!showAurora)),
       active: showAurora,
     },
     {
       icon: <OfflineBoltIcon sx={{ fontSize: 28 }} />,
-      tooltip: "Toggle GeoElectric",
+      tooltip: `${showGeoElectric ? "Hide" : "Show"} GeoElectric`,
       onClick: () => dispatch(setShowGeoElectric(!showGeoElectric)),
       active: showGeoElectric,
     },
@@ -95,13 +95,13 @@ const ButtonsControl = ({ settingsRef }) => {
   const legendActions = [
     {
       icon: <LetterIcon letter="I" strike={!showIconLegend} />,
-      tooltip: "Toggle Icon Legend",
+      tooltip: `${showIconLegend ? "Hide" : "Show"} Icon Legend`,
       onClick: () => dispatch(setShowIconLegend(!showIconLegend)),
       active: showIconLegend,
     },
     {
       icon: <LetterIcon letter="A" strike={!showAltitudeLegend} />,
-      tooltip: "Toggle Altitude Legend",
+      tooltip: `${showAltitudeLegend ? "Hide" : "Show"} Altitude Legend`,
       onClick: () => dispatch(setShowAltitudeLegend(!showAltitudeLegend)),
       active: showAltitudeLegend,
     },
@@ -147,14 +147,16 @@ const ButtonsControl = ({ settingsRef }) => {
           FabProps={{
             sx: {
               ...btnStyle,
-              background: !showAltitudeLegend && !showIconLegend
-                ? "rgba(229,57,53,0.35)"
-                : "rgba(34, 40, 60, 0.35)",
-              color: "#fff",
-              "&:hover": {
-                background: !showAltitudeLegend && !showIconLegend
+              background:
+                !showAltitudeLegend && !showIconLegend
                   ? "rgba(229,57,53,0.35)"
                   : "rgba(34, 40, 60, 0.35)",
+              color: "#fff",
+              "&:hover": {
+                background:
+                  !showAltitudeLegend && !showIconLegend
+                    ? "rgba(229,57,53,0.35)"
+                    : "rgba(34, 40, 60, 0.35)",
               },
             },
             height: "45px",
@@ -181,6 +183,7 @@ const ButtonsControl = ({ settingsRef }) => {
               slotProps={{
                 tooltip: {
                   title: action.tooltip,
+                  arrow: true,
                 },
                 fab: {
                   sx: {
@@ -189,7 +192,7 @@ const ButtonsControl = ({ settingsRef }) => {
                       ? "rgba(46,204,64,0.25)"
                       : "rgba(229,57,53,0.25)",
                     backdropFilter: "blur(6px)",
-                    color: "#fff",
+                    color: "#000",
                     border: action.active
                       ? "2px solid #2ecc40"
                       : "2px solid #e53935",
@@ -257,6 +260,7 @@ const ButtonsControl = ({ settingsRef }) => {
               slotProps={{
                 tooltip: {
                   title: action.tooltip,
+                  arrow: true,
                 },
                 fab: {
                   sx: {

@@ -121,7 +121,7 @@ const DateTimeViewer = () => {
           background: menuAnchorEl
             ? "rgba(127, 92, 255, 0.18)"
             : "rgba(34, 40, 60, 0.35)",
-          color: menuAnchorEl ? (darkMode ? "#7f5cff" : "#fff") : "#fff",
+          color: menuAnchorEl ? (darkMode ? "#ffd700" : "#fff") : "#fff",
           fontWeight: 600,
           letterSpacing: "1px",
           fontSize: "1em",

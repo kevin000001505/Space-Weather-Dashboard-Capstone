@@ -36,7 +36,7 @@ const initialState = {
   isZooming: false,
   settingsTabIndex: 0,
   altitudeRange: [0, 50000],
-  airportAltitudeRange: [0, 10000],
+  airportAltitudeRange: [0, 18000],
   drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
   isolateMode: false, // Isolate mode: only show selected planes and paths
   airportIconSize: 22,

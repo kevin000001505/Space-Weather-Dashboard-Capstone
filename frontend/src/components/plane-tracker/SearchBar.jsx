@@ -110,11 +110,8 @@ const SearchBar = () => {
         getOptionKey={(o) => o.key}
         getOptionLabel={(option) =>
           option.type === "plane"
-            ? option.data.callsign || option.data.icao24 || ""
-            : option.data.name ||
-              option.data.iata_code ||
-              option.data.gps_code ||
-              ""
+            ? `${option.data.callsign} ${option.data.icao24}`
+            : `${option.key} ${option.data.name} ${option.data.iata_code} ${option.data.gps_code}`
         }
         inputValue={query}
         onInputChange={(_, value, reason) => {

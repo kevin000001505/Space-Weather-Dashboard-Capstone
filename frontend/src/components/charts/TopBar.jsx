@@ -6,10 +6,12 @@ import MenuIcon from "@mui/icons-material/Menu";
 import { useSelector, useDispatch } from "react-redux";
 import DateTimeViewer from "../ui/DateTimeViewer";
 import { toggleSidebar } from "../../store/slices/sidebarSlice";
+import { useNavigate } from "react-router-dom";
 
 const TopBar = () => {
   const dispatch = useDispatch();
   const darkMode = useSelector((state) => state.ui.darkMode);
+  const navigate = useNavigate();
   const btnStyle = {
     width: "68px",
     height: "68px",
@@ -49,8 +51,35 @@ const TopBar = () => {
         boxShadow: darkMode ? "0 2px 8px #111" : "0 2px 8px rgba(0,0,0,0.08)",
       }}
     >
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        ANALYTICS DASHBOARD
+      <Typography
+        sx={{
+          fontWeight: 600,
+          fontSize: "20px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+        }}
+        onClick={() => navigate("/")}
+      >
+        <img
+          src={"/favicon.svg"}
+          alt="App Icon"
+          style={{
+            width: "50px",
+            height: "50px",
+            borderRadius: "14px",
+            background: darkMode
+              ? "#18181b"
+              : "linear-gradient(135deg, #e3e8ee 0%, #f7fafc 100%)",
+            boxShadow: darkMode
+              ? "0 2px 12px 0 rgba(167, 139, 250, 0.18)"
+              : "0 2px 12px 0 rgba(25, 118, 210, 0.13)",
+            padding: "6px",
+            transition: "box-shadow 0.2s",
+          }}
+        />
+        Space Weather
       </Typography>
       <DateTimeViewer />
       <Box sx={{ display: "flex", alignItems: "center" }}>
