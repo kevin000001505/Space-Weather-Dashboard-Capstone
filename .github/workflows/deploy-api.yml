@@ -5,12 +5,12 @@ on:
     branches: [main]
     paths:
       - 'docker/api/**'
-      - 'api/**'
+      - 'src/**'
   pull_request:
     branches: [main]
     paths:
       - 'docker/api/**'
-      - 'api/**'
+      - 'src/**'
 
 jobs:
   test-static:
