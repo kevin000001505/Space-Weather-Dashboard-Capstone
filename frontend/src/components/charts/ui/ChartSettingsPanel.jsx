@@ -129,7 +129,7 @@ const ChartSettingsPanel = ({ open, onClose }) => {
               label="Background Bands Opacity"
               value={backgroundBandsOpacity}
               onChange={(_, value) => dispatch(setBackgroundBandsOpacity(value))}
-              sliderProps={{ min: 0, max: 1, step: 0.01 }}
+              sliderProps={{ min: 0, max: 0.5, step: 0.01 }}
               darkMode={darkMode}
               ariaLabel="Background Bands Opacity"
             />

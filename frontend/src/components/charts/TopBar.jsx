@@ -46,7 +46,7 @@ const TopBar = () => {
         alignItems: "center",
         justifyContent: "space-between",
         pl: 3,
-        pr: 1,
+        pr: 0,
         zIndex: 1000,
         boxShadow: darkMode ? "0 2px 8px #111" : "0 2px 8px rgba(0,0,0,0.08)",
       }}

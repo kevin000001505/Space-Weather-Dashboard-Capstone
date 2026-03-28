@@ -8,6 +8,7 @@ import chartsReducer from './slices/chartsSlice';
 import auroraReducer from './slices/auroraSlice';
 import geoElectricReducer from './slices/geoElectricSlice';
 import sidebarReducer from './slices/sidebarSlice';
+import helpReducer from './slices/helpSlice';
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
     aurora: auroraReducer,
     sidebar: sidebarReducer,
     geoelectric: geoElectricReducer,
+    help: helpReducer,
   },
 });
