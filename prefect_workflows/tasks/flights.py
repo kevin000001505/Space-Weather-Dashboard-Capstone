@@ -12,10 +12,12 @@ from prefect.variables import Variable
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
 from database.queries import (
+    ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
     CLEANUP_OLD_FLIGHT_DATA_QUERY,
     CREATE_PARTITION_IF_MISSING_QUERY,
     FLIGHT_STATES_STAGING_DDL,
     FLIGHT_STATES_STAGING_COLUMNS,
+    FLIGHT_STATES_STAGING_GEOM_SQL,
     FLIGHT_STATES_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STAGING_DDL,
     ACTIVATE_FLIGHT_STAGING_COLUMNS,
@@ -139,20 +141,29 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
         async with conn.transaction():
             # flight_states
             await conn.execute(FLIGHT_STATES_STAGING_DDL)
+            
             await conn.copy_records_to_table(
                 "flight_states_staging",
                 records=tuples,
                 columns=FLIGHT_STATES_STAGING_COLUMNS,
             )
+
+            await conn.execute(FLIGHT_STATES_STAGING_GEOM_SQL)
+            
             await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
+
 
             # activate_flight
             await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
+
             await conn.copy_records_to_table(
                 "activate_flight_staging",
                 records=tuples,
                 columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
             )
+
+            await conn.execute(ACTIVATE_FLIGHT_STAGING_GEOM_SQL)
+
             await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
 
         logger.info(f"Finished inserting {len(records)} records.")

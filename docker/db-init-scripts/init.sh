@@ -69,9 +69,7 @@ psql -v ON_ERROR_STOP=1 --username "$DEVELOPER_USER" --dbname "$DEVELOPER_DB" <<
     ) PARTITION BY RANGE (time);
 
     -- ── Indexes ──
-    CREATE INDEX IF NOT EXISTS idx_flight_geom     ON flight_states USING GIST (geom);
     CREATE INDEX IF NOT EXISTS idx_flight_icao      ON flight_states (icao24);
-    CREATE INDEX IF NOT EXISTS idx_flight_callsign  ON flight_states (callsign);
 
     -- ── Grants for readonly ──
     GRANT USAGE  ON SCHEMA public TO readonly;

@@ -325,7 +325,8 @@ CREATE TEMP TABLE flight_states_staging (
     source          SMALLINT,
     sensors         INTEGER[],
     geom_lon        DOUBLE PRECISION,
-    geom_lat        DOUBLE PRECISION
+    geom_lat        DOUBLE PRECISION,
+    geom            GEOMETRY(Point, 4326)
 ) ON COMMIT DROP
 """
 
@@ -336,6 +337,13 @@ FLIGHT_STATES_STAGING_COLUMNS = [
     "source", "sensors", "geom_lon", "geom_lat",
 ]
 
+FLIGHT_STATES_STAGING_GEOM_SQL = """
+UPDATE flight_states_staging
+SET
+    geom           = ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326)
+WHERE geom_lon IS NOT NULL AND geom_lat IS NOT NULL
+"""
+
 FLIGHT_STATES_TRANSFORM_SQL = """
 INSERT INTO flight_states
     (time, icao24, callsign, origin_country, time_pos,
@@ -345,7 +353,7 @@ SELECT
     time, icao24, callsign, origin_country, time_pos,
     lat, lon, geo_altitude, baro_altitude, velocity,
     heading, vert_rate, on_ground, squawk, spi, source, sensors,
-    ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326)
+    geom
 FROM flight_states_staging
 ON CONFLICT DO NOTHING
 """
@@ -371,7 +379,9 @@ CREATE TEMP TABLE activate_flight_staging (
     source          SMALLINT,
     sensors         INTEGER[],
     geom_lon        DOUBLE PRECISION,
-    geom_lat        DOUBLE PRECISION
+    geom_lat        DOUBLE PRECISION,
+    geom            GEOMETRY(Point, 4326),
+    epoch_time_pos  DOUBLE PRECISION
 ) ON COMMIT DROP
 """
 
@@ -382,67 +392,77 @@ ACTIVATE_FLIGHT_STAGING_COLUMNS = [
     "source", "sensors", "geom_lon", "geom_lat",
 ]
 
+ACTIVATE_FLIGHT_STAGING_GEOM_SQL = """
+UPDATE activate_flight_staging
+SET
+    geom           = ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326),
+    epoch_time_pos = EXTRACT(EPOCH FROM time_pos)
+WHERE geom_lon IS NOT NULL AND geom_lat IS NOT NULL
+"""
+
 ACTIVATE_FLIGHT_TRANSFORM_SQL = """
 INSERT INTO activate_flight
     (time, icao24, callsign, origin_country, time_pos,
      lat, lon, geo_altitude, baro_altitude, velocity,
      heading, vert_rate, on_ground, squawk, spi, source, sensors,
-     geom, path_points)
+     geom, epoch_time_pos, path_points)
 SELECT
     s.time, s.icao24, s.callsign, s.origin_country, s.time_pos,
     s.lat, s.lon, s.geo_altitude, s.baro_altitude, s.velocity,
     s.heading, s.vert_rate, s.on_ground, s.squawk, s.spi, s.source, s.sensors,
-    ST_SetSRID(ST_MakePoint(s.geom_lon, s.geom_lat), 4326),
+    s.geom,
+    s.epoch_time_pos,
     CASE
         WHEN s.geom_lat IS NOT NULL AND s.geom_lon IS NOT NULL
-        THEN ARRAY[ARRAY[s.geom_lon, s.geom_lat, EXTRACT(EPOCH FROM s.time_pos)]]
+        THEN ARRAY[ARRAY[s.geom_lon, s.geom_lat, s.epoch_time_pos]]
         ELSE ARRAY[]::DOUBLE PRECISION[][]
     END
 FROM activate_flight_staging s
 ON CONFLICT (icao24)
 DO UPDATE SET
     path_points = CASE
-        -- State A: Landing (was airborne, now ground) -> reset
+        -- State A: Landing -> reset
         WHEN EXCLUDED.on_ground = TRUE THEN
-            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXCLUDED.epoch_time_pos]]
 
-        -- State B: Takeoff (was ground, now airborne) -> reset
+        -- State B: Takeoff -> reset
         WHEN EXCLUDED.on_ground = FALSE AND activate_flight.on_ground = TRUE THEN
-            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXCLUDED.epoch_time_pos]]
 
-        -- State C: Null position (signal loss) -> preserve path
+        -- State C: Null position -> preserve
         WHEN EXCLUDED.lat IS NULL OR EXCLUDED.lon IS NULL THEN
             activate_flight.path_points
 
-        -- State D: >30 min gap -> likely landed & back, reset
+        -- State D: >30 min gap -> reset
         WHEN EXCLUDED.on_ground = FALSE
             AND EXCLUDED.time_pos IS NOT NULL
             AND (EXCLUDED.time_pos - activate_flight.time_pos) > INTERVAL '30 minutes'
             AND ST_Distance(activate_flight.geom::geography, EXCLUDED.geom::geography) <= 2000000 THEN
-            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
+            ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXCLUDED.epoch_time_pos]]
 
-        -- State E: Normal flying / taxiing -> append point
+        -- State E: Normal -> append
         ELSE
-            activate_flight.path_points || ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXTRACT(EPOCH FROM EXCLUDED.time_pos)]]
+            activate_flight.path_points || ARRAY[ARRAY[EXCLUDED.lon, EXCLUDED.lat, EXCLUDED.epoch_time_pos]]
     END,
 
-    on_ground      = EXCLUDED.on_ground,
-    time           = EXCLUDED.time,
-    time_pos       = COALESCE(EXCLUDED.time_pos, activate_flight.time_pos),
-    callsign       = EXCLUDED.callsign,
-    origin_country = EXCLUDED.origin_country,
-    lat            = COALESCE(EXCLUDED.lat, activate_flight.lat),
-    lon            = COALESCE(EXCLUDED.lon, activate_flight.lon),
-    geom           = COALESCE(EXCLUDED.geom, activate_flight.geom),
-    geo_altitude   = COALESCE(EXCLUDED.geo_altitude, activate_flight.geo_altitude),
-    baro_altitude  = COALESCE(EXCLUDED.baro_altitude, activate_flight.baro_altitude),
-    velocity       = EXCLUDED.velocity,
-    heading        = EXCLUDED.heading,
-    squawk         = EXCLUDED.squawk,
-    spi            = EXCLUDED.spi,
-    source         = EXCLUDED.source,
-    sensors        = EXCLUDED.sensors,
-    vert_rate      = EXCLUDED.vert_rate
+    on_ground       = EXCLUDED.on_ground,
+    time            = EXCLUDED.time,
+    time_pos        = COALESCE(EXCLUDED.time_pos, activate_flight.time_pos),
+    epoch_time_pos  = COALESCE(EXCLUDED.epoch_time_pos, activate_flight.epoch_time_pos),
+    callsign        = EXCLUDED.callsign,
+    origin_country  = EXCLUDED.origin_country,
+    lat             = COALESCE(EXCLUDED.lat, activate_flight.lat),
+    lon             = COALESCE(EXCLUDED.lon, activate_flight.lon),
+    geom            = COALESCE(EXCLUDED.geom, activate_flight.geom),
+    geo_altitude    = COALESCE(EXCLUDED.geo_altitude, activate_flight.geo_altitude),
+    baro_altitude   = COALESCE(EXCLUDED.baro_altitude, activate_flight.baro_altitude),
+    velocity        = EXCLUDED.velocity,
+    heading         = EXCLUDED.heading,
+    squawk          = EXCLUDED.squawk,
+    spi             = EXCLUDED.spi,
+    source          = EXCLUDED.source,
+    sensors         = EXCLUDED.sensors,
+    vert_rate       = EXCLUDED.vert_rate
 """
 
 # --- drap_region ---
