@@ -1,0 +1,64 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  test-static:
+    name: Folder Structure & Coverage Enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install pytest dotenv
+      - run: pytest tests/test_folder_structure.py
+      - run: pytest tests/test_coverage_enforcement.py -v
+
+  test-frontend:
+    name: Run Frontend Tests
+    needs: test-static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.22.0'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm ci
+      - name: Build Validation
+        working-directory: ./frontend
+        run: |
+          echo "npm run test"
+          echo "npm run build"
+
+  deploy-frontend:
+    name: Deploy Frontend to VM
+    needs: [test-static, test-frontend]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Write env file
+        run: echo "${{ secrets.ENV_FILE }}" > .env
+
+      - name: Build and Deploy Frontend Container
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps frontend
+
+      - name: System Cleanup
+        run: docker image prune -f

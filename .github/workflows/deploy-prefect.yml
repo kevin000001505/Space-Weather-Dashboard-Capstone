@@ -1,0 +1,120 @@
+name: Prefect Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm Prefect redeploy'
+        required: true
+        default: ''
+
+jobs:
+  guard:
+    name: Confirm Intent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != 'DEPLOY'
+        run: |
+          echo "Confirmation not provided. Aborting."
+          exit 1
+
+  test-static:
+    name: Folder Structure & Coverage Enforcement
+    needs: guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install pytest dotenv
+      - run: pytest tests/test_folder_structure.py
+      - run: pytest tests/test_coverage_enforcement.py -v
+
+  test-flows:
+    name: Run Flows Tests
+    needs: test-static
+    runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: prefect
+          POSTGRES_PASSWORD: prefect
+          POSTGRES_DB: prefect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: docker/flows_package/requirements.txt
+      - name: Install Flows Dependencies
+        run: pip install -r docker/flows_package/requirements.txt
+      - name: Run init.sh
+        run: |
+          chmod +x ./docker/db-init-scripts/init.sh
+          ./docker/db-init-scripts/init.sh
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGPASSWORD: prefect
+          POSTGRES_USER: prefect
+          POSTGRES_DB: prefect
+          DEVELOPER_DB: app
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+      - name: Run db_maintain.py
+        run: python prefect_workflows/flows/db_maintain.py
+        env:
+          PYTHONPATH: "prefect_workflows:."
+          DATABASE_URL: postgresql://developer:${{ secrets.DEVELOPER_PASSWORD }}@localhost:5432/app
+      - name: Execute Flows Tests
+        run: pytest tests/test_flows/ -v
+        env:
+          PYTHONPATH: "."
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          DEVELOPER_DB: app
+          PGHOST: localhost
+          PGPORT: "5432"
+
+  deploy-prefect:
+    name: Deploy Prefect to VM
+    needs: [test-static, test-flows]
+    if: success()
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Write env files
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          mkdir -p ./secrets
+          echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+
+      - name: Build and Deploy Prefect Containers
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps \
+            prefect-server prefect-worker-noaa prefect-worker-flight
+
+      - name: System Cleanup
+        run: docker image prune -f

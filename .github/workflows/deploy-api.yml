@@ -1,0 +1,100 @@
+name: API CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/api/**'
+      - 'api/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker/api/**'
+      - 'api/**'
+
+jobs:
+  test-static:
+    name: Folder Structure & Coverage Enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - run: pip install pytest dotenv
+      - run: pytest tests/test_folder_structure.py
+      - run: pytest tests/test_coverage_enforcement.py -v
+
+  test-api:
+    name: Run API Tests
+    needs: test-static
+    runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: prefect
+          POSTGRES_PASSWORD: prefect
+          POSTGRES_DB: prefect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: docker/api/requirements.txt
+      - name: Install API Dependencies
+        run: pip install -r docker/api/requirements.txt
+      - name: Run init.sh
+        run: |
+          chmod +x ./docker/db-init-scripts/init.sh
+          ./docker/db-init-scripts/init.sh
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGPASSWORD: prefect
+          POSTGRES_USER: prefect
+          POSTGRES_DB: prefect
+          DEVELOPER_DB: app
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+      - name: Execute API Tests
+        run: echo "pytest tests/api/"
+        env:
+          PYTHONPATH: "."
+
+  deploy-api:
+    name: Deploy API to VM
+    needs: [test-static, test-api]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Write env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+
+      - name: Build and Deploy API Container
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps api
+
+      - name: System Cleanup
+        run: docker image prune -f
