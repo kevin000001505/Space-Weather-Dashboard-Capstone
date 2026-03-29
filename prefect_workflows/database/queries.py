@@ -238,6 +238,8 @@ CREATE TABLE IF NOT EXISTS drap_region (
     PRIMARY KEY (observed_at, lat, long)
 )PARTITION BY RANGE (observed_at);
 
+CREATE INDEX idx_drap_trunc_minute ON drap_region (date_trunc('minute', observed_at AT TIME ZONE 'UTC'));
+
 CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
 ON drap_region (observed_at);
 """
@@ -839,6 +841,8 @@ CREATE TABLE IF NOT EXISTS aurora_forecast (
     PRIMARY KEY (observation_time, lat, long)
 )PARTITION BY RANGE (observation_time);
 
+CREATE INDEX idx_aurora_trunc_minute ON aurora_forecast (date_trunc('minute', observation_time AT TIME ZONE 'UTC'));
+
 CREATE INDEX IF NOT EXISTS ix_aurora_forecast_obs_time ON aurora_forecast (observation_time);
 """
 
@@ -978,6 +982,8 @@ CREATE TABLE IF NOT EXISTS geoelectric_field (
     distance_nearest_station DOUBLE PRECISION       NOT NULL,  -- Distance to nearest magnetometer station (km)
     PRIMARY KEY (observed_at, lat, long)
 )PARTITION BY RANGE (observed_at);
+
+CREATE INDEX idx_geoelectric_trunc_minute ON geoelectric_field (date_trunc('minute', observed_at AT TIME ZONE 'UTC'));
 
 CREATE INDEX IF NOT EXISTS ix_geoelectric_field_observed_at ON geoelectric_field (observed_at);
 """

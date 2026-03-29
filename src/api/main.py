@@ -1,8 +1,9 @@
 import asyncio
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Literal, Optional, List, Dict
+from unittest import result
 
-from fastapi import FastAPI, HTTPException, Request, Query
+from fastapi import FastAPI, HTTPException, Request, Query, Response
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +14,9 @@ from database.queries import (
     AIRPORTS_LATEST_QUERY,
     AIRPORT_QUERY,
     AURORA_QUERY,
+    AURORA_RANGE_QUERY,
     FLIGHT_PATH_QUERY,
+    FLIGHTS_RANGE_QUERY,
     KP_INDEX_RANGE_QUERY,
     LATEST_DRAP_QUERY,
     DRAP_RANGE_QUERY,
@@ -26,7 +29,6 @@ from config import (
     AuroraResponse,
     FlightStatesResponse,
     DRAPResponse,
-    DRAPRangeResponse,
     FlightPathResponse,
     ActivateFlightState,
     Airport,
@@ -77,16 +79,11 @@ def _resolve_time_window(
     default_delta = timedelta(hours=default_hours)
 
     # Validate: don't allow future timestamps
-    if end and end > now:
+    if (end and end > now) or (start and start > now):
+        invalid_time = end if (end and end > now) else start
         raise HTTPException(
             status_code=400,
-            detail=f"query_time cannot be in the future (requested: {end}, now: {now})"
-        )
-
-    if start and start > now:
-        raise HTTPException(
-            status_code=400,
-            detail=f"query_time cannot be in the future (requested: {start}, now: {now})"
+            detail=f"query_time cannot be in the future (requested: {invalid_time}, now: {now})"
         )
 
     if start is None:
@@ -112,12 +109,6 @@ def _resolve_time_window(
         raise HTTPException(
             status_code=422,
             detail="'end' must be greater than 'start'.",
-        )
-
-    if min_time and (end_utc - start_utc).total_seconds() < 3600 * min_time:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Minimum time range is {min_time} hour.",
         )
 
     return start_utc, end_utc
@@ -160,7 +151,16 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+@app.middleware("http")
+async def add_process_time_header(request, call_next):
+    t0 = time.perf_counter()
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = str(time.perf_counter() - t0)
+    return response
+
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 
 # CORS middleware
 app.add_middleware(
@@ -171,6 +171,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+query_dict = {
+    "drap": DRAP_RANGE_QUERY,
+    "geoelectric": GEOELECTRIC_RANGE_QUERY,
+    'aurora': AURORA_RANGE_QUERY,
+    "flight": FLIGHTS_RANGE_QUERY
+}
 
 @app.get("/")
 async def root():
@@ -484,7 +490,7 @@ async def latest_drap(debug: bool = Query(False)):
             if debug:
                 return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
             
-            return DRAPResponse(timestamp=timestamp, count=drap_data['count'], points=drap_data['points'])
+            return DRAPResponse(timestamp=timestamp, points=drap_data['points'])
             
         async with get_connection() as conn:
             t_query_start = time.perf_counter()
@@ -500,74 +506,12 @@ async def latest_drap(debug: bool = Query(False)):
         timestamp = rows[0]["observed_at"]
         points = [[row["lat"], row["lon"], row["intensity"]] for row in rows]
 
-        return DRAPResponse(timestamp=timestamp, count=len(points), points=points)
+        return DRAPResponse(timestamp=timestamp, points=points)
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
-
-@app.get("/api/v1/drap", response_model=DRAPRangeResponse)
-async def drap_range(
-    start: Optional[datetime] = Query(
-        default=None,
-        description="Start of time range (ISO 8601 UTC). Defaults to 1 hour before end.",
-        openapi_examples={
-            "1_hour_ago": {"summary": "1 hour ago", "value": _iso_hours_ago(1)},
-            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
-        },
-    ),
-    end: Optional[datetime] = Query(
-        default=None,
-        description="End of time range (ISO 8601 UTC). Defaults to now.",
-        openapi_examples={
-            "now": {"summary": "Current time", "value": _iso_now()},
-        },
-    ),
-    debug: bool = Query(False),
-):
-    """
-    Retrieve D-RAP absorption data for a time range.
-
-    - **start** and **end**: Optional custom range. Defaults to the last 1 hour.
-    - Returns snapshots grouped by observed_at timestamp, each with absorption points.
-    """
-    t_start = time.perf_counter()
-    try:
-        start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
-
-        async with get_connection() as conn:
-            t_query_start = time.perf_counter()
-            rows = await conn.fetch(DRAP_RANGE_QUERY, start_utc, end_utc)
-            t_query_end = time.perf_counter()
-
-        if not rows:
-            raise HTTPException(status_code=404, detail="No D-RAP data available for the given range")
-
-        if debug:
-            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
-
-        # Group rows by observed_at timestamp
-        snapshots_map: dict = {}
-        for row in rows:
-            ts = row["observed_at"]
-            if ts not in snapshots_map:
-                snapshots_map[ts] = []
-            snapshots_map[ts].append([row["lat"], row["lon"], row["intensity"]])
-
-        snapshots = [
-            DRAPResponse(timestamp=ts, count=len(points), points=points)
-            for ts, points in snapshots_map.items()
-        ]
-
-        return DRAPRangeResponse(count=len(snapshots), snapshots=snapshots)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching D-RAP range data: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
 
 @app.get("/api/v1/kp-index", response_model=KpIndexListResponse)
 async def kp_index(
@@ -879,57 +823,49 @@ async def latest_geoelectric(debug: bool = Query(False)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@app.get("/api/v1/geoelectric", response_model=GeoelectricRangeResponse)
-async def geoelectric_range(
-    start: Optional[datetime] = Query(
-        default=None,
-        description="Start of time range (ISO 8601 UTC). Defaults to 1 hour before end.",
-        openapi_examples={
-            "1_hour_ago": {"summary": "1 hour ago", "value": _iso_hours_ago(1)},
-            "3_hours_ago": {"summary": "3 hours ago", "value": _iso_hours_ago(3)},
-        },
+
+
+@app.get("/api/v1/kermit/")
+async def range_data_retrieve(
+    start: datetime = Query(
+        default = datetime.now() - timedelta(days=1),
+        description = "The start time for event."
     ),
-    end: Optional[datetime] = Query(
-        default=None,
-        description="End of time range (ISO 8601 UTC). Defaults to now.",
-        openapi_examples={
-            "now": {"summary": "Current time", "value": _iso_now()},
-        },
+    end: datetime = Query(
+        default = datetime.now(),
+        description = "The end time for event.",
     ),
-    debug: bool = Query(False),
-):
-    t_start = time.perf_counter()
-    try:
-        start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
+    event: Literal["drap", "geoelectric", "aurora"] = Query(
+        default = "drap",
+        description = "Space weather event."
+    ),
+    interval: int = Query(
+        default = 5,
+        description = "The time range for each data gap."
+    )
+    ):
+    start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
+    query = query_dict[event]
 
-        async with get_connection() as conn:
-            t_query_start = time.perf_counter()
-            rows = await conn.fetch(GEOELECTRIC_RANGE_QUERY, start_utc, end_utc)
-            t_query_end = time.perf_counter()
+    async with get_connection() as conn:
+        rows = await conn.fetch(query, start_utc, end_utc, interval)
+    
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"No {query} data available for the given range")
 
-        if not rows:
-            raise HTTPException(status_code=404, detail="No Geoelectric data available for the given range")
+    snapshots = {}
+    for row in rows:
+        if row['observed_at'] in snapshots:
+            snapshots[row['observed_at']].append([row['lat'], row['long'], row['intensity']])
+        else:
+            snapshots[row['observed_at']] = [[row['lat'], row['long'], row['intensity']]]
 
-        if debug:
-            return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
-
-        # Group rows by observed_at timestamp
-        snapshots_map: dict = {}
-        for row in rows:
-            ts = row["observed_at"]
-            if ts not in snapshots_map:
-                snapshots_map[ts] = []
-            snapshots_map[ts].append([row["lat"], row["lon"], row["e_magnitude"], row["quality_flag"]])
-
-        snapshots = [
-            GeoelectricResponse(timestamp=ts, count=len(points), points=points)
-            for ts, points in snapshots_map.items()
-        ]
-
-        return GeoelectricRangeResponse(count=len(snapshots), snapshots=snapshots)
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching D-RAP range data: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    sorted_snapshots = [
+        {
+            "observed_at": ts,
+            "points": snapshots[ts]
+        }
+        for ts in sorted(snapshots.keys(), reverse=True)
+    ]
+    
+    return sorted_snapshots

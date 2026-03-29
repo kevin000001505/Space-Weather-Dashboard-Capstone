@@ -5,13 +5,12 @@ from datetime import datetime
 
 class DRAPResponse(BaseModel):
     timestamp: datetime
-    count: int
     points: List[List[float]]  # [lat, lon, intensity]
 
 
 class DRAPRangeResponse(BaseModel):
-    count: int
     snapshots: List[DRAPResponse]
+
 
 
 class FlightPathResponse(BaseModel):
