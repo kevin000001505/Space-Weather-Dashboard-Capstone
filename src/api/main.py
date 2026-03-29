@@ -830,13 +830,13 @@ async def latest_geoelectric(debug: bool = Query(False)):
 
 @app.get("/api/v1/kermit/")
 async def range_data_retrieve(
-    start: datetime = Query(
-        default = datetime.now(timezone.utc) - timedelta(days=1),
-        description = "The start time for event."
+    start: Optional[datetime] = Query(
+        default = None,
+        description = "The start time for event (ISO 8601 UTC). Defaults to 1 day before end."
     ),
-    end: datetime = Query(
-        default = datetime.now(timezone.utc),
-        description = "The end time for event.",
+    end: Optional[datetime] = Query(
+        default = None,
+        description = "The end time for event (ISO 8601 UTC). Defaults to now.",
     ),
     event: Literal["drap", "geoelectric", "aurora"] = Query(
         default = "drap",
@@ -847,14 +847,16 @@ async def range_data_retrieve(
         description = "The time range for each data gap."
     )
     ):
-    start_utc, end_utc = _resolve_time_window(start, end, default_hours=1)
+    start_utc, end_utc = _resolve_time_window(start, end, default_hours=24)
+    start_utc = start_utc.replace(second=0, microsecond=0)
+    end_utc = end_utc.replace(second=0, microsecond=0)
     query = query_dict[event]
 
     async with get_connection() as conn:
         rows = await conn.fetch(query, start_utc, end_utc, interval)
     
     if not rows:
-        raise HTTPException(status_code=404, detail=f"No {query} data available for the given range")
+        raise HTTPException(status_code=404, detail=f"No {event} data available for the given range")
 
     snapshots = {}
     for row in rows:
