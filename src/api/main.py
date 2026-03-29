@@ -71,7 +71,6 @@ def _normalize_utc(dt: datetime) -> datetime:
 def _resolve_time_window(
     start: Optional[datetime],
     end: Optional[datetime],
-    min_time: Optional[int] = 1,
     default_hours: int = 3,
 ) -> tuple[datetime, datetime]:
 
@@ -79,6 +78,10 @@ def _resolve_time_window(
     default_delta = timedelta(hours=default_hours)
 
     # Validate: don't allow future timestamps
+    if end:
+        end = _normalize_utc(end)
+    if start:
+        start = _normalize_utc(start)
     if (end and end > now) or (start and start > now):
         invalid_time = end if (end and end > now) else start
         raise HTTPException(
@@ -828,11 +831,11 @@ async def latest_geoelectric(debug: bool = Query(False)):
 @app.get("/api/v1/kermit/")
 async def range_data_retrieve(
     start: datetime = Query(
-        default = datetime.now() - timedelta(days=1),
+        default = datetime.now(timezone.utc) - timedelta(days=1),
         description = "The start time for event."
     ),
     end: datetime = Query(
-        default = datetime.now(),
+        default = datetime.now(timezone.utc),
         description = "The end time for event.",
     ),
     event: Literal["drap", "geoelectric", "aurora"] = Query(
