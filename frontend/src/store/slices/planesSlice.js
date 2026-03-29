@@ -5,6 +5,7 @@ const planesSlice = createSlice({
   name: 'planes',
   initialState: {
     data: [],
+    playback: {},
     timestamp: null,
     count: 0,
     loading: false,

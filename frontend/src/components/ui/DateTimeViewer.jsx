@@ -3,20 +3,44 @@ import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import "./styles/DateTimeViewer.css";
 import { setSelectedTimezone } from "../../store/slices/chartsSlice";
+import {
+  setDate,
+  setTime,
+  setLiveStreamMode,
+} from "../../store/slices/playbackSlice";
 import { Button, Menu, MenuItem, TextField } from "@mui/material";
+import {
+  DatePicker,
+  LocalizationProvider,
+  TimePicker,
+} from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useAllTimezones } from "../../hooks/useAllTimezones";
-const DateTimeViewer = () => {
+import {
+  createDate,
+  formatDate,
+  formatTime,
+  utcToZonedTime,
+} from "./helpers/helper";
+import { fetchHistoricalDRAP } from "../../api/api";
+const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
+  const dispatch = useDispatch();
+
   const selectedTimezone = useSelector(
     (state) => state.charts.selectedTimezone,
   );
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const [dateTime, setDateTime] = useState(new Date());
+  const { date, time, liveStreamMode } = useSelector((state) => state.playback);
   const timeZones = useAllTimezones();
   const [tzSearch, setTzSearch] = useState("");
   const [debouncedTzSearch, setDebouncedTzSearch] = useState("");
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [timePickerOpen, setTimePickerOpen] = useState(false);
   const debounceTimeout = useRef();
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const dateBoxRef = useRef(null);
+  const timeBoxRef = useRef(null);
 
   // On mount, set user's timezone if selectedTimezone is 'local' and detected timezone is available
   useEffect(() => {
@@ -27,9 +51,7 @@ const DateTimeViewer = () => {
         dispatch(setSelectedTimezone(userTz));
       }
     }
-    // Only run on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedTimezone, timeZones, dispatch]);
 
   // Debounce tzSearch input
   useEffect(() => {
@@ -39,6 +61,33 @@ const DateTimeViewer = () => {
     }, 250);
     return () => clearTimeout(debounceTimeout.current);
   }, [tzSearch]);
+
+  useEffect(() => {
+    if (!liveStreamMode || !selectedTimezone) return;
+    const interval = setInterval(() => {
+      const now = utcToZonedTime(
+        new Date(),
+        selectedTimezone === "local" ? undefined : selectedTimezone,
+      );
+      dispatch(setDate(now.toString().split("T")[0]));
+      dispatch(setTime(now.toString().split("T")[1]));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dispatch, liveStreamMode, selectedTimezone]);
+
+  useEffect(() => {
+    if (!date || liveStreamMode) return;
+    // Parse the selected date (YYYY-MM-DD)
+    const [year, month, day] = date.split("-").map(Number);
+    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+    const endDate = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
+    dispatch(
+      fetchHistoricalDRAP({
+        start: startDate.toISOString(),
+        end: endDate.toISOString(),
+      }),
+    );
+  }, [date, time, selectedTimezone]);
 
   const filteredTimeZones = React.useMemo(() => {
     if (!debouncedTzSearch.trim()) return timeZones;
@@ -52,65 +101,123 @@ const DateTimeViewer = () => {
     );
   }, [debouncedTzSearch, timeZones]);
 
-  // Custom MenuList with search bar
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDateTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  function getOrdinal(n) {
-    const s = ["th", "st", "nd", "rd"],
-      v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  }
-
-  // Format date and time according to selected timezone
-  let dateStr, timeStr;
-  if (selectedTimezone === "local") {
-    const year = dateTime.getFullYear();
-    const month = dateTime.toLocaleString(undefined, { month: "long" });
-    const day = getOrdinal(dateTime.getDate());
-    dateStr = `${day} ${month}, ${year}`;
-    timeStr = dateTime.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
-  } else {
-    // Use Intl.DateTimeFormat for other timezones
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      timeZone: selectedTimezone,
-    });
-    const parts = formatter.formatToParts(dateTime);
-    const year = parts.find((p) => p.type === "year")?.value;
-    const month = parts.find((p) => p.type === "month")?.value;
-    const day = parts.find((p) => p.type === "day")?.value;
-    dateStr = `${day}${getOrdinal(Number(day)).replace(/\d+/, "")} ${month}, ${year}`;
-    timeStr = dateTime.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-      timeZone: selectedTimezone,
-    });
-  }
-
   return (
-    <div className="datetime-viewer split">
-      <div className={`dtv-box dtv-date ${!darkMode ? "dtv-light" : ""}`}>
-        {dateStr}
-      </div>
-      <div className={`dtv-box dtv-time ${!darkMode ? "dtv-light" : ""}`}>
-        {timeStr}
-      </div>
+    <div className="datetime-viewer split" ref={ref}>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <div style={{ position: "relative" }}>
+          <div
+            className={`dtv-box dtv-date ${!darkMode ? "dtv-light" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => setDatePickerOpen(true)}
+            ref={dateBoxRef}
+          >
+            {formatDate(date, selectedTimezone)}
+          </div>
+          <DatePicker
+            open={datePickerOpen}
+            onClose={() => setDatePickerOpen(false)}
+            value={date ? createDate(date) : null}
+            onChange={(newValue) => {
+              if (newValue) {
+                const iso = newValue.toISOString().split("T")[0];
+                dispatch(setLiveStreamMode(false));
+                dispatch(setDate(iso));
+                dispatch(setTime("00:00:00"));
+              }
+              setDatePickerOpen(false);
+            }}
+            slotProps={{
+              textField: {
+                size: "small",
+                sx: { display: "none" }, // Hide the input, only show picker popup
+              },
+              popper: {
+                sx: { zIndex: 1500 },
+                anchorEl: dateBoxRef.current,
+                placement: "bottom",
+                modifiers: [
+                  {
+                    name: "offset",
+                    options: {
+                      offset: [0, 8], // 8px vertical offset
+                    },
+                  },
+                  {
+                    name: "flip",
+                    enabled: true,
+                  },
+                  {
+                    name: "preventOverflow",
+                    enabled: true,
+                  },
+                  {
+                    name: "computeStyles",
+                    options: {
+                      gpuAcceleration: false,
+                    },
+                  },
+                ],
+              },
+            }}
+            disableFuture
+            disableHighlightToday
+            slotPropsPopper={{
+              placement: "bottom-start",
+            }}
+          />
+        </div>
+      </LocalizationProvider>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <div style={{ position: "relative" }}>
+          <div
+            className={`dtv-box dtv-time ${!darkMode ? "dtv-light" : ""}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => setTimePickerOpen(true)}
+            ref={timeBoxRef}
+          >
+            {time}
+          </div>
+          <TimePicker
+            open={timePickerOpen}
+            onClose={() => setTimePickerOpen(false)}
+            value={time ? createDate(`${date}T${time}`) : null}
+            onChange={(newValue) => {
+              if (newValue) {
+                const t = newValue.toTimeString().split(" ")[0];
+                dispatch(setLiveStreamMode(false));
+                dispatch(setTime(t));
+              }
+              setTimePickerOpen(false);
+            }}
+            slotProps={{
+              textField: {
+                size: "small",
+                sx: { display: "none" },
+              },
+              actionBar: {
+                actions: [],
+              },
+              popper: {
+                sx: { zIndex: 1500 },
+                anchorEl: timeBoxRef?.current,
+                placement: "bottom",
+                modifiers: [
+                  { name: "offset", options: { offset: [0, 8] } },
+                  { name: "flip", enabled: true },
+                  { name: "preventOverflow", enabled: true },
+                  {
+                    name: "computeStyles",
+                    options: { gpuAcceleration: false },
+                  },
+                ],
+              },
+            }}
+            ampm={false}
+            minutesStep={1}
+            slotPropsPopper={{ placement: "bottom-start" }}
+          />
+        </div>
+      </LocalizationProvider>
       <Button
         disableRipple
         sx={{
@@ -138,6 +245,7 @@ const DateTimeViewer = () => {
           display: "flex",
           alignItems: "center",
           gap: 1,
+          pointerEvents: "auto",
           "&:hover .MuiSvgIcon-root": {
             color: darkMode ? "#ffd700" : "#fff",
           },
@@ -263,14 +371,14 @@ const DateTimeViewer = () => {
               <span
                 style={{ display: "flex", alignItems: "center", width: "100%" }}
               >
-                <span style={{ flex: 1, color: "#aaa", fontSize: "0.95em" }}>
+                <span style={{ flex: 1, color: "#aaa", fontSize: "1.2em" }}>
                   {tz.label}
                 </span>
                 {tz.zoneName && (
                   <span
                     style={{
                       color: "#7f5cff",
-                      fontSize: "0.95em",
+                      fontSize: "1.2em",
                       marginLeft: 8,
                     }}
                   >
@@ -279,7 +387,7 @@ const DateTimeViewer = () => {
                 )}
                 {tz.gmtOffset && (
                   <span
-                    style={{ color: "#aaa", fontSize: "0.95em", marginLeft: 8 }}
+                    style={{ color: "#aaa", fontSize: "1.2em", marginLeft: 8 }}
                   >
                     {tz.gmtOffset}
                   </span>
@@ -291,6 +399,6 @@ const DateTimeViewer = () => {
       </Menu>
     </div>
   );
-};
+});
 
 export default DateTimeViewer;

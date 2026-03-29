@@ -26,11 +26,9 @@ import Chip from "@mui/material/Chip";
 import { Rnd } from "react-rnd";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import {
-  setGeoElectricLogRange,
-} from "../../store/slices/geoElectricSlice";
+import { setGeoElectricLogRange } from "../../store/slices/geoElectricSlice";
 import ButtonsControl from "./ui/ButtonsControl";
-import { Card, CardContent, CardHeader } from "@mui/material";
+import { Card, CardContent, CardHeader, Slide } from "@mui/material";
 
 const PANEL_WIDTH = 450;
 const SettingsPanel = () => {
@@ -49,9 +47,7 @@ const SettingsPanel = () => {
     flightIconSize,
   } = useSelector((state) => state.ui);
   const planes = useSelector((state) => state.planes.data);
-  const { geoElectricLogRange } = useSelector(
-    (state) => state.geoelectric,
-  );
+  const { geoElectricLogRange } = useSelector((state) => state.geoelectric);
   const airports = useSelector((state) => state.airports.data);
   const drapPoints = useSelector((state) => state.drap.points);
   const auroraData = useSelector((state) => state.aurora.data);
@@ -1121,7 +1117,15 @@ const SettingsPanel = () => {
           </Paper>
         </Rnd>
       )}
-      <ButtonsControl settingsRef={settingsBtnRef} />
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <ButtonsControl settingsRef={settingsBtnRef} />
+      </Slide>
     </>
   );
 };

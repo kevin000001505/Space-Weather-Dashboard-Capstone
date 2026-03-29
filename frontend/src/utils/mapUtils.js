@@ -50,14 +50,16 @@ export const capitalizeWords = (str) => {
   if (!str) return 'N/A';
   return str.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 }
-
+// Helper to convert [r,g,b] to hex string
+export const rgbToHex = ([r, g, b]) => {
+  const toHex = (c) => c.toString(16).padStart(2, '0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
 // Defines the exact breakpoints for the gradient colors
 export const getStops = (useImperial) => {
   if (useImperial) {
     return [
       { val: 0, color: [242, 114, 39] },
-      { val: 2000, color: [245, 145, 40] },
-      { val: 4000, color: [242, 197, 49] },
       { val: 10000, color: [104, 202, 85] },
       { val: 20000, color: [83, 185, 235] },
       { val: 30000, color: [82, 86, 236] },
@@ -68,8 +70,6 @@ export const getStops = (useImperial) => {
     // Metric equivalents
     return [
       { val: 0, color: [242, 114, 39] },
-      { val: 600, color: [245, 145, 40] },
-      { val: 1200, color: [242, 197, 49] },
       { val: 3000, color: [104, 202, 85] },
       { val: 6000, color: [83, 185, 235] },
       { val: 9000, color: [82, 86, 236] },

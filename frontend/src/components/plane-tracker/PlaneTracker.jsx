@@ -14,6 +14,7 @@ import {
   fetchAurora,
   fetchAirports,
   fetchGeoelectric,
+  fetchHistoricalDRAP,
 } from "../../api/api";
 
 // SSE Hook import
@@ -66,6 +67,9 @@ import {
 import FlightDetailsPanel from "./FlightDetailsPanel";
 import AirportDetailsPanel from "./AirporDetailsPanel";
 import SearchBar from "./SearchBar";
+import PlaybackPanel from "./playback/PlaybackPanel";
+import ColorLegend from "./legends/ColorLegend";
+import { Slide } from "@mui/material";
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -112,10 +116,11 @@ const PlaneTracker = () => {
     auroraRegionRange,
     isolateMode,
     showAltitudeLegend,
-    liveStreamMode,
     airportIconSize,
     flightIconSize,
+    showIconLegend,
   } = useSelector((state) => state.ui);
+  const { liveStreamMode } = useSelector((state) => state.playback);
   const currentZoom = viewState?.zoom ?? 10;
   const zoomTimeoutRef = useRef(null);
 
@@ -311,7 +316,16 @@ const PlaneTracker = () => {
         display: "flex",
       }}
     >
-      <DateTimeViewer />
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <DateTimeViewer />
+      </Slide>
+
       <Map
         {...viewState}
         onMove={handleViewStateChange}
@@ -481,11 +495,47 @@ const PlaneTracker = () => {
 
       {/* Overlays */}
 
-      <StatsPanel />
-      {showAltitudeLegend && <AltitudeLegend />}
+      <Slide
+        direction="up"
+        in={showIconLegend}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <StatsPanel />
+      </Slide>
+
+      <Slide
+        direction="up"
+        in={!liveStreamMode}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <PlaybackPanel />
+      </Slide>
+
+      <Slide
+        direction="up"
+        in={showAltitudeLegend}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <ColorLegend />
+      </Slide>
+
       <SettingsPanel />
 
-      <SearchBar />
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <SearchBar />
+      </Slide>
     </div>
   );
 };

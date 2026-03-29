@@ -1,10 +1,11 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { fetchDRAP } from '../../api/api';
+import { createSlice } from "@reduxjs/toolkit";
+import { fetchDRAP, fetchHistoricalDRAP } from "../../api/api";
 
 const drapSlice = createSlice({
-  name: 'drap',
+  name: "drap",
   initialState: {
     points: [],
+    playback: {},
     timestamp: null,
     count: 0,
     loading: false,
@@ -12,8 +13,11 @@ const drapSlice = createSlice({
   },
   reducers: {
     injectLiveDRAP: (state, action) => {
-      state.data = action.payload.drap; 
-    }
+      state.data = action.payload.drap;
+    },
+    setDRAPPoints: (state, action) => {
+      state.points = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -31,8 +35,28 @@ const drapSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       });
-  }
+    builder
+      .addCase(fetchHistoricalDRAP.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchHistoricalDRAP.fulfilled, (state, action) => {
+        state.loading = false;
+        let playback = action.payload || {};
+        if (playback.snapshots && Array.isArray(playback.snapshots)) {
+          playback = {
+            ...playback,
+            snapshots: [...playback.snapshots].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)),
+          };
+        }
+        state.playback = playback;
+      })
+      .addCase(fetchHistoricalDRAP.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+  },
 });
 
-export const { injectLiveDRAP } = drapSlice.actions;
+export const { setDRAPPoints, injectLiveDRAP } = drapSlice.actions;
 export default drapSlice.reducer;

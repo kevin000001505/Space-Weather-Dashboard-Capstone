@@ -69,8 +69,8 @@ export default function Help() {
         }
       },
       {
-        rootMargin: `-${TOPBAR_HEIGHT + 24}px 0px -55% 0px`,
-        threshold: [0.1, 0.35, 0.6],
+        rootMargin: `-${TOPBAR_HEIGHT + 1}px 0px 0px 0px`,
+        threshold: [0.5],
       },
     );
 

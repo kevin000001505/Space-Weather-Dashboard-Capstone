@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from "react-redux";
 import DateTimeViewer from "../ui/DateTimeViewer";
 import { toggleSidebar } from "../../store/slices/sidebarSlice";
 import { useNavigate } from "react-router-dom";
+import { Slide } from "@mui/material";
 
 const TopBar = () => {
   const dispatch = useDispatch();
@@ -81,7 +82,15 @@ const TopBar = () => {
         />
         Space Weather
       </Typography>
-      <DateTimeViewer />
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
+        <DateTimeViewer />
+      </Slide>
       <Box sx={{ display: "flex", alignItems: "center" }}>
         <IconButton
           onClick={() =>

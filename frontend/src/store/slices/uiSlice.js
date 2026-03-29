@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 import { fetchAirportDetails } from "../../api/api";
 
 const initialState = {
-  liveStreamMode: true,
   useImperial: true,
   showAltitudeLegend: true,
   showIconLegend: true,
@@ -46,9 +45,6 @@ const uiSlice = createSlice({
   name: "ui",
   initialState,
   reducers: {
-    setLiveStreamMode: (state, action) => {
-      state.liveStreamMode = action.payload;
-    },
     toggleIsolateMode: (state, action) => {
       state.isolateMode = action.payload;
     },
@@ -199,7 +195,6 @@ const uiSlice = createSlice({
 });
 
 export const {
-  setLiveStreamMode,
   setUseImperial,
   setShowAltitudeLegend,
   setShowIconLegend,

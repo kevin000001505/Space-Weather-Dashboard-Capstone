@@ -9,6 +9,7 @@ import auroraReducer from './slices/auroraSlice';
 import geoElectricReducer from './slices/geoElectricSlice';
 import sidebarReducer from './slices/sidebarSlice';
 import helpReducer from './slices/helpSlice';
+import playbackReducer from './slices/playbackSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,5 +23,6 @@ export const store = configureStore({
     sidebar: sidebarReducer,
     geoelectric: geoElectricReducer,
     help: helpReducer,
+    playback: playbackReducer,
   },
 });

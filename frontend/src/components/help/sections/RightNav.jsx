@@ -13,6 +13,7 @@ import { useDispatch, useSelector } from "react-redux";
 export default function RightContentsNav({ sections }) {
   const dispatch = useDispatch();
   const { activeAnchor } = useSelector((state) => state.help);
+  const { darkMode } = useSelector((state) => state.ui);
 
   const handleNavigate = (id) => {
     const node = document.getElementById(id);
@@ -27,11 +28,12 @@ export default function RightContentsNav({ sections }) {
       sx={(theme) => ({
         position: "sticky",
         top: `${TOPBAR_HEIGHT}px`,
-        maxHeight: `calc(100vh - ${TOPBAR_HEIGHT + 6}px)`,
+        height: `calc(100vh - ${TOPBAR_HEIGHT + 6}px)`,
         overflowY: "auto",
         pl: 2,
         pt: 2,
         minWidth: RIGHT_SIDEBAR_WIDTH,
+        borderLeft: `1px solid ${theme.palette.divider}`,
       })}
     >
       <Typography
@@ -65,7 +67,7 @@ export default function RightContentsNav({ sections }) {
                 activeAnchor === entry.id
                   ? alpha(
                       theme.palette.primary.main,
-                      theme.palette.mode === "dark" ? 0.14 : 0.08,
+                      darkMode ? 0.14 : 0.08,
                     )
                   : "transparent",
               "&:hover": {
@@ -73,7 +75,7 @@ export default function RightContentsNav({ sections }) {
                   activeAnchor === entry.id
                     ? alpha(
                         theme.palette.primary.main,
-                        theme.palette.mode === "dark" ? 0.18 : 0.12,
+                        darkMode ? 0.18 : 0.12,
                       )
                     : theme.palette.action.hover,
               },

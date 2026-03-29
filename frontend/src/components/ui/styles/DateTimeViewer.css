@@ -10,9 +10,10 @@
   border: none;
   position: absolute;
   top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
   z-index: 1000;
+  pointer-events: none;
 }
 
 .dtv-box {
@@ -38,6 +39,7 @@
     0 0 12px 2px #00eaff22;
   backdrop-filter: blur(12px) saturate(1.4);
   -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  pointer-events: auto;
 }
 
 .dtv-date {
@@ -87,4 +89,41 @@
   text-shadow:
     0 0 16px #fff,
     0 0 32px #fff;
+}
+
+.MuiPaper-root {
+  background: rgba(34, 40, 60, 0.7) !important;
+  backdrop-filter: blur(12px) saturate(1.4) !important;
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiPickersDay-root {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiDayCalendar-header {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiPickersArrowSwitcher-button {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiPickersArrowSwitcher-button {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiPickersTextField-root {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 4px;
+}
+.MuiPickersCalendarHeader-switchViewIcon.MuiSvgIcon-root {
+  color: #e0e0e0 !important;
+  font-weight: 600;
+}
+.MuiDayCalendar-weekDayLabel {
+  color: #e0e0e0 !important;
+  font-weight: 600;
 }

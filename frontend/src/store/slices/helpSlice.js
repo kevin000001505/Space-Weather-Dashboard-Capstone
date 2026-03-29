@@ -7,7 +7,7 @@ const helpSlice = createSlice({
   initialState: {
     openGroups: openGroupsInitialState,
     activeTopic: "Purpose of the platform",
-    activeAnchor: "Purpose of the platform",
+    activeAnchor: "",
   },
   reducers: {
     setOpenGroups: (state, action) => {

@@ -161,8 +161,8 @@ const CustomDateTime = ({
                 mt: 1.5,
                 backgroundColor: darkMode ? "#23272e" : "#fff",
                 color: darkMode ? "#e0e0e0" : "#181a1b",
-                boxShadow: "var(--ui-shadow)",
                 border: `1px solid ${darkMode ? "#555" : "#ccc"}`,
+                boxShadow: "var(--ui-shadow)",
                 borderRadius: 2,
                 position: "relative",
               },
@@ -170,7 +170,15 @@ const CustomDateTime = ({
             },
           }}
         >
-          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8, borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`, paddingBottom: 4  }}>
+          <div
+            style={{
+              fontWeight: 600,
+              fontSize: 14,
+              marginBottom: 8,
+              borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`,
+              paddingBottom: 4,
+            }}
+          >
             Custom Date Range
           </div>
           <div
@@ -199,7 +207,6 @@ const CustomDateTime = ({
               slotProps={{
                 actionBar: { actions: [] },
                 popper: {
-                  
                   className: darkMode ? "mui-dark-datetime-popper" : undefined,
                 },
               }}

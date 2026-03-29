@@ -29,7 +29,10 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import "./styles/ButtonsControl.css";
 import { LetterIcon } from "../../ui/LetterIcon";
-const ButtonsControl = ({ settingsRef }) => {
+const ButtonsControl = React.forwardRef(function ButtonsControl(
+  { settingsRef },
+  ref,
+) {
   const dispatch = useDispatch();
   const {
     showSettings,
@@ -108,6 +111,7 @@ const ButtonsControl = ({ settingsRef }) => {
   ];
   return (
     <div
+      ref={ref}
       style={{
         position: "absolute",
         right: "10px",
@@ -321,6 +325,6 @@ const ButtonsControl = ({ settingsRef }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ButtonsControl;

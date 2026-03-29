@@ -38,6 +38,23 @@ export const fetchDRAP = createAsyncThunk(
     }
   },
 );
+export const fetchHistoricalDRAP = createAsyncThunk(
+  "drap/fetchHistoricalDRAP",
+  async (time_range, { rejectWithValue }) => {
+    try {
+      const { start, end } = time_range;
+      // console.log(encodeURIComponent(start), encodeURIComponent(end));
+      const response = await fetch(`${API_BASE_URL}/drap?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch DRAP data");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
 
 export const fetchAurora = createAsyncThunk(
   "aurora/fetchAurora",

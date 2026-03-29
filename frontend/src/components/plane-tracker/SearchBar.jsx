@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import TextField from "@mui/material/TextField";
 import Autocomplete from "@mui/material/Autocomplete";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,7 +12,7 @@ import {
   addAirportPanel,
 } from "../../store/slices/uiSlice";
 
-const SearchBar = () => {
+const SearchBar = React.forwardRef(function SearchBar(props, ref) {
   const dispatch = useDispatch();
   const planes = useSelector((state) => state.planes.data);
   const airports = useSelector((state) => state.airports.data);
@@ -89,6 +89,7 @@ const SearchBar = () => {
   const darkMode = useSelector((state) => state.ui.darkMode);
   return (
     <div
+      ref={ref}
       style={{
         background: "rgba(34, 40, 60, 0.35)",
         backdropFilter: "blur(6px)",
@@ -304,6 +305,6 @@ const SearchBar = () => {
       />
     </div>
   );
-};
+});
 
 export default SearchBar;
