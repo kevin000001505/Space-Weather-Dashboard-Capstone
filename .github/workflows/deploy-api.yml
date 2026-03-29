@@ -94,7 +94,7 @@ jobs:
         env:
           DOCKER_BUILDKIT: 1
         run: |
-          docker compose up -d --build --force-recreate --no-deps fastapi
+          docker compose up -d --build --force-recreate --no-deps fastapi 
 
       - name: System Cleanup
         run: docker image prune -f
