@@ -53,3 +53,4 @@ bin/
 
 # frontend/src/dummy_data/
 frontend/src/dummy_data/
+src/api/core.8

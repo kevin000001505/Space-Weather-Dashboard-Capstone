@@ -22,4 +22,12 @@ ENV PYTHONPATH=/app
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Run FastAPI application (will be overridden if command is specified in docker-compose)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# The worker counts is based on ((CPU*2)+1)
+CMD ["gunicorn", "main:app", \
+    "--bind", "0.0.0.0:8000", \
+    "--workers", "15", \
+    "--worker-class", "uvicorn.workers.UvicornWorker", \
+    "--reload"]
+
+# Develop usage
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
