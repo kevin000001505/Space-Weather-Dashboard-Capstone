@@ -3,6 +3,7 @@
 !prefect_workflows/
 !src/
 !tests
+!data/
 **/__pycache__
 **/*.pyc
 **/.ipynb_checkpoints

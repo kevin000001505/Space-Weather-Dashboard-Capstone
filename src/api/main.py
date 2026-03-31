@@ -875,6 +875,6 @@ async def range_data_retrieve(
     
     return sorted_snapshots
 
-@app.get("/kermit")
+@app.get("/api/kermit")
 def get_image():
-    return FileResponse("data/images/evil-laugh-kermit.gif", media_type="image/gif")
+    return FileResponse("/app/images/evil-laugh-kermit.gif", media_type="image/gif")
