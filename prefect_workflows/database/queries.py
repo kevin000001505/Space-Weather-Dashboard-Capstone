@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS activate_flight (
     
     -- Ordered list of [lat, lon] pairs representing the flight path
     path_points DOUBLE PRECISION[][],
+    epoch_time_pos DOUBLE PRECISION,
 
     -- Combination of time and icao24 as PRIMARY KEY for uniqueness
     PRIMARY KEY (icao24)
