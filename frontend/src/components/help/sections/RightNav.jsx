@@ -40,7 +40,7 @@ export default function RightContentsNav({ sections }) {
         variant="overline"
         sx={{
           color: "text.secondary",
-          fontSize: 18,
+          fontSize: "1.125rem",
           fontWeight: 700,
           letterSpacing: "0.08em",
         }}
@@ -84,7 +84,7 @@ export default function RightContentsNav({ sections }) {
             <ListItemText
               primary={entry.title}
               primaryTypographyProps={{
-                fontSize: entry.level === 3 ? 14 : 16,
+                fontSize: entry.level === 3 ? "0.875rem" : "1rem",
                 fontWeight: activeAnchor === entry.id ? 700 : 500,
                 lineHeight: 1.4,
               }}

@@ -168,7 +168,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
             direction="row"
             justifyContent="space-between"
             sx={{
-              fontSize: 12,
+              fontSize: "0.75rem",
               color: "#fff",
               fontVariantNumeric: "tabular-nums",
             }}
@@ -278,7 +278,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
                 minWidth: 42,
                 height: 42,
                 borderRadius: 2.5,
-                fontSize: 16,
+                fontSize: "1rem",
                 fontWeight: 700,
                 textTransform: "none",
                 color: "#fff",
@@ -306,7 +306,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
                     minWidth: 42,
                     height: 42,
                     borderRadius: 2.5,
-                    fontSize: 16,
+                    fontSize: "1rem",
                     fontWeight: 700,
                     textTransform: "none",
                     color: "#fff",

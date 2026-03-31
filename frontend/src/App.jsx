@@ -8,9 +8,16 @@ import About from "./components/about/About";
 import { Toaster } from "react-hot-toast";
 import Charts from "./components/charts/Charts";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 
 function App() {
   const darkMode = useSelector((state) => state.ui.darkMode);
+  const fontSizePercent = useSelector((state) => state.ui.fontSizePercent);
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSizePercent}%`;
+  }, [fontSizePercent]);
+
   return (
     <Router>
       <div className={`${darkMode ? "dark" : ""}`}>

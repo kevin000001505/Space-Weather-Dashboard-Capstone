@@ -9,6 +9,7 @@ import {
   setAuroraRegionRange,
   setFlightIconSize,
   setAirportIconSize,
+  setFontSizePercent,
 } from "../../store/slices/uiSlice";
 import Slider from "@mui/material/Slider";
 import Box from "@mui/material/Box";
@@ -28,9 +29,24 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import { setGeoElectricLogRange } from "../../store/slices/geoElectricSlice";
 import ButtonsControl from "./ui/ButtonsControl";
-import { Card, CardContent, CardHeader, Slide } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  FormControlLabel,
+  Slide,
+} from "@mui/material";
+import {
+  setElectricTransmissionLinesVoltageRange,
+  setShowACLines,
+  setShowDCLines,
+  setDontShowInferredLines,
+  setShowOnlyInServiceLines,
+  setShowOverheadLines,
+  setShowUndergroundLines,
+} from "../../store/slices/electricTransmissionLinesSlice";
 
-const PANEL_WIDTH = 450;
+const PANEL_WIDTH = 550;
 const SettingsPanel = () => {
   const dispatch = useDispatch();
   const {
@@ -45,6 +61,7 @@ const SettingsPanel = () => {
     auroraRegionRange,
     airportIconSize,
     flightIconSize,
+    fontSizePercent,
   } = useSelector((state) => state.ui);
   const planes = useSelector((state) => state.planes.data);
   const { geoElectricLogRange } = useSelector((state) => state.geoelectric);
@@ -52,6 +69,16 @@ const SettingsPanel = () => {
   const drapPoints = useSelector((state) => state.drap.points);
   const auroraData = useSelector((state) => state.aurora.data);
   const geoelectricData = useSelector((state) => state.geoelectric.data);
+  const {
+    data: electricTransmissionLinesData,
+    electricTransmissionLinesVoltageRange,
+    showOnlyInServiceLines,
+    dontShowInferredLines,
+    showACLines,
+    showDCLines,
+    showOverheadLines,
+    showUndergroundLines,
+  } = useSelector((state) => state.electricTransmissionLines);
 
   // Count filtered DRAP cells
   const filteredDRAPCount = useMemo(() => {
@@ -118,6 +145,53 @@ const SettingsPanel = () => {
       );
     }).length;
   }, [airports, airportAltitudeRange, useImperial, airportFilter]);
+
+  // Count filtered power grids (example structure, adjust as needed)
+  const filteredElectricTransmissionLinesCount = useMemo(() => {
+    if (
+      !Array.isArray(electricTransmissionLinesVoltageRange) ||
+      !Array.isArray(electricTransmissionLinesData)
+    ) {
+      return 0;
+    }
+
+    return electricTransmissionLinesData.filter((line) => {
+      if (typeof line.VOLTAGE !== "number") return false;
+      if (showOnlyInServiceLines && line.STATUS !== "IN SERVICE") return false;
+      if (dontShowInferredLines && line.INFERRED !== "N") return false;
+
+      const type = String(line.TYPE ?? "").toUpperCase();
+
+      const hasOverhead = type.includes("OVERHEAD");
+      const hasUnderground = type.includes("UNDERGROUND");
+      const hasAC = type.includes("AC");
+      const hasDC = type.includes("DC");
+
+      const matchesConstruction =
+        (showOverheadLines && hasOverhead) ||
+        (showUndergroundLines && hasUnderground);
+
+      const matchesCurrentType =
+        (showACLines && hasAC) || (showDCLines && hasDC);
+
+      if (!matchesConstruction) return false;
+      if (!matchesCurrentType) return false;
+
+      return (
+        line.VOLTAGE >= electricTransmissionLinesVoltageRange[0] &&
+        line.VOLTAGE <= electricTransmissionLinesVoltageRange[1]
+      );
+    }).length;
+  }, [
+    electricTransmissionLinesData,
+    electricTransmissionLinesVoltageRange,
+    showOnlyInServiceLines,
+    dontShowInferredLines,
+    showOverheadLines,
+    showUndergroundLines,
+    showACLines,
+    showDCLines,
+  ]);
 
   const settingsBtnRef = useRef(null);
   const [panelPos, setPanelPos] = useState({ x: null, y: null });
@@ -246,7 +320,19 @@ const SettingsPanel = () => {
               indicatorColor={darkMode ? "secondary" : "primary"}
             >
               <Tab
-                label="Aviation"
+                label="General"
+                sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
+              />
+              <Tab
+                label="Airplanes"
+                sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
+              />
+              <Tab
+                label="Airports"
+                sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
+              />
+              <Tab
+                label="Power Grids"
                 sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
               />
               <Tab
@@ -263,6 +349,216 @@ const SettingsPanel = () => {
               }}
             >
               {settingsTabIndex === 0 && (
+                <>
+                  <Paper
+                    elevation={4}
+                    sx={{
+                      margin: "0 16px 8px 16px",
+                      borderRadius: "8px",
+                      fontSize: "0.92rem",
+                      color: darkMode ? "#e0e0e0" : "#333",
+                      backgroundColor: darkMode ? "#23272e" : "#fff",
+                      boxShadow: darkMode ? "0 2px 8px #111" : undefined,
+                    }}
+                  >
+                    <CardHeader
+                      title={
+                        <span>
+                          <b>Options</b>
+                        </span>
+                      }
+                      disableTypography
+                      sx={{
+                        zIndex: 1,
+                        padding: "8px",
+                        borderRadius: "8px 8px 0px 0px",
+                        color: darkMode ? "#e0e0e0" : "#333",
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                        fontSize: "1rem",
+                        borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
+                      }}
+                    />
+                    <Card
+                      sx={{
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                        color: darkMode ? "#f7f7fa" : "#181a1b",
+                        boxShadow: darkMode
+                          ? "0 1px 4px #111"
+                          : "0 1px 4px #ccc",
+                        borderRadius: "0px",
+                        pr: 2.5,
+                        width: "100%",
+                        alignSelf: "flex-start",
+                        overflow: "visible",
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          padding: "8px 8px",
+                          "&:last-child": { pb: 1 },
+                          width: "100%",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: darkMode ? "#b0b0b0" : "#555",
+                            width: "25%",
+                            flexShrink: 0,
+                            fontWeight: 500,
+                            fontSize: "0.875rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Flight Icon Size
+                        </Typography>
+                        <Slider
+                          value={flightIconSize}
+                          min={25}
+                          max={100}
+                          step={1}
+                          valueLabelDisplay="auto"
+                          onChange={(e, v) => dispatch(setFlightIconSize(v))}
+                          sx={{
+                            width: "calc(100% - 32px)",
+                            "& .MuiSlider-track": {
+                              background: "unset",
+                              border: "none",
+                              boxShadow: "none",
+                            },
+                            "& .MuiSlider-markLabel": {
+                              color: darkMode ? "#e0e0e0" : "#333",
+                              backgroundColor: darkMode ? "#23272e" : "#fff",
+                            },
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card
+                      sx={{
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                        color: darkMode ? "#f7f7fa" : "#181a1b",
+                        boxShadow: darkMode
+                          ? "0 1px 4px #111"
+                          : "0 1px 4px #ccc",
+                        borderRadius: "0px 0px 0px 0px",
+                        pr: 2.5,
+                        width: "100%",
+                        alignSelf: "flex-start",
+                        overflow: "visible",
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          padding: "8px 8px",
+                          "&:last-child": { pb: 1 },
+                          width: "100%",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: darkMode ? "#b0b0b0" : "#555",
+                            width: "25%",
+                            flexShrink: 0,
+                            fontWeight: 500,
+                            fontSize: "0.875rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Airport Icon Size
+                        </Typography>
+                        <Slider
+                          value={airportIconSize}
+                          min={15}
+                          max={40}
+                          step={1}
+                          valueLabelDisplay="auto"
+                          onChange={(e, v) => dispatch(setAirportIconSize(v))}
+                          sx={{
+                            width: "calc(100% - 32px)",
+                            "& .MuiSlider-track": {
+                              background: "unset",
+                              border: "none",
+                              boxShadow: "none",
+                            },
+                            "& .MuiSlider-markLabel": {
+                              color: darkMode ? "#e0e0e0" : "#333",
+                              backgroundColor: darkMode ? "#23272e" : "#fff",
+                            },
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card
+                      sx={{
+                        backgroundColor: darkMode ? "#23272e" : "#fff",
+                        color: darkMode ? "#f7f7fa" : "#181a1b",
+                        boxShadow: darkMode
+                          ? "0 1px 4px #111"
+                          : "0 1px 4px #ccc",
+                        borderRadius: "0px 0px 8px 8px",
+                        pr: 2.5,
+                        width: "100%",
+                        alignSelf: "flex-start",
+                        overflow: "visible",
+                      }}
+                    >
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          padding: "8px 8px",
+                          "&:last-child": { pb: 1 },
+                          width: "100%",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: darkMode ? "#b0b0b0" : "#555",
+                            width: "25%",
+                            flexShrink: 0,
+                            fontWeight: 500,
+                            fontSize: "0.875rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Font Size
+                        </Typography>
+                        <Slider
+                          value={fontSizePercent}
+                          min={75}
+                          max={93}
+                          step={1}
+                          valueLabelDisplay="auto"
+                          onChange={(e, v) => dispatch(setFontSizePercent(v))}
+                          sx={{
+                            width: "calc(100% - 32px)",
+                            "& .MuiSlider-track": {
+                              background: "unset",
+                              border: "none",
+                              boxShadow: "none",
+                            },
+                            "& .MuiSlider-markLabel": {
+                              color: darkMode ? "#e0e0e0" : "#333",
+                              backgroundColor: darkMode ? "#23272e" : "#fff",
+                            },
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </Paper>
+                </>
+              )}
+              {settingsTabIndex === 1 && (
                 <>
                   <Paper
                     elevation={4}
@@ -327,7 +623,7 @@ const SettingsPanel = () => {
                             width: "25%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -364,6 +660,11 @@ const SettingsPanel = () => {
                       </CardContent>
                     </Card>
                   </Paper>
+                </>
+              )}
+              {settingsTabIndex === 2 && (
+                <>
+                  {" "}
                   <Paper
                     elevation={4}
                     sx={{
@@ -426,7 +727,7 @@ const SettingsPanel = () => {
                             width: "20%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -447,7 +748,7 @@ const SettingsPanel = () => {
                               backgroundColor: darkMode ? "#23272e" : "#fff",
                             }}
                           >
-                            ChooseAirport Types
+                            Choose Airport Types
                           </InputLabel>
                           <Select
                             labelId="airport-type-select-label"
@@ -582,7 +883,7 @@ const SettingsPanel = () => {
                             width: "25%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -621,6 +922,10 @@ const SettingsPanel = () => {
                       </CardContent>
                     </Card>
                   </Paper>
+                </>
+              )}
+              {settingsTabIndex === 3 && (
+                <>
                   <Paper
                     elevation={4}
                     sx={{
@@ -635,7 +940,12 @@ const SettingsPanel = () => {
                     <CardHeader
                       title={
                         <span>
-                          <b>Options</b>
+                          <b>Filter Electric Transmission Lines</b> - Showing{" "}
+                          <b>{filteredElectricTransmissionLinesCount}</b> Lines
+                          between{" "}
+                          <b>{electricTransmissionLinesVoltageRange[0]}</b> and{" "}
+                          <b>{electricTransmissionLinesVoltageRange[1]}</b>{" "}
+                          <b>kV</b>
                         </span>
                       }
                       disableTypography
@@ -649,65 +959,6 @@ const SettingsPanel = () => {
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
                     />
-                    <Card
-                      sx={{
-                        backgroundColor: darkMode ? "#23272e" : "#fff",
-                        color: darkMode ? "#f7f7fa" : "#181a1b",
-                        boxShadow: darkMode
-                          ? "0 1px 4px #111"
-                          : "0 1px 4px #ccc",
-                        borderRadius: "0px",
-                        pr: 2.5,
-                        width: "100%",
-                        alignSelf: "flex-start",
-                        overflow: "visible",
-                      }}
-                    >
-                      <CardContent
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          padding: "8px 8px",
-                          "&:last-child": { pb: 1 },
-                          width: "100%",
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            color: darkMode ? "#b0b0b0" : "#555",
-                            width: "25%",
-                            flexShrink: 0,
-                            fontWeight: 500,
-                            fontSize: 12,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          Flight Icon Size
-                        </Typography>
-                        <Slider
-                          value={flightIconSize}
-                          min={25}
-                          max={100}
-                          step={1}
-                          valueLabelDisplay="auto"
-                          onChange={(e, v) => dispatch(setFlightIconSize(v))}
-                          sx={{
-                            width: "calc(100% - 32px)",
-                            "& .MuiSlider-track": {
-                              background: "unset",
-                              border: "none",
-                              boxShadow: "none",
-                            },
-                            "& .MuiSlider-markLabel": {
-                              color: darkMode ? "#e0e0e0" : "#333",
-                              backgroundColor: darkMode ? "#23272e" : "#fff",
-                            },
-                          }}
-                        />
-                      </CardContent>
-                    </Card>
                     <Card
                       sx={{
                         backgroundColor: darkMode ? "#23272e" : "#fff",
@@ -739,19 +990,30 @@ const SettingsPanel = () => {
                             width: "25%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
-                          Airport Icon Size
+                          Voltage Level
                         </Typography>
                         <Slider
-                          value={airportIconSize}
-                          min={15}
-                          max={40}
-                          step={1}
+                          value={electricTransmissionLinesVoltageRange}
+                          min={200}
+                          max={1000}
+                          step={100}
                           valueLabelDisplay="auto"
-                          onChange={(e, v) => dispatch(setAirportIconSize(v))}
+                          marks={[
+                            { value: 200, label: "200" },
+                            {
+                              value: 1000,
+                              label: "1000",
+                            },
+                          ]}
+                          onChange={(e, v) =>
+                            dispatch(
+                              setElectricTransmissionLinesVoltageRange(v),
+                            )
+                          }
                           sx={{
                             width: "calc(100% - 32px)",
                             "& .MuiSlider-track": {
@@ -759,6 +1021,7 @@ const SettingsPanel = () => {
                               border: "none",
                               boxShadow: "none",
                             },
+
                             "& .MuiSlider-markLabel": {
                               color: darkMode ? "#e0e0e0" : "#333",
                               backgroundColor: darkMode ? "#23272e" : "#fff",
@@ -766,11 +1029,213 @@ const SettingsPanel = () => {
                           }}
                         />
                       </CardContent>
+                      <CardContent
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                          padding: "8px 8px",
+                          "&:last-child": { pb: 1 },
+                          width: "100%",
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          sx={{
+                            color: darkMode ? "#b0b0b0" : "#555",
+                            width: "25%",
+                            flexShrink: 0,
+                            fontWeight: 500,
+                            fontSize: "0.875rem",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Filter Options
+                        </Typography>
+                        <FormControl
+                          fullWidth
+                          variant="outlined"
+                          sx={{ minWidth: 260, fontSize: "0.92rem" }}
+                        >
+                          <InputLabel
+                            id="electric-line-filter-select-label"
+                            sx={{
+                              fontSize: "0.92rem",
+                              background: "white",
+                              px: 0.5,
+                              color: darkMode ? "#e0e0e0" : "#333",
+                              backgroundColor: darkMode ? "#23272e" : "#fff",
+                            }}
+                          >
+                            Choose Filter Options
+                          </InputLabel>
+                          <Select
+                            labelId="electric-line-filter-select-label"
+                            multiple
+                            value={[
+                              ...(showOnlyInServiceLines ? ["inService"] : []),
+                              ...(dontShowInferredLines
+                                ? ["reportedOnly"]
+                                : []),
+                              ...(showACLines ? ["ac"] : []),
+                              ...(showDCLines ? ["dc"] : []),
+                              ...(showOverheadLines ? ["overhead"] : []),
+                              ...(showUndergroundLines ? ["underground"] : []),
+                            ]}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              dispatch(
+                                setShowOnlyInServiceLines(
+                                  value.includes("inService"),
+                                ),
+                              );
+                              dispatch(
+                                setDontShowInferredLines(
+                                  value.includes("reportedOnly"),
+                                ),
+                              );
+                              console.log("Selected Filters:", value);
+                              dispatch(setShowACLines(value.includes("ac")));
+                              dispatch(setShowDCLines(value.includes("dc")));
+                              dispatch(
+                                setShowOverheadLines(
+                                  value.includes("overhead"),
+                                ),
+                              );
+                              dispatch(
+                                setShowUndergroundLines(
+                                  value.includes("underground"),
+                                ),
+                              );
+                            }}
+                            renderValue={(selected) => (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 0.5,
+                                }}
+                              >
+                                {selected.map((option) => {
+                                  const labelMap = {
+                                    inService: "Only In-Service",
+                                    reportedOnly: "Reported Voltage Only",
+                                    ac: "AC Lines",
+                                    dc: "DC Lines",
+                                    overhead: "Overhead Lines",
+                                    underground: "Underground Lines",
+                                  };
+                                  return (
+                                    <Chip
+                                      key={option}
+                                      label={labelMap[option] || option}
+                                      size="small"
+                                      color="primary"
+                                      sx={{
+                                        fontSize: "0.7rem",
+                                        backgroundColor: "#1976d2",
+                                      }}
+                                    />
+                                  );
+                                })}
+                              </Box>
+                            )}
+                            MenuProps={{
+                              PaperProps: { sx: { minWidth: 220 } },
+                            }}
+                            sx={{
+                              fontSize: "0.92rem",
+                              py: 0,
+                              color: "#fff",
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: darkMode ? "#f0f0f0" : "#333",
+                              },
+                              "& .MuiSvgIcon-root": {
+                                color: darkMode ? "#f0f0f0" : "#333",
+                              },
+                            }}
+                            variant="outlined"
+                          >
+                            <MenuItem
+                              value="inService"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={showOnlyInServiceLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                Only In-Service Lines
+                              </span>
+                            </MenuItem>
+                            <MenuItem
+                              value="reportedOnly"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={dontShowInferredLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                Reported (Not Estimated) Voltage Only 
+                              </span>
+                            </MenuItem>
+                            <MenuItem
+                              value="ac"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={showACLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                AC Lines
+                              </span>
+                            </MenuItem>
+                            <MenuItem
+                              value="dc"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={showDCLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                DC Lines
+                              </span>
+                            </MenuItem>
+                            <MenuItem
+                              value="overhead"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={showOverheadLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                Overhead Lines
+                              </span>
+                            </MenuItem>
+                            <MenuItem
+                              value="underground"
+                              sx={{ fontSize: "0.92rem", py: 0 }}
+                            >
+                              <Checkbox
+                                checked={showUndergroundLines}
+                                sx={{ marginRight: 1, p: 0.5 }}
+                              />
+                              <span style={{ fontSize: "0.92rem" }}>
+                                Underground Lines
+                              </span>
+                            </MenuItem>
+                          </Select>
+                        </FormControl>
+                      </CardContent>
                     </Card>
                   </Paper>
                 </>
               )}
-              {settingsTabIndex === 1 && (
+              {settingsTabIndex === 4 && (
                 <>
                   <Paper
                     elevation={4}
@@ -844,7 +1309,7 @@ const SettingsPanel = () => {
                             width: "30%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -953,7 +1418,7 @@ const SettingsPanel = () => {
                             width: "30%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -1068,7 +1533,7 @@ const SettingsPanel = () => {
                             width: "30%",
                             flexShrink: 0,
                             fontWeight: 500,
-                            fontSize: 12,
+                            fontSize: "0.875rem",
                             whiteSpace: "nowrap",
                           }}
                         >

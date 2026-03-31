@@ -69,7 +69,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
     () =>
       chartBackgroundBandsPlugin(R_LEVELS, {
         id: "radioBlackoutBackground",
-        font: "bold 16px sans-serif",
+        font: "bold 1rem sans-serif",
         textAlign: "right",
         labelPosition: "left",
         labelOffset: 25,

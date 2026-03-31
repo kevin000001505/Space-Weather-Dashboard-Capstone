@@ -50,7 +50,7 @@ const ChartFilterCard = ({
           width: "30%",
           flexShrink: 0,
           fontWeight: 500,
-          fontSize: 12,
+          fontSize: "0.75rem",
           mr: 2,
           whiteSpace: "nowrap",
         }}

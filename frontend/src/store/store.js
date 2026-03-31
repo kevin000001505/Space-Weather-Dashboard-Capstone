@@ -10,6 +10,7 @@ import geoElectricReducer from './slices/geoElectricSlice';
 import sidebarReducer from './slices/sidebarSlice';
 import helpReducer from './slices/helpSlice';
 import playbackReducer from './slices/playbackSlice';
+import electricTransmissionLinesReducer from './slices/electricTransmissionLinesSlice';
 
 export const store = configureStore({
   reducer: {
@@ -24,5 +25,6 @@ export const store = configureStore({
     geoelectric: geoElectricReducer,
     help: helpReducer,
     playback: playbackReducer,
+    electricTransmissionLines : electricTransmissionLinesReducer,
   },
 });

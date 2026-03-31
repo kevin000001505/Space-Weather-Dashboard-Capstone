@@ -131,6 +131,15 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
                 size: "small",
                 sx: { display: "none" }, // Hide the input, only show picker popup
               },
+              desktopPaper: {
+                sx: {
+                  background: "rgba(34, 40, 60, 0.35) !important",
+                  backdropFilter: "blur(12px) saturate(1.4) !important",
+                  color: "#e0e0e0 !important",
+                  fontWeight: 600,
+                },
+              },
+              
               popper: {
                 sx: { zIndex: 1500 },
                 anchorEl: dateBoxRef.current,
@@ -275,7 +284,7 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
           "Select Timezone"}
         <ArrowDropDownIcon
           sx={{
-            fontSize: 22,
+            fontSize: "1.375rem",
             color: menuAnchorEl ? (darkMode ? "#7f5cff" : "#fff") : "#fff",
             transition: "transform 0.2s, color 0.2s",
             transform: menuAnchorEl ? "rotate(180deg)" : "none",
@@ -350,7 +359,7 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
           }}
           slotProps={{
             input: {
-              style: { fontSize: 14, color: darkMode ? "#fff" : "#222" },
+              style: { fontSize: "0.875rem", color: darkMode ? "#fff" : "#222" },
             },
           }}
           onKeyDown={(e) => e.stopPropagation()}

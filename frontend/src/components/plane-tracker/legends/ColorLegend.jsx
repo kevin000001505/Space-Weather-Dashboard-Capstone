@@ -26,6 +26,16 @@ const AURORA_STOPS = [
   { val: 80, color: "#ff0000" },
 ];
 
+const electricTransmissionLines_STOPS = [
+  { val: 200, color: "#C83BFF" },
+  { val: 300, color: "#00FF6A" },
+  { val: 350, color: "#00FFFF" },
+  { val: 400, color: "#0099FF" },
+  { val: 500, color: "#0080FF" },
+  { val: 700, color: "#FF8C00" },
+  { val: 1000, color: "#FF6600" },
+];
+
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const getRange = (stops = []) => {
@@ -36,10 +46,9 @@ const getRange = (stops = []) => {
   };
 };
 
-// Equidistant percent for N stops: 0%, (1/(N-1))*100%, ..., 100%
 const getEquidistantPercent = (index, total) => {
   if (total <= 1) return 0;
-  return (index / (total - 1)) * 100;
+  return ((index + 0.15) / (total - 0.6)) * 100;
 };
 
 const buildGradient = (stops = []) => {
@@ -100,7 +109,7 @@ const LegendTicks = ({ stops, formatter }) => {
 
 const LegendSection = ({ section, index }) => {
   const gradient = buildGradient(section.stops);
-  const width = 180;
+  const width = 160;
   const height = 210;
   return (
     <div
@@ -173,8 +182,16 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "geoelectric",
         title: "Geoelectric Field",
-        subtitle: "Amplitude | V/km",
+        subtitle: "Amplitude | mV/km",
         stops: GEOELECTRIC_STOPS,
+        available: false,
+        formatter: (value) => formatPlainLabel(value),
+      },
+      {
+        key: "electricTransmissionLines",
+        title: "Power Grids",
+        subtitle: "Voltage Level | kV",
+        stops: electricTransmissionLines_STOPS,
         available: false,
         formatter: (value) => formatPlainLabel(value),
       },

@@ -22,7 +22,7 @@ const TopBar = () => {
     justifyContent: "center",
     borderRadius: "0px",
     border: "1.5px solid rgba(255,255,255,0.25)",
-    fontSize: "20px",
+    fontSize: "1.25rem",
     backdropFilter: "blur(12px) saturate(1.4)",
     color: darkMode ? "#f7f7fa" : "#f0f0f0",
     backgroundColor: darkMode ? "#000000" : "#1976d2",
@@ -55,7 +55,7 @@ const TopBar = () => {
       <Typography
         sx={{
           fontWeight: 600,
-          fontSize: "20px",
+          fontSize: "1.25rem",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",

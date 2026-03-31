@@ -32,7 +32,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
     () =>
       chartBackgroundBandsPlugin(S_LEVELS, {
         id: "protonSLevelBackground",
-        font: "bold 16px sans-serif",
+        font: "bold 1rem sans-serif",
         textAlign: "right",
         labelPosition: "left",
         labelOffset: 25,

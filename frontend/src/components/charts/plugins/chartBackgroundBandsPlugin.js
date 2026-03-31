@@ -6,7 +6,7 @@ const chartBackgroundBandsPlugin = (bands, options = {}) => {
     const { ctx, chartArea, scales } = chart;
     if (!chartArea || !scales.y) return;
     ctx.save();
-    ctx.font = options.font || "bold 12px sans-serif";
+    ctx.font = options.font || "bold 0.75rem sans-serif";
     ctx.textAlign = options.textAlign || "right";
     ctx.textBaseline = "middle";
     bands.forEach(({ min, max, label, color }) => {

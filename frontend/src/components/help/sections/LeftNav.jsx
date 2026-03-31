@@ -57,7 +57,7 @@ export default function LeftTopicsNav({
                 <ListItemText
                   primary={group.label}
                   primaryTypographyProps={{
-                    fontSize: 18,
+                    fontSize: "1.25rem",
                     fontWeight: 600,
                     letterSpacing: "-0.01em",
                   }}
@@ -93,7 +93,7 @@ export default function LeftTopicsNav({
                               )
                             : "transparent",
                           "& .MuiListItemText-primary": {
-                            fontSize: 14,
+                            fontSize: "1rem",
                             fontWeight: selected ? 700 : 500,
                             letterSpacing: "-0.01em",
                           },

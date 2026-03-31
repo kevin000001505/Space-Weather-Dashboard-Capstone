@@ -70,7 +70,7 @@ const FlightDetailsPanel = ({ flight, onClose, children, useImperial }) => {
         <h4 className="flight-details-title" style={{ cursor: 'move', margin: 0, marginBottom: 6, borderBottom: '1px solid var(--ui-border)', paddingBottom: 3, color: 'var(--ui-text)' }}>
           {flight.callsign || flight.icao24?.toUpperCase()} - Flight Details
         </h4>
-        <div style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--ui-text)' }}>
+        <div style={{ fontSize: '0.875rem', lineHeight: '1.6', color: 'var(--ui-text)' }}>
           <strong>ICAO24:</strong> {flight.icao24?.toUpperCase() || 'N/A'}<br/>
           <strong>Altitude:</strong> {getAltDisplay(flight.geo_altitude, false, useImperial)}<br/>
           <strong>Speed:</strong> {getSpeedDisplay(flight.velocity, false, useImperial)}<br/>

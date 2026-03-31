@@ -41,7 +41,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
     padding: '10px 8px',
     backgroundColor: 'rgba(0, 0, 0, 0.02)',
     borderBottom: '1px solid var(--ui-border)',
-    fontSize: '12px'
+    fontSize: '0.75rem'
   };
 
   // Hex equivalents of the DeckGL RGB palette
@@ -125,7 +125,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
         </h4>
 
         {/* Extended Airport Details */}
-        <div style={{ fontSize: '13px', lineHeight: '1.6', color: 'var(--ui-text)', marginBottom: '12px' }}>
+        <div style={{ fontSize: '0.875rem', lineHeight: '1.6', color: 'var(--ui-text)', marginBottom: '12px' }}>
           <strong>Location:</strong> {airport.municipality || 'N/A'}, {airport.region_name || 'N/A'}, {airport.country_name || 'N/A'}<br/>
           <strong>Type:</strong> {capitalizeWords(airport.type)} {airport.scheduled_service ? '(Scheduled Service)' : ''}<br/>
           <strong>Codes:</strong> IATA: {airport.iata_code || '-'} | ICAO: {airport.icao_code || '-'} | GPS: {airport.gps_code || '-'}<br/>
@@ -133,14 +133,14 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
           <strong>Coordinates:</strong> {getCoords()}<br/>
           
           {/* Links & Meta */}
-          <div style={{ marginTop: '4px', fontSize: '12px' }}>
+          <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
             {airport.home_link && <><a href={airport.home_link} target="_blank" rel="noreferrer" style={{ color: '#1976d2' }}>Official Website</a> • </>}
             {airport.wikipedia_link && <a href={airport.wikipedia_link} target="_blank" rel="noreferrer" style={{ color: '#1976d2' }}>Wikipedia</a>}
             {airport.keywords && <div style={{ color: 'var(--ui-border)', fontStyle: 'italic', marginTop: '2px' }}>Keywords: {airport.keywords}</div>}
           </div>
         </div>
 
-        <div style={{ fontSize: '13px', color: 'var(--ui-text)' }}>
+        <div style={{ fontSize: '0.875rem', color: 'var(--ui-text)' }}>
           <strong style={{ display: 'block', marginBottom: '6px' }}>Infrastructure Details:</strong>
           
           {/* RUNWAYS */}
@@ -171,7 +171,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
                 return (
                   <div key={r.id} style={{ marginBottom: '12px', padding: '8px', borderBottom: '1px solid rgba(128,128,128,0.2)', ...highlightStyle }}>
                     <div style={{ marginBottom: '6px' }}>
-                      <strong style={{ color: runwayColor, fontSize: '14px' }}>
+                      <strong style={{ color: runwayColor, fontSize: '0.875rem' }}>
                         {r.le_ident || '?'} / {r.he_ident || '?'}
                       </strong> 
                       <span style={{ marginLeft: '8px', color: 'var(--ui-border)' }}>
@@ -181,7 +181,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
                       {r.closed && <span style={{ color: '#ff3333', marginLeft: '6px', fontWeight: 'bold' }}>(CLOSED)</span>}
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '10px', fontSize: '11px', backgroundColor: 'rgba(128,128,128,0.05)', padding: '6px', borderRadius: '4px' }}>
+                    <div style={{ display: 'flex', gap: '10px', fontSize: '0.6875rem', backgroundColor: 'rgba(128,128,128,0.05)', padding: '6px', borderRadius: '4px' }}>
                       <div style={{ flex: 1 }}>
                         <strong>Low End ({r.le_ident || '-'})</strong><br/>
                         Heading: {r.le_heading_degt ? `${r.le_heading_degt}°` : '-'}<br/>
@@ -210,7 +210,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
             <div style={contentStyle}>
               {airport.frequencies?.length > 0 ? airport.frequencies.map(f => (
                 <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', borderBottom: '1px dashed rgba(128,128,128,0.2)' }}>
-                  <span title={f.description}><strong>{f.type}</strong> <span style={{fontSize: '10px', color: 'var(--ui-border)'}}>{f.description}</span></span>
+                  <span title={f.description}><strong>{f.type}</strong> <span style={{fontSize: '0.625rem', color: 'var(--ui-border)'}}>{f.description}</span></span>
                   <strong>{f.frequency_mhz} MHz</strong>
                 </div>
               )) : <div>No frequency data available.</div>}
@@ -228,9 +228,9 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
                 <div key={n.id} style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(128,128,128,0.2)' }}>
                   <div style={{ marginBottom: '4px' }}>
                     {/* Cyan for the main navaid title */}
-                    <strong style={{ color: '#00c8ff' }}>{n.ident}</strong> ({n.type}) - {n.name} <span style={{fontSize: '10px'}}>[{n.iso_country}]</span>
+                    <strong style={{ color: '#00c8ff' }}>{n.ident}</strong> ({n.type}) - {n.name} <span style={{fontSize: '0.625rem'}}>[{n.iso_country}]</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '11px', color: 'var(--ui-border)' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.6875rem', color: 'var(--ui-border)' }}>
                     <div><strong style={{ color: '#00c8ff' }}>Main Freq:</strong> {n.frequency_khz ? `${(n.frequency_khz / 1000).toFixed(2)} MHz` : '-'}</div>
                     <div><strong>Elevation:</strong> {getAltDisplay(n.elevation_ft, true, useImperial)}</div>
                     
@@ -259,7 +259,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
               {airport.comments?.length > 0 ? airport.comments.map(c => (
                 <div key={c.id} style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(128,128,128,0.2)' }}>
                   <strong>{c.subject || 'No Subject'}</strong>
-                  <br/><span style={{ color: 'var(--ui-border)', fontSize: '10px' }}>By {c.author} on {c.date ? new Date(c.date).toLocaleDateString() : 'Unknown'}</span>
+                  <br/><span style={{ color: 'var(--ui-border)', fontSize: '0.625rem' }}>By {c.author} on {c.date ? new Date(c.date).toLocaleDateString() : 'Unknown'}</span>
                   <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap', fontStyle: 'italic', backgroundColor: 'rgba(128,128,128,0.05)', padding: '6px', borderRadius: '4px' }}>"{c.body}"</p>
                 </div>
               )) : <div>No comments available.</div>}

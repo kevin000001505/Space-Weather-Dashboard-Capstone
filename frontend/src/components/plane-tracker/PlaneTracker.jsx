@@ -1,5 +1,5 @@
 //Base imports
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 // MapLibre imports
@@ -15,6 +15,7 @@ import {
   fetchAirports,
   fetchGeoelectric,
   fetchHistoricalDRAP,
+  fetchElectricTransmissionLines,
 } from "../../api/api";
 
 // SSE Hook import
@@ -63,6 +64,13 @@ import {
   getGeoElectricMapLayers,
 } from "../../utils/geoElectric";
 
+// Power Grid imports
+import {
+  getElectricTransmissionLinesGeoJSON,
+  getElectricTransmissionLinesLayers,
+} from "../../utils/electricTransmissionLines";
+// Power grid GeoJSON (memoized)
+
 // Flight details panel imports
 import FlightDetailsPanel from "./FlightDetailsPanel";
 import AirportDetailsPanel from "./AirporDetailsPanel";
@@ -78,6 +86,10 @@ const DeckGLOverlay = (props) => {
 };
 
 const PlaneTracker = () => {
+  const [
+    hoveredElectricTransmissionLines,
+    setHoveredElectricTransmissionLines,
+  ] = useState(null);
   const dispatch = useDispatch();
   const { data: planes } = useSelector((state) => state.planes);
   const selectedFlightsPanels = useSelector(
@@ -120,6 +132,17 @@ const PlaneTracker = () => {
     flightIconSize,
     showIconLegend,
   } = useSelector((state) => state.ui);
+  const {
+    data: electricTransmissionLinesData,
+    showElectricTransmissionLines,
+    electricTransmissionLinesVoltageRange,
+    showOnlyInServiceLines,
+    dontShowInferredLines,
+    showACLines,
+    showDCLines,
+    showOverheadLines,
+    showUndergroundLines,
+  } = useSelector((state) => state.electricTransmissionLines);
   const { liveStreamMode } = useSelector((state) => state.playback);
   const currentZoom = viewState?.zoom ?? 10;
   const zoomTimeoutRef = useRef(null);
@@ -132,6 +155,7 @@ const PlaneTracker = () => {
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
     dispatch(fetchGeoelectric());
+    dispatch(fetchElectricTransmissionLines());
     dispatch(fetchAirports());
   }, [dispatch]);
 
@@ -240,6 +264,67 @@ const PlaneTracker = () => {
     };
   }, [geoelectricData, geoElectricLogRange, isZooming]);
 
+  const {
+    electricTransmissionLinesGeoJson,
+    electricTransmissionLinesMapLayers,
+  } = useMemo(() => {
+    if (!electricTransmissionLinesData) {
+      return {
+        electricTransmissionLinesGeoJson: null,
+        electricTransmissionLinesMapLayers: null,
+      };
+    }
+    if (
+      !Array.isArray(electricTransmissionLinesData) ||
+      !Array.isArray(electricTransmissionLinesVoltageRange)
+    )
+      return [];
+    const filteredElectricTransmissionLines =
+      electricTransmissionLinesData.filter((line) => {
+        if (typeof line.VOLTAGE !== "number") return false;
+        if (showOnlyInServiceLines && line.STATUS !== "IN SERVICE")
+          return false;
+        if (dontShowInferredLines && line.INFERRED !== "N") return false;
+
+        const type = String(line.TYPE ?? "").toUpperCase();
+
+        const hasOverhead = type.includes("OVERHEAD");
+        const hasUnderground = type.includes("UNDERGROUND");
+        const hasAC = type.includes("AC");
+        const hasDC = type.includes("DC");
+
+        const matchesConstruction =
+          (showOverheadLines && hasOverhead) ||
+          (showUndergroundLines && hasUnderground);
+
+        const matchesCurrentType =
+          (showACLines && hasAC) || (showDCLines && hasDC);
+
+        if (!matchesConstruction) return false;
+        if (!matchesCurrentType) return false;
+
+        return (
+          line.VOLTAGE >= electricTransmissionLinesVoltageRange[0] &&
+          line.VOLTAGE <= electricTransmissionLinesVoltageRange[1]
+        );
+      });
+    return {
+      electricTransmissionLinesGeoJson: getElectricTransmissionLinesGeoJSON(
+        filteredElectricTransmissionLines,
+      ),
+      electricTransmissionLinesMapLayers: getElectricTransmissionLinesLayers(),
+    };
+  }, [
+    electricTransmissionLinesData,
+    electricTransmissionLinesVoltageRange,
+    showOnlyInServiceLines,
+    dontShowInferredLines,
+    showOverheadLines,
+    showUndergroundLines,
+    showACLines,
+    showDCLines,
+  ]);
+
   // Plane and Airport layers
   const deckLayers = useMemo(() => {
     const baseLayers = buildDeckLayers({
@@ -335,6 +420,28 @@ const PlaneTracker = () => {
             : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         }
         onClick={() => dispatch(clearSelections())}
+        onMouseMove={(e) => {
+          const map =
+            e.target && e.target.queryRenderedFeatures
+              ? e.target
+              : e.currentTarget;
+          if (!map || !e.lngLat) return;
+          const features =
+            showElectricTransmissionLines && map.queryRenderedFeatures
+              ? map.queryRenderedFeatures(e.point, {
+                  layers: ["electric-transmission-lines"],
+                })
+              : [];
+          if (features && features.length > 0) {
+            setHoveredElectricTransmissionLines({
+              feature: features[0],
+              lngLat: e.lngLat,
+            });
+          } else {
+            setHoveredElectricTransmissionLines(null);
+          }
+        }}
+        onMouseLeave={() => setHoveredElectricTransmissionLines(null)}
       >
         {/* MapLibre-based DRAP implementation*/}
         {showDRAP &&
@@ -371,6 +478,26 @@ const PlaneTracker = () => {
               data={geoElectricGeoJson}
             >
               {geoElectricMapLayers.map((layer) => (
+                <Layer
+                  key={layer.id}
+                  {...layer}
+                  beforeId="electric-transmission-lines"
+                />
+              ))}
+            </Source>
+          )}
+
+        {/* MapLibre-based Power Grid implementation */}
+        {showElectricTransmissionLines &&
+          electricTransmissionLinesGeoJson &&
+          electricTransmissionLinesMapLayers &&
+          electricTransmissionLinesGeoJson.features?.length > 0 && (
+            <Source
+              id="electric-transmission-lines"
+              type="geojson"
+              data={electricTransmissionLinesGeoJson}
+            >
+              {electricTransmissionLinesMapLayers.map((layer) => (
                 <Layer key={layer.id} {...layer} />
               ))}
             </Source>
@@ -386,6 +513,71 @@ const PlaneTracker = () => {
         />
 
         {/* Popups */}
+        {hoveredElectricTransmissionLines &&
+          hoveredElectricTransmissionLines.lngLat &&
+          hoveredElectricTransmissionLines.feature && (
+            <Popup
+              longitude={hoveredElectricTransmissionLines.lngLat.lng}
+              latitude={hoveredElectricTransmissionLines.lngLat.lat}
+              closeButton={false}
+              closeOnClick={false}
+              anchor="top"
+              offset={10}
+            >
+              <div style={{ padding: "8px", minWidth: "150px" }}>
+                <h3 style={{ margin: "0 0 8px 0", fontSize: "0.875rem" }}>
+                  {hoveredElectricTransmissionLines.feature.properties.OWNER ??
+                    hoveredElectricTransmissionLines.feature.properties.SUB_1 ??
+                    hoveredElectricTransmissionLines.feature.properties.SUB_2}
+                </h3>
+                <div style={{ fontSize: "0.75rem", lineHeight: "1.6" }}>
+                  <strong>Voltage Level:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.VOLTAGE}{" "}
+                  kV
+                  <br />
+                  <strong>Type:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.TYPE}
+                  <br />
+                  <strong>Status:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.STATUS}
+                  <br />
+                  <strong>Source:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.SOURCE &&
+                  hoveredElectricTransmissionLines.feature.properties.SOURCE
+                    .length > 30
+                    ? hoveredElectricTransmissionLines.feature.properties.SOURCE.slice(
+                        0,
+                        30,
+                      ) + "..."
+                    : hoveredElectricTransmissionLines.feature.properties
+                        .SOURCE}
+                  <br />
+                  <strong>Voltage Source:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties
+                    .INFERRED === "Y"
+                    ? "Estimated"
+                    : "Reported"}
+                  <br />
+                  <strong>From Substation:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.SUB_1}
+                  <br />
+                  <strong>To Substation:</strong>{" "}
+                  {hoveredElectricTransmissionLines.feature.properties.SUB_2}
+                  <br />
+                  <strong>Length:</strong>{" "}
+                  {useImperial
+                    ? (
+                        hoveredElectricTransmissionLines.feature.properties
+                          .SHAPE__Len * 0.000621371
+                      ).toFixed(2) + " mi"
+                    : (
+                        hoveredElectricTransmissionLines.feature.properties
+                          .SHAPE__Len / 1000
+                      ).toFixed(2) + " km"}
+                </div>
+              </div>
+            </Popup>
+          )}
         {showAirports && selectedAirport && (
           <Popup
             longitude={parseFloat(selectedAirport.lon)}
@@ -393,13 +585,13 @@ const PlaneTracker = () => {
             closeOnClick={false}
             onClose={() => dispatch(setSelectedAirport(null))}
             anchor="top"
-            offset={10}
+            offset={30}
           >
             <div style={{ padding: "8px", minWidth: "150px" }}>
-              <h3 style={{ margin: "0 0 8px 0", fontSize: "14px" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "0.875rem" }}>
                 {selectedAirport.name}
               </h3>
-              <div style={{ fontSize: "12px", lineHeight: "1.6" }}>
+              <div style={{ fontSize: "0.75rem", lineHeight: "1.6" }}>
                 <strong>Code:</strong>{" "}
                 {selectedAirport.iata_code || selectedAirport.gps_code || "N/A"}
                 <br />
@@ -412,7 +604,7 @@ const PlaneTracker = () => {
                 <strong>Elevation:</strong>{" "}
                 {getAltDisplay(selectedAirport.elevation_ft, true, useImperial)}
                 <br />
-                <strong>Position:</strong> {formatCoord(selectedAirport.lat)}°,{" "}
+                <strong>Position:</strong> {formatCoord(selectedAirport.lat)},{" "}
                 {formatCoord(selectedAirport.lon)}°
               </div>
             </div>
@@ -429,10 +621,10 @@ const PlaneTracker = () => {
             offset={30}
           >
             <div style={{ padding: "8px", minWidth: "180px" }}>
-              <h3 style={{ margin: "0 0 8px 0", fontSize: "16px" }}>
+              <h3 style={{ margin: "0 0 8px 0", fontSize: "0.875rem" }}>
                 {selectedPlane.callsign || selectedPlane.icao24.toUpperCase()}
               </h3>
-              <div style={{ fontSize: "14px", lineHeight: "1.6" }}>
+              <div style={{ fontSize: "0.75rem", lineHeight: "1.6" }}>
                 <strong>ICAO24:</strong> {selectedPlane.icao24.toUpperCase()}
                 <br />
                 <strong>Altitude:</strong>{" "}

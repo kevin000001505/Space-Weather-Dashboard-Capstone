@@ -27,8 +27,11 @@ import TuneIcon from "@mui/icons-material/Tune";
 import MenuIcon from "@mui/icons-material/Menu";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import SsidChartIcon from '@mui/icons-material/SsidChart';
+
 import "./styles/ButtonsControl.css";
 import { LetterIcon } from "../../ui/LetterIcon";
+import { setShowElectricTransmissionLines } from "../../../store/slices/electricTransmissionLinesSlice";
 const ButtonsControl = React.forwardRef(function ButtonsControl(
   { settingsRef },
   ref,
@@ -46,7 +49,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     showAltitudeLegend,
     showIconLegend,
   } = useSelector((state) => state.ui);
-
+  const { showElectricTransmissionLines } = useSelector((state) => state.electricTransmissionLines);
   const { showGeoElectric } = useSelector((state) => state.geoelectric);
   const btnStyle = {
     width: "45px",
@@ -58,7 +61,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "20px",
+    fontSize: "1.25rem",
     boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
     backdropFilter: "blur(6px)",
     background: "rgba(34, 40, 60, 0.35)",
@@ -93,6 +96,12 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
       tooltip: `${showGeoElectric ? "Hide" : "Show"} GeoElectric`,
       onClick: () => dispatch(setShowGeoElectric(!showGeoElectric)),
       active: showGeoElectric,
+    },
+    {
+      icon: <SsidChartIcon sx={{ fontSize: 28 }} />,
+      tooltip: `${showElectricTransmissionLines ? "Hide" : "Show"} Power Grids`,
+      onClick: () => dispatch(setShowElectricTransmissionLines(!showElectricTransmissionLines)),
+      active: showElectricTransmissionLines,
     },
   ];
   const legendActions = [

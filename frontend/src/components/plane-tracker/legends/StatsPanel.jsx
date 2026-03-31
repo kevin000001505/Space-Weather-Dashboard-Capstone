@@ -128,7 +128,7 @@ const StatsPanel = React.forwardRef(function StatsPanel(props, ref) {
           ? `0 16px 36px ${alpha("#000", 0.34)}`
           : `0 14px 30px ${alpha("#0F172A", 0.1)}`,
         color: "#fff",
-        fontSize: "14px",
+        fontSize: "1.125rem",
         transition: "box-shadow 0.3s ease",
       }}
     >
@@ -137,7 +137,7 @@ const StatsPanel = React.forwardRef(function StatsPanel(props, ref) {
         <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
           <div style={rowStyle}>
             <FlightIcon
-              style={{ fontSize: "18px", color: "rgb(83, 185, 235)" }}
+              style={{ fontSize: "1.125rem", color: "rgb(83, 185, 235)" }}
             />
             <strong>Flights</strong>
           </div>

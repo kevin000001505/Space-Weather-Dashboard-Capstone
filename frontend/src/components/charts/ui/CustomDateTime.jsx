@@ -17,7 +17,7 @@ import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 const buttonSx = (darkMode) => ({
   fontWeight: "bold",
-  fontSize: "10px",
+  fontSize: "0.875rem",
   color: darkMode ? "#e0e0e0" : "#222",
   borderColor: darkMode ? "#555" : "#ccc",
   "&.Mui-selected": {
@@ -173,7 +173,7 @@ const CustomDateTime = ({
           <div
             style={{
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: "1rem",
               marginBottom: 8,
               borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`,
               paddingBottom: 4,

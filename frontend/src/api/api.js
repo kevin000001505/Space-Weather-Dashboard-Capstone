@@ -237,3 +237,21 @@ export const fetchNoAAScales = createAsyncThunk(
     }
   },
 );
+
+export const fetchElectricTransmissionLines = createAsyncThunk(
+  "transmissionLines/fetchElectricTransmissionLines",
+  async (utc_time = null, { rejectWithValue }) => {
+    try {
+      // Fetch from dummy_data/power_grid.json for development/testing
+      const response = await fetch('/power_grid.json');
+      if (!response.ok) {
+        throw new Error("Failed to fetch Electric Transmission Lines data");
+      }
+      console.log(response)
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);

@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { fetchAirportDetails } from "../../api/api";
 
 const initialState = {
+  fontSizePercent: 80,
   useImperial: true,
   showAltitudeLegend: true,
   showIconLegend: true,
@@ -167,6 +168,9 @@ const uiSlice = createSlice({
     setShowDate: (state, action) => {
       state.showDate = action.payload;
     },
+    setFontSizePercent: (state, action) => {
+      state.fontSizePercent = action.payload;
+    },
     setAirportIconSize: (state, action) => {
       state.airportIconSize = action.payload;
     },
@@ -229,6 +233,7 @@ export const {
   toggleIsolateMode,
   setAirportIconSize,
   setFlightIconSize,
+  setFontSizePercent,
 } = uiSlice.actions;
 
 export default uiSlice.reducer;

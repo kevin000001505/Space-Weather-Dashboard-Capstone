@@ -99,7 +99,7 @@ const SearchBar = React.forwardRef(function SearchBar(props, ref) {
         top: "10px",
         left: "20px",
         zIndex: 1,
-        fontSize: "12px",
+        fontSize: "0.875rem",
         color: "var(--ui-text)",
       }}
     >
@@ -276,7 +276,7 @@ const SearchBar = React.forwardRef(function SearchBar(props, ref) {
               htmlInput: {
                 ...params.inputProps,
                 style: {
-                  fontSize: 14,
+                  fontSize: "1rem",
                   backdropFilter: "blur(4px)",
                   color: "#fff",
                   padding: "8px",

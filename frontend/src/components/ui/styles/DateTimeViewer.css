@@ -43,7 +43,7 @@
 }
 
 .dtv-date {
-  min-width: 160px;
+  min-width: 170px;
   border-radius: 32px 0 0 32px;
   font-weight: 600;
   letter-spacing: 1px;
@@ -91,12 +91,6 @@
     0 0 32px #fff;
 }
 
-.MuiPaper-root {
-  background: rgba(34, 40, 60, 0.7) !important;
-  backdrop-filter: blur(12px) saturate(1.4) !important;
-  color: #e0e0e0 !important;
-  font-weight: 600;
-}
 .MuiPickersDay-root {
   color: #e0e0e0 !important;
   font-weight: 600;
