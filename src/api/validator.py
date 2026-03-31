@@ -1,7 +1,8 @@
 from pydantic import TypeAdapter
-
-from config import FlightStatesResponse
+from typing import List
+from config import Airport, FlightStatesResponse
 
 
 points_adapter = TypeAdapter(list[list[float]])
 flight_response_adapter = TypeAdapter(FlightStatesResponse)
+airports_adapter = TypeAdapter(List[Airport])

@@ -40,7 +40,7 @@ from config import (
     GeoelectricResponse,
     TimeTestingData,
 )
-from validator import points_adapter
+from validator import points_adapter, airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
 import logging
 import json
@@ -314,7 +314,7 @@ async def live_dashboard_stream(request: Request):
     )
 
 
-@app.get("/api/v1/airports", response_model=AirportsResponse)
+@app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)  # Drop response_model — you're returning raw Response
 async def get_latest_airports(
     conn: asyncpg.Connection = Depends(get_db_connection),
     limit: int = Query(None, ge=1, le=200000),
@@ -323,76 +323,59 @@ async def get_latest_airports(
     t_start = time.perf_counter()
     redis_client = redis_config.get_redis_client()
     try:
-        # 1. Attempt to grab the full dataset from Redis RAM
         t_query_start = time.perf_counter()
-        cached_airports = await redis_client.get(redis_config.AIRPORTS_CACHE_KEY)
+        cached_bytes: bytes | None = await redis_client.get(redis_config.AIRPORTS_CACHE_KEY)
 
-        if cached_airports:
-            # CACHE HIT: Parse the JSON string back into a Python list of dicts
-            airports_data = json.loads(cached_airports)
+        if cached_bytes:
             t_query_end = time.perf_counter()
 
             if debug:
-                return JSONResponse(
-                    content=TimeTestingData(
-                        start=t_start,
-                        query_start=t_query_start,
-                        query_end=t_query_end,
-                        finish=time.perf_counter(),
-                    ).result()
-                )
-
-            # Slice the array if the user provided a limit
-            if limit:
-                airports_data = airports_data[:limit]
-
-            return AirportsResponse(airports=airports_data)
-
-        # 2. CACHE MISS: Query PostgreSQL
-        rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
-        t_query_end = time.perf_counter()
-        if not rows:
-            raise HTTPException(status_code=404, detail="No airport data available")
-
-        airports = []
-        for row in rows:
-            airports.append(
-                Airport(
-                    ident=row["ident"],
-                    name=row["name"],
-                    iata_code=row["iata_code"],
-                    gps_code=row["gps_code"],
-                    type=row["type"],
-                    municipality=row["municipality"],
-                    country=row["iso_country"],
-                    elevation_ft=row["elevation_ft"],
-                    lat=round(row["latitude_deg"], 3),
-                    lon=round(row["longitude_deg"], 3),
-                )
-            )
-
-        cache_payload = [airport.model_dump() for airport in airports]
-
-        await redis_client.set(
-            redis_config.AIRPORTS_CACHE_KEY,
-            json.dumps(cache_payload),
-            ex=redis_config.VERY_LONG_TTL,
-        )
-
-        if debug:
-            return JSONResponse(
-                content=TimeTestingData(
+                return JSONResponse(content=TimeTestingData(
                     start=t_start,
                     query_start=t_query_start,
                     query_end=t_query_end,
                     finish=time.perf_counter(),
-                ).result()
-            )
+                ).result())
+
+            if limit:
+                airports_data = airports_adapter.validate_json(cached_bytes)
+                return Response(
+                    content=airports_adapter.dump_json(airports_data[:limit]),
+                    media_type="application/json",
+                )
+
+            return Response(content=cached_bytes, media_type="application/json")
+
+        rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
+        t_query_end = time.perf_counter()
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No airport data available")
+
+        airports_models = airports_adapter.validate_python(rows)  
+        cache_payload_bytes = airports_adapter.dump_json(airports_models)
+
+        await redis_client.set(
+            redis_config.AIRPORTS_CACHE_KEY,
+            cache_payload_bytes,
+            ex=redis_config.VERY_LONG_TTL,
+        )
+
+        if debug:
+            return JSONResponse(content=TimeTestingData(
+                start=t_start,
+                query_start=t_query_start,
+                query_end=t_query_end,
+                finish=time.perf_counter(),
+            ).result())
 
         if limit:
-            return AirportsResponse(airports=airports[:limit])
+            return Response(
+                content=airports_adapter.dump_json(airports_models[:limit]),
+                media_type="application/json",
+            )
 
-        return AirportsResponse(airports=airports)
+        return Response(content=cache_payload_bytes, media_type="application/json")
 
     except HTTPException:
         raise
@@ -400,7 +383,6 @@ async def get_latest_airports(
         logger.error(f"Error fetching latest airports: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
-        # Crucial: Always close the connection back to the pool
         await redis_client.aclose()
 
 

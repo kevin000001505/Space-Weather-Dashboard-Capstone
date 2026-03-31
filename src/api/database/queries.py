@@ -136,7 +136,16 @@ LATEST_GEOELECTRIC_QUERY = """
 
 AIRPORTS_LATEST_QUERY = """
     SELECT 
-        ident, name, iata_code, gps_code, type, municipality, iso_country, elevation_ft, ST_Y(geom) AS latitude_deg, ST_X(geom) AS longitude_deg
+        ident, 
+        name, 
+        iata_code, 
+        gps_code, 
+        type, 
+        municipality, 
+        iso_country AS country, 
+        elevation_ft, 
+        ROUND(ST_Y(geom)::numeric, 3) AS lat, 
+        ROUND(ST_X(geom)::numeric, 3) AS lon
     FROM airports
 """
 

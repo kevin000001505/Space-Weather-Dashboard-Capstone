@@ -105,7 +105,7 @@ export const fetchAirports = createAsyncThunk(
         throw new Error("Failed to fetch airport data");
       }
       const data = await response.json();
-      return data.airports;
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
