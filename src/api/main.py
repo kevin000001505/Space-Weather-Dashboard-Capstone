@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Literal, Optional, List, Dict
 from unittest import result
 
-from fastapi import FastAPI, HTTPException, Request, Query, Response
+from fastapi import FastAPI, HTTPException, Request, Query, Response, FileResponse
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -874,3 +874,7 @@ async def range_data_retrieve(
     ]
     
     return sorted_snapshots
+
+@app.get("/kermit")
+def get_image():
+    return FileResponse("data/images/evil-laugh-kermit.gif", media_type="image/gif")
