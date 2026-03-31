@@ -329,7 +329,6 @@ async def get_latest_airports(
 
         if cached_bytes:
             t_query_end = time.perf_counter()
-
             if debug:
                 return JSONResponse(
                     content=TimeTestingData(
@@ -339,14 +338,13 @@ async def get_latest_airports(
                         finish=time.perf_counter(),
                     ).result()
                 )
-
             if limit:
+                
                 airports_data = airports_adapter.validate_json(cached_bytes)
                 return Response(
                     content=airports_adapter.dump_json(airports_data[:limit]),
                     media_type="application/json",
                 )
-
             return Response(content=cached_bytes, media_type="application/json")
 
         rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
@@ -355,7 +353,8 @@ async def get_latest_airports(
         if not rows:
             raise HTTPException(status_code=404, detail="No airport data available")
 
-        airports_models = airports_adapter.validate_python(rows)
+        # Fix: convert Records to dicts for Pydantic V2
+        airports_models = airports_adapter.validate_python([dict(row) for row in rows])
         cache_payload_bytes = airports_adapter.dump_json(airports_models)
 
         await redis_client.set(
@@ -389,7 +388,6 @@ async def get_latest_airports(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         await redis_client.aclose()
-
 
 @app.get("/api/v1/airport/{ident}", response_model=AirportDetailResponse)
 async def get_airport_details(

@@ -144,8 +144,8 @@ AIRPORTS_LATEST_QUERY = """
         municipality, 
         iso_country AS country, 
         elevation_ft, 
-        ROUND(ST_Y(geom)::numeric, 3) AS lat, 
-        ROUND(ST_X(geom)::numeric, 3) AS lon
+        ROUND(ST_Y(geom)::numeric, 3):: float8 AS lat, 
+        ROUND(ST_X(geom)::numeric, 3):: float8 AS lon
     FROM airports
 """
 
