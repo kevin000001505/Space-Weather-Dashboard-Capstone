@@ -31,7 +31,6 @@ from config import (
     DRAPResponse,
     FlightPathResponse,
     Airport,
-    AirportsResponse,
     AirportDetailResponse,
     KpIndexResponse,
     XRayResponse,
@@ -168,6 +167,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 @app.middleware("http")
 async def add_process_time_header(request, call_next):
@@ -177,17 +186,6 @@ async def add_process_time_header(request, call_next):
     return response
 
 
-app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 query_dict = {
     "drap": DRAP_RANGE_QUERY,
@@ -314,7 +312,7 @@ async def live_dashboard_stream(request: Request):
     )
 
 
-@app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)  # Drop response_model — you're returning raw Response
+@app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)  
 async def get_latest_airports(
     conn: asyncpg.Connection = Depends(get_db_connection),
     limit: int = Query(None, ge=1, le=200000),

@@ -49,10 +49,6 @@ class Airport(BaseModel):
     lon: float
 
 
-class AirportsResponse(BaseModel):
-    airports: List[Airport]
-
-
 class RunwayModel(BaseModel):
     id: int
     length_ft: Optional[int] = None

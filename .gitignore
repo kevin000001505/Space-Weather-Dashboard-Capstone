@@ -42,9 +42,7 @@ secrets/pyopensky-settings
 Running
 
 # uv
-main.py
 uv.lock
-pyproject.toml
 .python-version
 *ipynb
 notebooks/
