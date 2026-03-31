@@ -1,6 +1,13 @@
 """SQL queries for creating tables, indexes, performing upserts, and latest queries to insert into redis for the space weather data pipeline."""
 
-PARTITION_TABLE_LISTS = ["drap_region", "goes_xray_6hour", "goes_proton_flux", "kp_index", "aurora_forecast", "geoelectric_field"]
+PARTITION_TABLE_LISTS = [
+    "drap_region",
+    "goes_xray_6hour",
+    "goes_proton_flux",
+    "kp_index",
+    "aurora_forecast",
+    "geoelectric_field",
+]
 
 CLEANUP_OLD_FLIGHT_DATA_QUERY = """
 DELETE FROM flight_states WHERE time < $1
@@ -15,7 +22,6 @@ SELECT create_partition_if_missing($1)
 CREATE_TABLE_PARTITION_IF_MISSING = """
 SELECT create_monthly_partition_if_missing($1, $2)
 """
-
 
 
 ACTIVATE_FLIGHT_CREATE_TABLE_SQL = """
@@ -261,8 +267,6 @@ CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_time_tag ON goes_xray_6hour (time_
 """
 
 
-
-
 PROTON_FLUX_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS goes_proton_flux (
   time_tag         timestamptz      NOT NULL,          -- Observation timestamp
@@ -333,10 +337,25 @@ CREATE TEMP TABLE flight_states_staging (
 """
 
 FLIGHT_STATES_STAGING_COLUMNS = [
-    "time", "icao24", "callsign", "origin_country", "time_pos",
-    "lat", "lon", "geo_altitude", "baro_altitude", "velocity",
-    "heading", "vert_rate", "on_ground", "squawk", "spi",
-    "source", "sensors", "geom_lon", "geom_lat",
+    "time",
+    "icao24",
+    "callsign",
+    "origin_country",
+    "time_pos",
+    "lat",
+    "lon",
+    "geo_altitude",
+    "baro_altitude",
+    "velocity",
+    "heading",
+    "vert_rate",
+    "on_ground",
+    "squawk",
+    "spi",
+    "source",
+    "sensors",
+    "geom_lon",
+    "geom_lat",
 ]
 
 FLIGHT_STATES_STAGING_GEOM_SQL = """
@@ -388,10 +407,25 @@ CREATE TEMP TABLE activate_flight_staging (
 """
 
 ACTIVATE_FLIGHT_STAGING_COLUMNS = [
-    "time", "icao24", "callsign", "origin_country", "time_pos",
-    "lat", "lon", "geo_altitude", "baro_altitude", "velocity",
-    "heading", "vert_rate", "on_ground", "squawk", "spi",
-    "source", "sensors", "geom_lon", "geom_lat",
+    "time",
+    "icao24",
+    "callsign",
+    "origin_country",
+    "time_pos",
+    "lat",
+    "lon",
+    "geo_altitude",
+    "baro_altitude",
+    "velocity",
+    "heading",
+    "vert_rate",
+    "on_ground",
+    "squawk",
+    "spi",
+    "source",
+    "sensors",
+    "geom_lon",
+    "geom_lat",
 ]
 
 ACTIVATE_FLIGHT_STAGING_GEOM_SQL = """
@@ -520,11 +554,28 @@ CREATE TEMP TABLE airports_staging (
 """
 
 AIRPORTS_STAGING_COLUMNS = [
-    "ident", "type", "name", "latitude_deg", "longitude_deg",
-    "elevation_ft", "continent", "country_name", "iso_country",
-    "region_name", "iso_region", "local_region", "municipality",
-    "scheduled_service", "gps_code", "icao_code", "iata_code",
-    "local_code", "home_link", "wikipedia_link", "keywords", "last_updated",
+    "ident",
+    "type",
+    "name",
+    "latitude_deg",
+    "longitude_deg",
+    "elevation_ft",
+    "continent",
+    "country_name",
+    "iso_country",
+    "region_name",
+    "iso_region",
+    "local_region",
+    "municipality",
+    "scheduled_service",
+    "gps_code",
+    "icao_code",
+    "iata_code",
+    "local_code",
+    "home_link",
+    "wikipedia_link",
+    "keywords",
+    "last_updated",
 ]
 
 AIRPORTS_TRANSFORM_SQL = """
@@ -578,7 +629,12 @@ CREATE TEMP TABLE countries_staging (
 """
 
 COUNTRIES_STAGING_COLUMNS = [
-    "id", "code", "name", "continent", "wikipedia_link", "keywords"
+    "id",
+    "code",
+    "name",
+    "continent",
+    "wikipedia_link",
+    "keywords",
 ]
 
 COUNTRIES_TRANSFORM_SQL = """
@@ -608,8 +664,14 @@ CREATE TEMP TABLE regions_staging (
 """
 
 REGIONS_STAGING_COLUMNS = [
-    "id", "code", "local_code", "name", "continent", "iso_country", 
-    "wikipedia_link", "keywords"
+    "id",
+    "code",
+    "local_code",
+    "name",
+    "continent",
+    "iso_country",
+    "wikipedia_link",
+    "keywords",
 ]
 
 REGIONS_TRANSFORM_SQL = """
@@ -638,7 +700,11 @@ CREATE TEMP TABLE frequencies_staging (
 """
 
 FREQUENCIES_STAGING_COLUMNS = [
-    "id", "airport_ident", "type", "description", "frequency_mhz"
+    "id",
+    "airport_ident",
+    "type",
+    "description",
+    "frequency_mhz",
 ]
 
 FREQUENCIES_TRANSFORM_SQL = """
@@ -664,9 +730,7 @@ CREATE TEMP TABLE comments_staging (
 ) ON COMMIT DROP
 """
 
-COMMENTS_STAGING_COLUMNS = [
-    "id", "airport_ident", "subject", "body", "author", "date"
-]
+COMMENTS_STAGING_COLUMNS = ["id", "airport_ident", "subject", "body", "author", "date"]
 
 COMMENTS_TRANSFORM_SQL = """
 INSERT INTO airport_comments (id, airport_ident, subject, body, author, date)
@@ -706,10 +770,25 @@ CREATE TEMP TABLE runways_staging (
 """
 
 RUNWAYS_STAGING_COLUMNS = [
-    "id", "airport_ident", "length_ft", "width_ft", "surface", "lighted", 
-    "closed", "le_ident", "le_latitude_deg", "le_longitude_deg", "le_elevation_ft", 
-    "le_heading_degt", "le_displaced_threshold_ft", "he_ident", "he_latitude_deg", 
-    "he_longitude_deg", "he_elevation_ft", "he_heading_degt", "he_displaced_threshold_ft"
+    "id",
+    "airport_ident",
+    "length_ft",
+    "width_ft",
+    "surface",
+    "lighted",
+    "closed",
+    "le_ident",
+    "le_latitude_deg",
+    "le_longitude_deg",
+    "le_elevation_ft",
+    "le_heading_degt",
+    "le_displaced_threshold_ft",
+    "he_ident",
+    "he_latitude_deg",
+    "he_longitude_deg",
+    "he_elevation_ft",
+    "he_heading_degt",
+    "he_displaced_threshold_ft",
 ]
 
 RUNWAYS_TRANSFORM_SQL = """
@@ -779,11 +858,26 @@ CREATE TEMP TABLE navaids_staging (
 """
 
 NAVAIDS_STAGING_COLUMNS = [
-    "id", "filename", "ident", "name", "type", "frequency_khz", 
-    "latitude_deg", "longitude_deg", "elevation_ft", "iso_country", 
-    "dme_frequency_khz", "dme_channel", "dme_latitude_deg", "dme_longitude_deg", 
-    "dme_elevation_ft", "slaved_variation_deg", "magnetic_variation_deg", 
-    "usagetype", "power", "associated_airport"
+    "id",
+    "filename",
+    "ident",
+    "name",
+    "type",
+    "frequency_khz",
+    "latitude_deg",
+    "longitude_deg",
+    "elevation_ft",
+    "iso_country",
+    "dme_frequency_khz",
+    "dme_channel",
+    "dme_latitude_deg",
+    "dme_longitude_deg",
+    "dme_elevation_ft",
+    "slaved_variation_deg",
+    "magnetic_variation_deg",
+    "usagetype",
+    "power",
+    "associated_airport",
 ]
 
 NAVAIDS_TRANSFORM_SQL = """
@@ -857,7 +951,11 @@ CREATE TEMP TABLE aurora_forecast_staging (
 """
 
 AURORA_STAGING_COLUMNS = [
-    "observation_time", "forecast_time", "longitude", "latitude", "aurora",
+    "observation_time",
+    "forecast_time",
+    "longitude",
+    "latitude",
+    "aurora",
 ]
 
 AURORA_TRANSFORM_SQL = """
@@ -889,8 +987,13 @@ CREATE TEMP TABLE goes_xray_6hour_staging (
 """
 
 XRAY_6HOUR_STAGING_COLUMNS = [
-    "time_tag", "satellite", "flux", "observed_flux",
-    "electron_correction", "electron_contamination", "energy",
+    "time_tag",
+    "satellite",
+    "flux",
+    "observed_flux",
+    "electron_correction",
+    "electron_contamination",
+    "energy",
 ]
 
 XRAY_6HOUR_TRANSFORM_SQL = """
@@ -917,8 +1020,12 @@ CREATE TEMP TABLE goes_proton_flux_staging (
 """
 
 PROTON_FLUX_STAGING_COLUMNS = [
-    "time_tag", "satellite",
-    "flux_10_mev", "flux_50_mev", "flux_100_mev", "flux_500_mev",
+    "time_tag",
+    "satellite",
+    "flux_10_mev",
+    "flux_50_mev",
+    "flux_100_mev",
+    "flux_500_mev",
 ]
 
 PROTON_FLUX_TRANSFORM_SQL = """
@@ -1002,8 +1109,14 @@ CREATE TEMP TABLE geoelectric_field_staging (
 """
 
 GEOELECTRIC_STAGING_COLUMNS = [
-    "observed_at", "longitude", "latitude",
-    "ex", "ey", "e_magnitude", "quality_flag", "distance_nearest_station",
+    "observed_at",
+    "longitude",
+    "latitude",
+    "ex",
+    "ey",
+    "e_magnitude",
+    "quality_flag",
+    "distance_nearest_station",
 ]
 
 GEOELECTRIC_TRANSFORM_SQL = """

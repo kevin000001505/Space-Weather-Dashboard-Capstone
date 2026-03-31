@@ -4,14 +4,12 @@ from tasks.proton_flux_plot import store_proton_flux_plot
 
 
 class TestFetchProtonFlux:
-
     def test_returns_list(self, proton_flux_plots):
         assert isinstance(proton_flux_plots, list)
         assert len(proton_flux_plots) > 0
 
 
 class TestStoreProtonFlux:
-
     @pytest.mark.asyncio
     async def test_inserts_records(self, conn, proton_flux_plots):
         await store_proton_flux_plot.fn(proton_flux_plots, conn)

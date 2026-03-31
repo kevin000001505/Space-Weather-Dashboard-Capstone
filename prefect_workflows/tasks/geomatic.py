@@ -33,7 +33,7 @@ def extract_file() -> str:
         response = requests.get(base_url)
         response.raise_for_status()
         raw = pq(response.text)
-        items = list(raw('body a').items())
+        items = list(raw("body a").items())
         file_name = items[-1].attr("href")
         logger.info(f"Latest geoelectric file: {file_name}")
         return file_name
@@ -49,7 +49,7 @@ def extract_data(url: str) -> List[Dict[str, Any]]:
     try:
         response = requests.get(url)
         response.raise_for_status()
-        data = response.json()['features']
+        data = response.json()["features"]
         logger.info(f"Fetched {len(data)} geoelectric features from {url}")
         return data
     except Exception as e:
@@ -58,7 +58,9 @@ def extract_data(url: str) -> List[Dict[str, Any]]:
 
 
 @task(log_prints=True)
-def transform_data(features: List[Dict[str, Any]], observed_at: datetime) -> List[tuple]:
+def transform_data(
+    features: List[Dict[str, Any]], observed_at: datetime
+) -> List[tuple]:
     """Parse GeoJSON features into GeoelectricRecord tuples."""
     logger = get_logger(__name__)
     records = []
@@ -121,35 +123,42 @@ async def broadcast_geoelectric_to_redis(
 
     try:
         client = get_redis_client()
-        
+
         # Ensure the timestamp is formatted as ISO 8601 for the frontend
-        formatted_time = observed_at.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(observed_at, "strftime") else str(observed_at)
-        
+        formatted_time = (
+            observed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+            if hasattr(observed_at, "strftime")
+            else str(observed_at)
+        )
+
         # Enrich features with e_magnitude before caching
         enriched = []
         for feature in features:
             props = feature["properties"]
-            enriched.append({
-                **feature,
-                "properties": {
-                    **props,
-                    "e_magnitude": np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
+            enriched.append(
+                {
+                    **feature,
+                    "properties": {
+                        **props,
+                        "e_magnitude": np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
+                    },
                 }
-            })
+            )
         points = [
             [
-                f["geometry"]["coordinates"][1], 
-                f["geometry"]["coordinates"][0],  
+                f["geometry"]["coordinates"][1],
+                f["geometry"]["coordinates"][0],
                 f["properties"]["e_magnitude"].astype(float),
                 f["properties"]["quality_flag"],
             ]
             for f in enriched
         ]
-        payload = json.dumps({
-            "timestamp": formatted_time,
-            "count": len(enriched),
-            "points": points,
-        })
+        payload = json.dumps(
+            {
+                "timestamp": formatted_time,
+                "points": points,
+            }
+        )
         await client.set(GEOELECTRIC_CACHE_KEY, payload, ex=MEDIUM_TTL)
         await client.publish(GEOELECTRIC_CHANNEL, "new_data")
         await client.aclose()

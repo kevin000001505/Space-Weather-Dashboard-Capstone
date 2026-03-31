@@ -35,11 +35,9 @@ MEDIUM_TTL = 21600  # 6 hours
 LONG_TTL = 43200  # 12 hours
 VERY_LONG_TTL = 86400  # 24 hours
 
+
 def get_redis_client() -> aioredis.Redis:
     """Returns an async Redis client configured for the stack."""
     return aioredis.Redis(
-        host=REDIS_HOST,
-        port=REDIS_PORT,
-        db=REDIS_DB,
-        decode_responses=True
+        host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True
     )

@@ -1,7 +1,11 @@
 from prefect import flow
 from shared.logger import get_logger
 from shared.db_utils import get_connection
-from tasks.xray_latest import extract_xray_6hour_data, load_xray_6hour_data, parse_xray_6hour_data
+from tasks.xray_latest import (
+    extract_xray_6hour_data,
+    load_xray_6hour_data,
+    parse_xray_6hour_data,
+)
 
 
 @flow(

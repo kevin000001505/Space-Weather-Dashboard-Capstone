@@ -35,28 +35,30 @@ async def table_exists(conn, table_name: str) -> bool:
     )
     return row["exists"]
 
+
 # ---------------------------------------------------------------------------
-# Task tests — 
+# Task tests —
 # ---------------------------------------------------------------------------
+
 
 class TestCoverageEnforcement:
     def test_all_initial_db_tasks_have_test_class(self):
         """Fails if a new initial_*_db task is added without a corresponding test class."""
-        
+
         # Find all initial_*_db tasks in tasks.db
         initial_tasks = [
-            name for name in dir(db_tasks)
+            name
+            for name in dir(db_tasks)
             if name.startswith("initial_") and name.endswith("_db")
         ]
 
         # Map task names to expected test class names
         # initial_kp_index_db → TestInitialKpIndexDb
         def to_class_name(task_name: str) -> str:
-            return "Test" + "".join(
-                part.capitalize() for part in task_name.split("_")
-            )
+            return "Test" + "".join(part.capitalize() for part in task_name.split("_"))
 
         import sys
+
         current_module = sys.modules[__name__]
 
         missing = []
@@ -65,10 +67,10 @@ class TestCoverageEnforcement:
             if not hasattr(current_module, class_name):
                 missing.append(f"{task_name} → expected {class_name}")
 
-        assert not missing, (
-            f"Missing test classes for these tasks:\n" +
-            "\n".join(missing)
+        assert not missing, "Missing test classes for these tasks:\n" + "\n".join(
+            missing
         )
+
 
 # ---------------------------------------------------------------------------
 # Individual task tests — pass conn directly via .fn()
@@ -115,6 +117,7 @@ class TestInitialAlertDb:
     async def test_creates_table(self, conn):
         await initial_alert_db.fn(conn)
         assert await table_exists(conn, "alerts")
+
 
 class TestInitialGeoelectricDb:
     @pytest.mark.asyncio
@@ -200,7 +203,9 @@ class TestInitializeDbFlow:
         now = datetime.now(timezone.utc)
         for table_name in PARTITION_TABLE_LISTS:
             partition_name = f"{table_name}_{now.strftime('%Y_%m')}"
-            assert await table_exists(conn, partition_name), f"Missing partition: {partition_name}"
+            assert await table_exists(conn, partition_name), (
+                f"Missing partition: {partition_name}"
+            )
 
 
 # ---------------------------------------------------------------------------

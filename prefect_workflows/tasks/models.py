@@ -93,14 +93,15 @@ class FlightStateRecord(BaseModel):
 
 class BaseCSVModel(BaseModel):
     """Base model that automatically converts empty CSV strings to None."""
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     @classmethod
     def empty_strings_to_none(cls, data: Any) -> Any:
         if isinstance(data, dict):
             # Iterate through the dictionary and replace "" with None
             return {k: (None if v == "" else v) for k, v in data.items()}
         return data
+
 
 class AirportRecord(BaseCSVModel):
     """Airport record for database insertion."""
@@ -157,7 +158,8 @@ class AirportRecord(BaseCSVModel):
             self.last_updated,
         )
 
-    model_config = ConfigDict(validate_assignment=True, extra="ignore") # Ignoring id
+    model_config = ConfigDict(validate_assignment=True, extra="ignore")  # Ignoring id
+
 
 class CountryRecord(BaseCSVModel):
     id: int
@@ -168,8 +170,17 @@ class CountryRecord(BaseCSVModel):
     keywords: Optional[str] = Field(default=None)
 
     def to_tuple(self) -> tuple:
-        return (self.id, self.code, self.name, self.continent, self.wikipedia_link, self.keywords)
+        return (
+            self.id,
+            self.code,
+            self.name,
+            self.continent,
+            self.wikipedia_link,
+            self.keywords,
+        )
+
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
 
 class RegionRecord(BaseCSVModel):
     id: int
@@ -182,8 +193,19 @@ class RegionRecord(BaseCSVModel):
     keywords: Optional[str] = Field(default=None)
 
     def to_tuple(self) -> tuple:
-        return (self.id, self.code, self.local_code, self.name, self.continent, self.iso_country, self.wikipedia_link, self.keywords)
+        return (
+            self.id,
+            self.code,
+            self.local_code,
+            self.name,
+            self.continent,
+            self.iso_country,
+            self.wikipedia_link,
+            self.keywords,
+        )
+
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
 
 class FrequencyRecord(BaseCSVModel):
     id: int
@@ -193,8 +215,18 @@ class FrequencyRecord(BaseCSVModel):
     frequency_mhz: Optional[float] = Field(default=None)
 
     def to_tuple(self) -> tuple:
-        return (self.id, self.airport_ident, self.type, self.description, self.frequency_mhz)
-    model_config = ConfigDict(validate_assignment=True, extra="ignore") # Ignoring airport_ref
+        return (
+            self.id,
+            self.airport_ident,
+            self.type,
+            self.description,
+            self.frequency_mhz,
+        )
+
+    model_config = ConfigDict(
+        validate_assignment=True, extra="ignore"
+    )  # Ignoring airport_ref
+
 
 class RunwayRecord(BaseCSVModel):
     id: int
@@ -219,13 +251,29 @@ class RunwayRecord(BaseCSVModel):
 
     def to_tuple(self) -> tuple:
         return (
-            self.id, self.airport_ident, self.length_ft, self.width_ft, self.surface, 
-            self.lighted, self.closed, self.le_ident, self.le_latitude_deg, self.le_longitude_deg, 
-            self.le_elevation_ft, self.le_heading_degt, self.le_displaced_threshold_ft, 
-            self.he_ident, self.he_latitude_deg, self.he_longitude_deg, self.he_elevation_ft, 
-            self.he_heading_degt, self.he_displaced_threshold_ft
+            self.id,
+            self.airport_ident,
+            self.length_ft,
+            self.width_ft,
+            self.surface,
+            self.lighted,
+            self.closed,
+            self.le_ident,
+            self.le_latitude_deg,
+            self.le_longitude_deg,
+            self.le_elevation_ft,
+            self.le_heading_degt,
+            self.le_displaced_threshold_ft,
+            self.he_ident,
+            self.he_latitude_deg,
+            self.he_longitude_deg,
+            self.he_elevation_ft,
+            self.he_heading_degt,
+            self.he_displaced_threshold_ft,
         )
+
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
 
 class NavaidRecord(BaseCSVModel):
     id: int
@@ -251,13 +299,30 @@ class NavaidRecord(BaseCSVModel):
 
     def to_tuple(self) -> tuple:
         return (
-            self.id, self.filename, self.ident, self.name, self.type, self.frequency_khz,
-            self.latitude_deg, self.longitude_deg, self.elevation_ft, self.iso_country,
-            self.dme_frequency_khz, self.dme_channel, self.dme_latitude_deg, self.dme_longitude_deg,
-            self.dme_elevation_ft, self.slaved_variation_deg, self.magnetic_variation_deg,
-            self.usagetype, self.power, self.associated_airport
+            self.id,
+            self.filename,
+            self.ident,
+            self.name,
+            self.type,
+            self.frequency_khz,
+            self.latitude_deg,
+            self.longitude_deg,
+            self.elevation_ft,
+            self.iso_country,
+            self.dme_frequency_khz,
+            self.dme_channel,
+            self.dme_latitude_deg,
+            self.dme_longitude_deg,
+            self.dme_elevation_ft,
+            self.slaved_variation_deg,
+            self.magnetic_variation_deg,
+            self.usagetype,
+            self.power,
+            self.associated_airport,
         )
+
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
+
 
 class CommentRecord(BaseCSVModel):
     id: Optional[int] = Field(default=None)
@@ -268,11 +333,17 @@ class CommentRecord(BaseCSVModel):
     date: Optional[datetime] = Field(default=None)
 
     def to_tuple(self) -> tuple:
-        return (self.id, self.airport_ident, self.subject, self.body, self.author, self.date)
+        return (
+            self.id,
+            self.airport_ident,
+            self.subject,
+            self.body,
+            self.author,
+            self.date,
+        )
+
     model_config = ConfigDict(
-        populate_by_name=True, 
-        validate_assignment=True, 
-        extra="ignore"
+        populate_by_name=True, validate_assignment=True, extra="ignore"
     )
 
 
@@ -296,7 +367,6 @@ class DrapRecord(BaseModel):
         )
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
-
 
 
 class ProtonFluxPlot(BaseModel):

@@ -1,7 +1,6 @@
 """Flight data ingestion and maintenance tasks."""
 
 import json
-import redis.asyncio as redis
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from asyncpg import Connection
@@ -24,12 +23,13 @@ from database.queries import (
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STATES_QUERY,
 )
+
 # Pull from the shared volume
 from shared.redis import (
     get_redis_client,
     FLIGHTS_CACHE_KEY,
     FLIGHTS_CHANNEL,
-    DEFAULT_TTL
+    DEFAULT_TTL,
 )
 
 
@@ -141,7 +141,7 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
         async with conn.transaction():
             # flight_states
             await conn.execute(FLIGHT_STATES_STAGING_DDL)
-            
+
             await conn.copy_records_to_table(
                 "flight_states_staging",
                 records=tuples,
@@ -149,9 +149,8 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
             )
 
             await conn.execute(FLIGHT_STATES_STAGING_GEOM_SQL)
-            
-            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
+            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
             # activate_flight
             await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
@@ -175,7 +174,6 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
         raise
 
 
-
 @task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE, retries=3)
 async def broadcast_active_flights_to_redis(conn: Connection) -> None:
     """Pull the latest active flights state from Postgres and push to Redis."""
@@ -183,38 +181,40 @@ async def broadcast_active_flights_to_redis(conn: Connection) -> None:
 
     # Fetch the true, calculated state from the database
     rows = await conn.fetch(ACTIVATE_FLIGHT_STATES_QUERY)
-        
+
     # Format it for the frontend
     flights_data = []
     for r in rows:
-        flights_data.append({
-            "icao24": r["icao24"],
-            "callsign": r["callsign"],
-            "lat": r["lat"],
-            "lon": r["lon"],
-            "geo_altitude": r["geo_altitude"],
-            "velocity": r["velocity"],
-            "heading": r["heading"],
-            "on_ground": r["on_ground"]
-        })
-        
+        flights_data.append(
+            {
+                "icao24": r["icao24"],
+                "callsign": r["callsign"],
+                "lat": r["lat"],
+                "lon": r["lon"],
+                "geo_altitude": r["geo_altitude"],
+                "velocity": r["velocity"],
+                "heading": r["heading"],
+                "on_ground": r["on_ground"],
+            }
+        )
+
     payload = {
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "count": len(flights_data),
-        "flights": flights_data
+        "flights": flights_data,
     }
-    
+
     # Cache and Broadcast
     try:
         client = get_redis_client()
-        
+
         # ex=300 sets a 5-minute Time-To-Live so old data clears if ingestion fails
         await client.set(FLIGHTS_CACHE_KEY, json.dumps(payload), ex=DEFAULT_TTL)
         await client.publish(FLIGHTS_CHANNEL, "new_data")
-        
+
         await client.aclose()
         logger.info(f"Broadcasted {len(flights_data)} post-processed flights to Redis.")
-        
+
     except Exception as e:
         logger.error(f"Failed to broadcast to Redis: {e}")
 

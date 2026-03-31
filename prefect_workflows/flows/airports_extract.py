@@ -4,6 +4,7 @@ from shared.db_utils import get_connection
 from tasks import airports
 import asyncio
 
+
 @flow(
     log_prints=True,
     description="ETL flow for airports data extraction.",

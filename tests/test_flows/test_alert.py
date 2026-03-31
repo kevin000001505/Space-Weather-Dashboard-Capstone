@@ -2,17 +2,17 @@
 import pytest
 from tasks.alert import store_alert
 
-class TestFetchAlert:
 
+class TestFetchAlert:
     def test_returns_list(self, raw_alerts):
         assert isinstance(raw_alerts, list)
         assert len(raw_alerts) > 0
 
-class TestParseAlerts:
 
+class TestParseAlerts:
     def test_returns_data(self, parsed_alerts):
         assert len(parsed_alerts) > 0
-    
+
     def test_removes_noaa_scale_url(self, parsed_alerts):
         """Verify cleanup logic ran — URL should not appear in any message"""
         for record in parsed_alerts:
@@ -20,7 +20,10 @@ class TestParseAlerts:
 
     def test_removes_noaa_scale_description_text(self, parsed_alerts):
         for record in parsed_alerts:
-            assert "NOAA Space Weather Scale descriptions can be found at" not in record.message
+            assert (
+                "NOAA Space Weather Scale descriptions can be found at"
+                not in record.message
+            )
 
 
 class TestStoreAlert:

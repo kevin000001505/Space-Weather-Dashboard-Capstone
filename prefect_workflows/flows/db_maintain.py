@@ -20,7 +20,6 @@ from tasks.db import (
 from database.queries import PARTITION_TABLE_LISTS
 
 
-
 @flow(log_prints=True)
 async def db_maintenance_flow():
     """Flow to perform database maintenance tasks."""
@@ -72,10 +71,6 @@ async def partition_maintain():
     except Exception as e:
         logger.debug(f"Table {table_name} failed to create {date} of partition")
         logger.error(f"Database Error failed: {e}")
-    
-
-
-
 
 
 if __name__ == "__main__":
@@ -84,7 +79,6 @@ if __name__ == "__main__":
     import os
     from datetime import datetime, timezone
     from database.queries import PARTITION_TABLE_LISTS
-
 
     date = datetime.now(timezone.utc)
 

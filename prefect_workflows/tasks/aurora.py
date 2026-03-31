@@ -8,14 +8,9 @@ from tasks.models import AuroraRecord
 from database.queries import (
     AURORA_STAGING_DDL,
     AURORA_STAGING_COLUMNS,
-    AURORA_TRANSFORM_SQL
+    AURORA_TRANSFORM_SQL,
 )
-from shared.redis import (
-    get_redis_client,
-    AURORA_CACHE_KEY,
-    AURORA_CHANNEL,
-    MEDIUM_TTL
-)
+from shared.redis import get_redis_client, AURORA_CACHE_KEY, AURORA_CHANNEL, MEDIUM_TTL
 
 AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 
@@ -48,6 +43,10 @@ async def load_aurora_data(data: dict, conn: Connection) -> None:
     observation_time = data.get("Observation Time")
     forecast_time = data.get("Forecast Time")
     coordinates = data.get("coordinates", [])
+
+    if not observation_time or not forecast_time:
+        logger.warning("Missing observation_time or forecast_time in aurora response")
+        return
 
     if not coordinates:
         logger.warning("No coordinate data in aurora response")
@@ -90,24 +89,33 @@ async def load_aurora_data(data: dict, conn: Connection) -> None:
 
     logger.info(f"Aurora forecast inserted: {len(records)} records")
 
+
 @task(name="Broadcast Aurora to Redis")
 async def broadcast_aurora_to_redis(data: dict) -> None:
     """Push the raw NOAA dictionary straight from memory to Redis."""
     logger = get_logger(__name__)
-    
+
     if not data or not data.get("coordinates"):
         logger.warning("No Aurora data to broadcast.")
         return
 
     try:
         client = get_redis_client()
-        
+
         observation_time = data.get("Observation Time")
         forecast_time = data.get("Forecast Time")
-        
+
         # Ensure the timestamp is formatted as ISO 8601 for the frontend
-        formatted_observation_time = observation_time.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(observation_time, "strftime") else str(observation_time)
-        formatted_forecast_time = forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ") if hasattr(forecast_time, "strftime") else str(forecast_time)
+        formatted_observation_time = (
+            observation_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            if observation_time and hasattr(observation_time, "strftime")
+            else str(observation_time) if observation_time else ""
+        )
+        formatted_forecast_time = (
+            forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            if forecast_time and hasattr(forecast_time, "strftime")
+            else str(forecast_time) if forecast_time else ""
+        )
 
         payload = {
             "observation_time": formatted_observation_time,
@@ -117,9 +125,9 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
         }
         await client.set(AURORA_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)
         await client.publish(AURORA_CHANNEL, "new_data")
-        
+
         await client.aclose()
-        logger.info(f"Broadcasted Aurora grid directly from memory to Redis.")
-        
+        logger.info("Broadcasted Aurora grid directly from memory to Redis.")
+
     except Exception as e:
         logger.error(f"Failed to broadcast Aurora to Redis: {e}")

@@ -117,18 +117,18 @@ ORDER BY issue_datetime DESC
 """
 
 LATEST_GEOELECTRIC_QUERY = """
-    SELECT
-        g.observed_at,
-        latitude AS lat,
-        longitude AS lon,
-        g.e_magnitude,
-        quality_flag
-    FROM geoelectric_field g
-    WHERE g.observed_at = (
-        SELECT MAX(observed_at) FROM geoelectric_field
-    );
+    WITH latest_grid AS (
+        -- Your existing logic to grab the latest data goes here
+        SELECT observed_at, lat, long, e_magnitude, quality_flag 
+        FROM geoelectric_field
+        WHERE observed_at = (SELECT MAX(observed_at) FROM geoelectric_field)
+    )
+    SELECT 
+        MAX(observed_at) AS timestamp,
+        COUNT(*) AS count,
+        JSON_AGG(JSON_BUILD_ARRAY(lat, long, e_magnitude, quality_flag)) AS points
+    FROM latest_grid;
 """
-
 
 
 AIRPORTS_LATEST_QUERY = """
@@ -258,7 +258,9 @@ WHERE a.ident = $1
 
 
 DRAP_RANGE_QUERY = """
-SELECT date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, lat, long, absorption AS intensity
+SELECT 
+    date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, 
+    JSON_AGG(JSON_BUILD_ARRAY(lat, long, absorption)) AS points
 FROM drap_region
 WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
     ARRAY(
@@ -269,11 +271,14 @@ WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
         )
     )
 )
+GROUP BY 1
 ORDER BY observed_at DESC
 """
 
 AURORA_RANGE_QUERY = """
-SELECT date_trunc('minute', observation_time AT TIME ZONE 'UTC') AS observed_at, lat, long, aurora AS intensity
+SELECT 
+    date_trunc('minute', observation_time AT TIME ZONE 'UTC') AS observed_at, 
+    JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
 FROM aurora_forecast
 WHERE date_trunc('minute', observation_time AT TIME ZONE 'UTC') = ANY(
     ARRAY(
@@ -284,11 +289,14 @@ WHERE date_trunc('minute', observation_time AT TIME ZONE 'UTC') = ANY(
         )
     )
 )
+GROUP BY 1
 ORDER BY observed_at DESC
 """
 
 GEOELECTRIC_RANGE_QUERY = """
-SELECT date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, lat, long, e_magnitude AS intensity
+SELECT 
+    date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, 
+    JSON_AGG(JSON_BUILD_ARRAY(lat, long, e_magnitude)) AS points
 FROM geoelectric_field
 WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
     ARRAY(
@@ -299,6 +307,7 @@ WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
         )
     )
 )
+GROUP BY 1
 ORDER BY observed_at DESC
 """
 

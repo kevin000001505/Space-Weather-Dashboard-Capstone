@@ -4,7 +4,6 @@ from tasks.aurora import load_aurora_data
 
 
 class TestFetchAurora:
-
     def test_returns_dict(self, raw_aurora):
         assert isinstance(raw_aurora, dict)
 
@@ -14,7 +13,6 @@ class TestFetchAurora:
 
 
 class TestLoadAurora:
-
     @pytest.mark.asyncio
     async def test_inserts_records(self, conn, raw_aurora):
         await load_aurora_data.fn(raw_aurora, conn)

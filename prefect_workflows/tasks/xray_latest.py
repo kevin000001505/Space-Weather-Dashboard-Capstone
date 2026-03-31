@@ -12,7 +12,9 @@ from database.queries import (
 )
 
 XRAY_6HOUR_URL = "https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json"
-XRAY_6HOUR_URL_BACKUP = "https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"
+XRAY_6HOUR_URL_BACKUP = (
+    "https://services.swpc.noaa.gov/json/goes/secondary/xrays-6-hour.json"
+)
 
 
 def _fetch_json(url: str) -> list:

@@ -28,7 +28,8 @@ def transform_data(data_string):
     metadata, df_wide, df_long = transformers.parse_drap_data(data_string)
     return (metadata, df_wide, df_long)
 
-@task(log_prints=True, retries = 3, cache_policy=NO_CACHE)
+
+@task(log_prints=True, retries=3, cache_policy=NO_CACHE)
 async def load_data(df_long: DataFrame, conn: Connection):
     """Load data into PostgreSQL."""
     logger = get_logger(__name__)
@@ -39,11 +40,12 @@ async def load_data(df_long: DataFrame, conn: Connection):
         logger.error(f"✗ Data loading failed: {e}")
         raise
 
+
 @task(name="Broadcast DRAP to Redis")
 async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
     """Format the in-memory pandas DataFrame and push straight to Redis."""
     logger = get_logger(__name__)
-    
+
     if df_long.empty:
         logger.warning("DataFrame is empty, nothing to broadcast.")
         return
@@ -53,27 +55,27 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
         formatted_time = timestamp.strftime("%Y-%m-%dT%H:%M:%SZ")
     else:
         # Fallback if it's already a string from the metadata
-        formatted_time = str(timestamp) 
+        formatted_time = str(timestamp)
 
     # Extract just the columns we need and convert to a native Python list of lists
     # .astype(float) ensures we don't pass weird numpy datatypes to the JSON serializer
     logger.info(df_long)
-    points = df_long[['Latitude', 'Longitude', 'Absorption']].astype(float).values.tolist()
-    
-    payload = {
-        "timestamp": formatted_time,
-        "count": len(points),
-        "points": points
-    }
-    
+    points = (
+        df_long[["Latitude", "Longitude", "Absorption"]].astype(float).values.tolist()
+    )
+
+    payload = {"timestamp": formatted_time, "count": len(points), "points": points}
+
     try:
         client = get_redis_client()
-        
+
         await client.set(DRAP_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)
         await client.publish(DRAP_CHANNEL, "new_data")
-        
+
         await client.aclose()
-        logger.info(f"Broadcasted DRAP grid ({len(points)} points) directly from memory to Redis.")
-        
+        logger.info(
+            f"Broadcasted DRAP grid ({len(points)} points) directly from memory to Redis."
+        )
+
     except Exception as e:
         logger.error(f"Failed to broadcast DRAP to Redis: {e}")

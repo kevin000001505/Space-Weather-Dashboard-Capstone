@@ -5,7 +5,11 @@ from asyncpg import Connection
 import requests
 import json
 from tasks.models import ProtonFluxPlot
-from database.queries import PROTON_FLUX_STAGING_DDL, PROTON_FLUX_STAGING_COLUMNS, PROTON_FLUX_TRANSFORM_SQL
+from database.queries import (
+    PROTON_FLUX_STAGING_DDL,
+    PROTON_FLUX_STAGING_COLUMNS,
+    PROTON_FLUX_TRANSFORM_SQL,
+)
 from typing import List
 
 
@@ -52,7 +56,7 @@ def fetch_proton_flux_plot() -> List[ProtonFluxPlot]:
         raise Exception(f"Error processing proton flux plot data: {e}")
 
 
-@task(cache_policy=NO_CACHE, retries = 3)
+@task(cache_policy=NO_CACHE, retries=3)
 async def store_proton_flux_plot(plots: List[ProtonFluxPlot], conn: Connection) -> None:
     """Bulk insert proton flux plot records into the database."""
     logger = get_logger(__name__)

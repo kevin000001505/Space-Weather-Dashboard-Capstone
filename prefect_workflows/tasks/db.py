@@ -68,7 +68,7 @@ async def initial_airport_db(conn: Connection):
         ("runways", RUNWAYS_CREATE_TABLE_SQL),
         ("airport_frequencies", FREQUENCIES_CREATE_TABLE_SQL),
         ("airport_comments", AIRPORT_COMMENTS_CREATE_TABLE_SQL),
-        ("navaids", NAVAIDS_CREATE_TABLE_SQL)
+        ("navaids", NAVAIDS_CREATE_TABLE_SQL),
     ]
 
     try:
@@ -203,13 +203,18 @@ async def initial_partition_function(conn: Connection):
         logger.error(f"Failed to create partition function: {e}")
         raise
 
+
 @task(cache_policy=NO_CACHE)
-async def create_tables_partition(conn: Connection, table_name: str, datetime: datetime):
+async def create_tables_partition(
+    conn: Connection, table_name: str, datetime: datetime
+):
     """Task to create all the table partition"""
     await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime)
-    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30))
+    await conn.execute(
+        CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30)
+    )
 
-    
+
 # -----
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)

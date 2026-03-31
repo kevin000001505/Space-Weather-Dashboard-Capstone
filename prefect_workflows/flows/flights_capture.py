@@ -22,6 +22,7 @@ async def ingest_flow():
         if records:
             await broadcast_active_flights_to_redis(conn)
 
+
 @flow(name="Daily Maintenance", log_prints=True)
 async def maintenance_flow():
     """Daily maintenance flow for cleaning up old flight data."""

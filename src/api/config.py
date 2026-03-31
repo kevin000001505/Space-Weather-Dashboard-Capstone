@@ -12,7 +12,6 @@ class DRAPRangeResponse(BaseModel):
     snapshots: List[DRAPResponse]
 
 
-
 class FlightPathResponse(BaseModel):
     icao24: str
     callsign: Optional[str]
@@ -63,14 +62,14 @@ class RunwayModel(BaseModel):
     surface: Optional[str] = None
     lighted: Optional[bool] = None
     closed: Optional[bool] = None
-    
+
     # Low End
     le_ident: Optional[str] = None
     le_elevation_ft: Optional[int] = None
     le_heading_degt: Optional[float] = None
     le_displaced_threshold_ft: Optional[int] = None
     le_geom: Optional[Dict[str, Any]] = None
-    
+
     # High End
     he_ident: Optional[str] = None
     he_elevation_ft: Optional[int] = None
@@ -78,11 +77,13 @@ class RunwayModel(BaseModel):
     he_displaced_threshold_ft: Optional[int] = None
     he_geom: Optional[Dict[str, Any]] = None
 
+
 class FrequencyModel(BaseModel):
     id: int
     type: Optional[str] = None
     description: Optional[str] = None
     frequency_mhz: Optional[float] = None
+
 
 class NavaidModel(BaseModel):
     id: int
@@ -104,12 +105,14 @@ class NavaidModel(BaseModel):
     geom: Optional[Dict[str, Any]] = None
     dme_geom: Optional[Dict[str, Any]] = None
 
+
 class CommentModel(BaseModel):
     id: int
     subject: Optional[str] = None
     body: Optional[str] = None
     author: Optional[str] = None
     date: Optional[datetime] = None
+
 
 class AirportDetailResponse(BaseModel):
     id: int
@@ -130,10 +133,10 @@ class AirportDetailResponse(BaseModel):
     wikipedia_link: Optional[str] = None
     keywords: Optional[str] = None
     geom: Optional[Dict[str, Any]] = None
-    
+
     country_name: Optional[str] = None
     region_name: Optional[str] = None
-    
+
     runways: List[RunwayModel] = []
     frequencies: List[FrequencyModel] = []
     navaids: List[NavaidModel] = []
@@ -198,14 +201,13 @@ class AlertListResponse(BaseModel):
 
 class GeoelectricResponse(BaseModel):
     timestamp: datetime
-    count: int
-    points: List[List[float]] 
+    points: List[List[float]]
 
-    
 
 class GeoelectricRangeResponse(BaseModel):
     count: int
     snapshots: List[GeoelectricResponse]
+
 
 class TimeTestingData(BaseModel):
     start: float

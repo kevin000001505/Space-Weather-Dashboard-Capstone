@@ -5,7 +5,11 @@ from shared.logger import get_logger
 from asyncpg import Connection
 from datetime import datetime
 from typing import List
-from database.queries import ALERTS_STAGING_DDL, ALERTS_STAGING_COLUMNS, ALERTS_TRANSFORM_SQL
+from database.queries import (
+    ALERTS_STAGING_DDL,
+    ALERTS_STAGING_COLUMNS,
+    ALERTS_TRANSFORM_SQL,
+)
 from tasks.models import AlertRecord
 
 url = "https://services.swpc.noaa.gov/products/alerts.json"

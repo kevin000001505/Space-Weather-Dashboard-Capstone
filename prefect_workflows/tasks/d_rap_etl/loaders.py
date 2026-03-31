@@ -1,10 +1,6 @@
 from datetime import datetime, timezone
 from pandas import DataFrame
-from database.queries import (
-    DRAP_STAGING_DDL, 
-    DRAP_STAGING_COLUMNS, 
-    DRAP_TRANSFORM_SQL
-    )
+from database.queries import DRAP_STAGING_DDL, DRAP_STAGING_COLUMNS, DRAP_TRANSFORM_SQL
 from asyncpg import Connection
 from tasks.models import DrapRecord
 from shared.logger import get_logger
