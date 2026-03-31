@@ -38,6 +38,7 @@ from config import (
     AlertResponse,
     GeoelectricResponse,
     TimeTestingData,
+    SnapshotResponse,
 )
 from validator import points_adapter, airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
@@ -559,10 +560,10 @@ async def latest_drap(
         if not row:
             raise HTTPException(status_code=404, detail="No D-RAP data available")
 
-        drap_dict = dict(row)
-        drap_dict["points"] = points_adapter.validate_json(drap_dict["points"])
+        raw_json_string = row['payload']
+        final_model = DRAPResponse.model_validate_json(raw_json_string)
 
-        final_model = DRAPResponse(**drap_dict)
+        # 3. Dump back to JSON for Redis and the response
         cache_payload_bytes = final_model.model_dump_json()
 
         await redis_client.set(
@@ -925,7 +926,7 @@ async def latest_geoelectric(
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
-@app.get("/api/v1/kermit/")
+@app.get("/api/v1/kermit/", response_model=List[SnapshotResponse])
 async def range_data_retrieve(
     conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
@@ -941,7 +942,7 @@ async def range_data_retrieve(
     ),
     interval: int = Query(default=5, description="The time range for each data gap."),
 ):
-    start_utc, end_utc = _resolve_time_window(start, end, default_hours=24)
+    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
     start_utc = start_utc.replace(second=0, microsecond=0)
     end_utc = end_utc.replace(second=0, microsecond=0)
     query = query_dict[event]
@@ -953,23 +954,18 @@ async def range_data_retrieve(
             status_code=404, detail=f"No {event} data available for the given range"
         )
 
-    snapshots = {}
+    result = []
     for row in rows:
-        if row["observed_at"] in snapshots:
-            snapshots[row["observed_at"]].append(
-                [row["lat"], row["long"], row["intensity"]]
-            )
-        else:
-            snapshots[row["observed_at"]] = [
-                [row["lat"], row["long"], row["intensity"]]
-            ]
+        # Convert the asyncpg.Record to a standard dictionary
+        row_dict = dict(row)
+        
+        # Parse the JSON string from Postgres into a native Python list using Rust
+        row_dict["points"] = points_adapter.validate_json(row_dict["points"])
+        
+        result.append(row_dict)
 
-    sorted_snapshots = [
-        {"observed_at": ts, "points": snapshots[ts]}
-        for ts in sorted(snapshots.keys(), reverse=True)
-    ]
-
-    return sorted_snapshots
+    # 5. Return the list. FastAPI will validate it against List[SnapshotResponse]
+    return result
 
 
 @app.get("/api/kermit")

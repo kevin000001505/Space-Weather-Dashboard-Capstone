@@ -28,18 +28,18 @@ LATEST_DRAP_QUERY = """
         SELECT MAX(observed_at) AS max_ts
         FROM drap_region
     )
-    SELECT
-        lt.max_ts AS timestamp,
-        JSON_AGG(JSON_BUILD_ARRAY(
+    SELECT JSON_BUILD_OBJECT(
+        'timestamp', lt.max_ts,
+        'points', JSON_AGG(JSON_BUILD_ARRAY(
             lat, 
             long, 
             COALESCE(d.absorption, 0)
-        )) AS points
+        ))
+    )::text AS payload
     FROM drap_region d
     JOIN latest_time lt ON d.observed_at = lt.max_ts
     GROUP BY lt.max_ts;
 """
-
 
 KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count

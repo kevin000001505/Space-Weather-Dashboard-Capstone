@@ -186,6 +186,11 @@ class GeoelectricRangeResponse(BaseModel):
     snapshots: List[GeoelectricResponse]
 
 
+class SnapshotResponse(BaseModel):
+    observed_at: datetime
+    points: List[List[float]]
+
+
 class TimeTestingData(BaseModel):
     start: float
     query_start: float

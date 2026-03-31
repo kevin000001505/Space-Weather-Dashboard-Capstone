@@ -168,7 +168,7 @@ export const fetchKpIndex = createAsyncThunk(
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch Kp index");
       const data = await response.json();
-      return data.indices;
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -194,7 +194,7 @@ export const fetchXrayFlux = createAsyncThunk(
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch X-ray flux");
       const data = await response.json();
-      return data.xray_fluxes;
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
@@ -217,7 +217,7 @@ export const fetchProtonFlux = createAsyncThunk(
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch proton flux");
       const data = await response.json();
-      return data.data;
+      return data;
     } catch (error) {
       return rejectWithValue(error.message);
     }
