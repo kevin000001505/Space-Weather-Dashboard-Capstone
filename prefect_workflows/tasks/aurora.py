@@ -124,7 +124,6 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
         payload = {
             "observation_time": formatted_observation_time,
             "forecast_time": formatted_forecast_time,
-            "count": len(data.get("coordinates", [])),
             "coordinates": data.get("coordinates", []),
         }
         await client.set(AURORA_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)

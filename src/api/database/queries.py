@@ -17,7 +17,7 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
         ROUND(geo_altitude::numeric, 2) AS geo_altitude,
         ROUND(velocity::numeric, 2) AS velocity,
         ROUND(heading::numeric, 2) AS heading,
-        on_ground
+        COALESCE(on_ground, FALSE) AS on_ground
     FROM activate_flight
     WHERE on_ground = FALSE AND time_pos >= NOW() - INTERVAL '20 minutes';
 """

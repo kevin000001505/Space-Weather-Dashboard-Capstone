@@ -34,8 +34,6 @@ class FlightStatesResponse(BaseModel):
     timestamp: str
     count: int
     flights: List[ActivateFlightState]
-    query_time_ms: float  # Add query execution time
-    total_time_ms: float  # Add total endpoint time
 
 
 class Airport(BaseModel):
@@ -150,10 +148,6 @@ class KpIndexResponse(BaseModel):
     station_count: Optional[int] = None
 
 
-class KpIndexListResponse(BaseModel):
-    indices: List[KpIndexResponse]
-
-
 class ProtonFluxResponse(BaseModel):
     time_tag: datetime
     satellite: int
@@ -163,17 +157,10 @@ class ProtonFluxResponse(BaseModel):
     flux_500_mev: Optional[float] = None
 
 
-class ProtonFluxListResponse(BaseModel):
-    data: List[ProtonFluxResponse]
-
-
 class AuroraResponse(BaseModel):
     observation_time: datetime
     forecast_time: datetime
-    count: int
     coordinates: List[List[int]]  # [lon, lat, aurora]
-    query_time_ms: Optional[float] = None
-    total_time_ms: Optional[float] = None
 
 
 class XRayResponse(BaseModel):
@@ -186,17 +173,11 @@ class XRayResponse(BaseModel):
     energy: str
 
 
-class XRayListResponse(BaseModel):
-    xray_fluxes: List[XRayResponse]
-
 
 class AlertResponse(BaseModel):
     time: datetime
     message: str
 
-
-class AlertListResponse(BaseModel):
-    data: List[AlertResponse]
 
 
 class GeoelectricResponse(BaseModel):
