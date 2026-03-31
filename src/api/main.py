@@ -489,29 +489,36 @@ async def latest_drap(conn: asyncpg.Connection = Depends(get_db_connection), deb
         t_query_end = time.perf_counter()
 
         if cached_drap:
-            drap_data = json.loads(cached_drap)
-            timestamp = datetime.strptime(drap_data["timestamp"], "%Y-%m-%d %H:%M UTC").replace(tzinfo=timezone.utc)
 
             if debug:
                 return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
             
-            return DRAPResponse(timestamp=timestamp, points=drap_data['points'])
+            return Response(content=cached_drap, media_type="application/json")
             
     
         t_query_start = time.perf_counter()
-        rows = await conn.fetch(LATEST_DRAP_QUERY)
+        row = await conn.fetchrow(LATEST_DRAP_QUERY)
         t_query_end = time.perf_counter()
 
-        if not rows:
+        if not row:
             raise HTTPException(status_code=404, detail="No D-RAP data available")
+
+        drap_dict = dict(row)
+        drap_dict["points"] = points_adapter.validate_json(drap_dict["points"])
+
+        final_model = DRAPResponse(**drap_dict)
+        cache_payload_bytes = final_model.model_dump_json()
+
+        await redis_client.set(
+            redis_config.DRAP_CACHE_KEY,
+            cache_payload_bytes,
+            ex=redis_config.VERY_LONG_TTL # Or whatever your DRAP TTL is
+        )
 
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-        timestamp = rows[0]["observed_at"]
-        points = [[row["lat"], row["lon"], row["intensity"]] for row in rows]
-
-        return DRAPResponse(timestamp=timestamp, points=points)
+        return Response(content=cache_payload_bytes, media_type="application/json")
 
     except HTTPException:
         raise
@@ -818,7 +825,7 @@ async def latest_geoelectric(conn: asyncpg.Connection = Depends(get_db_connectio
 
         geoelectric_data = dict(row)
         geoelectric_data["points"] = points_adapter.validate_json(geoelectric_data["points"])
-        
+
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 

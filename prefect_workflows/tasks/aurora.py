@@ -109,12 +109,16 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
         formatted_observation_time = (
             observation_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             if observation_time and hasattr(observation_time, "strftime")
-            else str(observation_time) if observation_time else ""
+            else str(observation_time)
+            if observation_time
+            else ""
         )
         formatted_forecast_time = (
             forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ")
             if forecast_time and hasattr(forecast_time, "strftime")
-            else str(forecast_time) if forecast_time else ""
+            else str(forecast_time)
+            if forecast_time
+            else ""
         )
 
         payload = {

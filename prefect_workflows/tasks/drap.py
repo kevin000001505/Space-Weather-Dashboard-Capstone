@@ -64,7 +64,7 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
         df_long[["Latitude", "Longitude", "Absorption"]].astype(float).values.tolist()
     )
 
-    payload = {"timestamp": formatted_time, "count": len(points), "points": points}
+    payload = {"timestamp": formatted_time, "points": points}
 
     try:
         client = get_redis_client()

@@ -29,12 +29,15 @@ LATEST_DRAP_QUERY = """
         FROM drap_region
     )
     SELECT
-        d.observed_at,
-        ST_Y(d.location::geometry) AS lat,
-        ST_X(d.location::geometry) AS lon,
-        COALESCE(d.absorption, 0)   AS intensity
+        lt.max_ts AS timestamp,
+        JSON_AGG(JSON_BUILD_ARRAY(
+            lat, 
+            long, 
+            COALESCE(d.absorption, 0)
+        )) AS points
     FROM drap_region d
-    JOIN latest_time lt ON d.observed_at = lt.max_ts;
+    JOIN latest_time lt ON d.observed_at = lt.max_ts
+    GROUP BY lt.max_ts;
 """
 
 
