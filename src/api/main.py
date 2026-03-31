@@ -525,7 +525,7 @@ async def latest_drap(conn: asyncpg.Connection = Depends(get_db_connection), deb
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-@app.get("/api/v1/kp-index", response_model=KpIndexListResponse)
+@app.get("/api/v1/kp-index", response_model=List[KpIndexResponse])
 async def kp_index(
     conn: asyncpg.Connection = Depends(get_db_connection), 
     start: Optional[datetime] = Query(
@@ -562,17 +562,7 @@ async def kp_index(
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-        indices = [
-            KpIndexResponse(
-                time_tag=row["time_tag"],
-                kp=row["kp"],
-                a_running=row.get("a_running"),
-                station_count=row.get("station_count"),
-            )
-            for row in rows
-        ]
-
-        return KpIndexListResponse(indices=indices)
+        return [dict(row) for row in rows]
 
     except HTTPException:
         raise
@@ -581,7 +571,7 @@ async def kp_index(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/xray", response_model=XRayListResponse)
+@app.get("/api/v1/xray", response_model=List[XRayResponse])
 async def xray_flux(
     conn: asyncpg.Connection = Depends(get_db_connection), 
     start: Optional[datetime] = Query(
@@ -617,20 +607,7 @@ async def xray_flux(
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-        xray_fluxes = [
-            XRayResponse(
-                    time_tag=row["time_tag"],
-                    satellite=row["satellite"],
-                    flux=row["flux"],
-                    observed_flux=row["observed_flux"],
-                    electron_correction=row["electron_correction"],
-                    electron_contamination=row["electron_contamination"],
-                    energy=row["energy"],
-                )
-            for row in rows
-        ]
-
-        return XRayListResponse(xray_fluxes=xray_fluxes)
+        return [dict(row) for row in rows]
 
     except HTTPException:
         raise
@@ -639,7 +616,7 @@ async def xray_flux(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/proton-flux", response_model=ProtonFluxListResponse)
+@app.get("/api/v1/proton-flux", response_model=List[ProtonFluxResponse])
 async def proton_flux(
     conn: asyncpg.Connection = Depends(get_db_connection), 
     start: Optional[datetime] = Query(
@@ -675,19 +652,7 @@ async def proton_flux(
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-        data = [
-            ProtonFluxResponse(
-                    time_tag=row["time_tag"],
-                    satellite=row["satellite"],
-                    flux_10_mev=row.get("flux_10_mev"),
-                    flux_50_mev=row.get("flux_50_mev"),
-                    flux_100_mev=row.get("flux_100_mev"),
-                    flux_500_mev=row.get("flux_500_mev"),
-                )
-            for row in rows
-        ]
-
-        return ProtonFluxListResponse(data=data)
+        return [dict(row) for row in rows]
 
     except HTTPException:
         raise
@@ -784,7 +749,7 @@ async def aurora(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/alert", response_model=AlertListResponse)
+@app.get("/api/v1/alert", response_model=List[AlertResponse])
 async def get_alerts(conn: asyncpg.Connection = Depends(get_db_connection), days: int = Query(default=1, ge=1, le=30), debug: bool = Query(False)):
     """Retrieve alert records with only time and message.
 
@@ -800,12 +765,8 @@ async def get_alerts(conn: asyncpg.Connection = Depends(get_db_connection), days
         if debug:
             return JSONResponse(content=TimeTestingData(start=t_start, query_start=t_query_start, query_end=t_query_end, finish=time.perf_counter()).result())
 
-        return AlertListResponse(data=[
-            AlertResponse(
-                time=row["issue_datetime"],
-                message=row["alert_messages"],
-            ) for row in rows
-        ])
+        return [dict(row) for row in rows]
+    
     except HTTPException:
         raise
     except Exception as e:
