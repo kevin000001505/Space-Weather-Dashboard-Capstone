@@ -179,13 +179,13 @@ app.add_middleware(
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+
 @app.middleware("http")
 async def add_process_time_header(request, call_next):
     t0 = time.perf_counter()
     response = await call_next(request)
     response.headers["X-Process-Time"] = str(time.perf_counter() - t0)
     return response
-
 
 
 query_dict = {
@@ -313,7 +313,7 @@ async def live_dashboard_stream(request: Request):
     )
 
 
-@app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)  
+@app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)
 async def get_latest_airports(
     conn: asyncpg.Connection = Depends(get_db_connection),
     limit: int = Query(None, ge=1, le=200000),
@@ -323,18 +323,22 @@ async def get_latest_airports(
     redis_client = redis_config.get_redis_client()
     try:
         t_query_start = time.perf_counter()
-        cached_bytes: bytes | None = await redis_client.get(redis_config.AIRPORTS_CACHE_KEY)
+        cached_bytes: bytes | None = await redis_client.get(
+            redis_config.AIRPORTS_CACHE_KEY
+        )
 
         if cached_bytes:
             t_query_end = time.perf_counter()
 
             if debug:
-                return JSONResponse(content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result())
+                return JSONResponse(
+                    content=TimeTestingData(
+                        start=t_start,
+                        query_start=t_query_start,
+                        query_end=t_query_end,
+                        finish=time.perf_counter(),
+                    ).result()
+                )
 
             if limit:
                 airports_data = airports_adapter.validate_json(cached_bytes)
@@ -351,7 +355,7 @@ async def get_latest_airports(
         if not rows:
             raise HTTPException(status_code=404, detail="No airport data available")
 
-        airports_models = airports_adapter.validate_python(rows)  
+        airports_models = airports_adapter.validate_python(rows)
         cache_payload_bytes = airports_adapter.dump_json(airports_models)
 
         await redis_client.set(
@@ -361,12 +365,14 @@ async def get_latest_airports(
         )
 
         if debug:
-            return JSONResponse(content=TimeTestingData(
-                start=t_start,
-                query_start=t_query_start,
-                query_end=t_query_end,
-                finish=time.perf_counter(),
-            ).result())
+            return JSONResponse(
+                content=TimeTestingData(
+                    start=t_start,
+                    query_start=t_query_start,
+                    query_end=t_query_end,
+                    finish=time.perf_counter(),
+                ).result()
+            )
 
         if limit:
             return Response(
@@ -501,7 +507,7 @@ async def get_activate_flight_states(
         payload_dict = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "count": len(flights_data),
-            "flights": flights_data  
+            "flights": flights_data,
         }
 
         payload_model = FlightStatesResponse.model_validate(payload_dict)
@@ -521,7 +527,7 @@ async def get_activate_flight_states(
             return JSONResponse(content=timing.result())
 
         return Response(content=json_bytes, media_type="application/json")
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -560,7 +566,7 @@ async def latest_drap(
         if not row:
             raise HTTPException(status_code=404, detail="No D-RAP data available")
 
-        raw_json_string = row['payload']
+        raw_json_string = row["payload"]
         final_model = DRAPResponse.model_validate_json(raw_json_string)
 
         # 3. Dump back to JSON for Redis and the response
@@ -790,7 +796,7 @@ async def aurora(
                 payload = {
                     "observation_time": raw_data.get("observation_time"),
                     "forecast_time": raw_data.get("forecast_time"),
-                    "coordinates": raw_data.get("coordinates", [])
+                    "coordinates": raw_data.get("coordinates", []),
                 }
                 return payload
 
@@ -958,10 +964,10 @@ async def range_data_retrieve(
     for row in rows:
         # Convert the asyncpg.Record to a standard dictionary
         row_dict = dict(row)
-        
+
         # Parse the JSON string from Postgres into a native Python list using Rust
         row_dict["points"] = points_adapter.validate_json(row_dict["points"])
-        
+
         result.append(row_dict)
 
     # 5. Return the list. FastAPI will validate it against List[SnapshotResponse]
