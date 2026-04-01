@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import "./styles/DateTimeViewer.css";
@@ -9,11 +9,7 @@ import {
   setLiveStreamMode,
 } from "../../store/slices/playbackSlice";
 import { Button, Menu, MenuItem, TextField } from "@mui/material";
-import {
-  DatePicker,
-  LocalizationProvider,
-  TimePicker,
-} from "@mui/x-date-pickers";
+import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import { useAllTimezones } from "../../hooks/useAllTimezones";
@@ -24,14 +20,111 @@ import {
   utcToZonedTime,
 } from "./helpers/helper";
 import { fetchHistoricalDRAP } from "../../api/api";
+import { setDRAPPlayback } from "../../store/slices/drapSlice";
+
+// Memoized DateBox
+const DateBox = React.memo(function DateBox({ date, selectedTimezone, darkMode, onOpen, dateBoxRef, onChange, open }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        className={`dtv-box dtv-date ${!darkMode ? "dtv-light" : ""}`}
+        style={{ cursor: "pointer" }}
+        onClick={onOpen}
+        ref={dateBoxRef}
+      >
+        {formatDate(date, selectedTimezone)}
+      </div>
+      <DatePicker
+        open={open}
+        onClose={() => onChange(null)}
+        value={date ? createDate(date) : null}
+        onChange={onChange}
+        slotProps={{
+          textField: {
+            size: "small",
+            sx: { display: "none" },
+          },
+          desktopPaper: {
+            sx: {
+              background: "rgba(34, 40, 60, 0.35) !important",
+              backdropFilter: "blur(12px) saturate(1.4) !important",
+              color: "#e0e0e0 !important",
+              fontWeight: 600,
+            },
+          },
+          popper: {
+            sx: { zIndex: 1500 },
+            anchorEl: dateBoxRef.current,
+            placement: "bottom",
+            modifiers: [
+              { name: "offset", options: { offset: [0, 8] } },
+              { name: "flip", enabled: true },
+              { name: "preventOverflow", enabled: true },
+              { name: "computeStyles", options: { gpuAcceleration: false } },
+            ],
+          },
+        }}
+        disableFuture
+        disableHighlightToday
+        slotPropsPopper={{ placement: "bottom-start" }}
+      />
+    </div>
+  );
+});
+
+// Memoized TimeBox
+const TimeBox = React.memo(function TimeBox({ date, time, darkMode, onOpen, timeBoxRef, onChange, open }) {
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        className={`dtv-box dtv-time ${!darkMode ? "dtv-light" : ""}`}
+        style={{ cursor: "pointer" }}
+        onClick={onOpen}
+        ref={timeBoxRef}
+      >
+        {time}
+      </div>
+      <TimePicker
+        open={open}
+        onClose={() => onChange(null)}
+        value={time ? createDate(`${date}T${time}`) : null}
+        onChange={onChange}
+        slotProps={{
+          textField: {
+            size: "small",
+            sx: { display: "none" },
+          },
+          actionBar: {
+            actions: [],
+          },
+          popper: {
+            sx: { zIndex: 1500 },
+            anchorEl: timeBoxRef?.current,
+            placement: "bottom",
+            modifiers: [
+              { name: "offset", options: { offset: [0, 8] } },
+              { name: "flip", enabled: true },
+              { name: "preventOverflow", enabled: true },
+              { name: "computeStyles", options: { gpuAcceleration: false } },
+            ],
+          },
+        }}
+        ampm={false}
+        minutesStep={1}
+        slotPropsPopper={{ placement: "bottom-start" }}
+      />
+    </div>
+  );
+});
+
 const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
   const dispatch = useDispatch();
 
-  const selectedTimezone = useSelector(
-    (state) => state.charts.selectedTimezone,
-  );
+  const selectedTimezone = useSelector((state) => state.charts.selectedTimezone);
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const { date, time, liveStreamMode } = useSelector((state) => state.playback);
+  const date = useSelector((state) => state.playback.date);
+  const time = useSelector((state) => state.playback.time);
+  const liveStreamMode = useSelector((state) => state.playback.liveStreamMode);
   const timeZones = useAllTimezones();
   const [tzSearch, setTzSearch] = useState("");
   const [debouncedTzSearch, setDebouncedTzSearch] = useState("");
@@ -79,14 +172,46 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
     if (!date || liveStreamMode) return;
     // Parse the selected date (YYYY-MM-DD)
     const [year, month, day] = date.split("-").map(Number);
-    const startDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-    const endDate = new Date(year, month - 1, day + 1, 0, 0, 0, 0);
-    dispatch(
-      fetchHistoricalDRAP({
-        start: startDate.toISOString(),
-        end: endDate.toISOString(),
-      }),
-    );
+    const fetchAllHours = async () => {
+      const promises = [];
+      for (let hour = 0; hour < 24; hour++) {
+        const start = new Date(year, month - 1, day, hour, 0, 0, 0);
+        const end = new Date(year, month - 1, day, hour + 1, 0, 0, 0);
+        promises.push(
+          dispatch(
+            fetchHistoricalDRAP({
+              start: start.toISOString(),
+              end: end.toISOString(),
+              event: "drap",
+              interval: 5,
+            })
+          ).unwrap()
+        );
+      }
+      try {
+        const results = await Promise.allSettled(promises);
+        // Flatten, filter fulfilled, and merge all data arrays
+        const merged = results
+          .filter(r => r.status === 'fulfilled')
+          .flatMap(r => r.value.data || r.value);
+
+        // Sort by requested_time ascending and filter out duplicates
+        const seen = new Set();
+        const allData = merged
+          .filter(item => {
+            if (!item.requested_time) return false;
+            if (seen.has(item.requested_time)) return false;
+            seen.add(item.requested_time);
+            return true;
+          })
+          .sort((a, b) => new Date(a.requested_time) - new Date(b.requested_time));
+
+        dispatch(setDRAPPlayback(allData));
+      } catch (err) {
+        console.log(err)
+      }
+    };
+    fetchAllHours();
   }, [date, time, selectedTimezone]);
 
   const filteredTimeZones = React.useMemo(() => {
@@ -101,132 +226,47 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
     );
   }, [debouncedTzSearch, timeZones]);
 
+  // Handlers for date/time pickers
+  const handleDatePickerOpen = useCallback(() => setDatePickerOpen(true), []);
+  const handleTimePickerOpen = useCallback(() => setTimePickerOpen(true), []);
+  const handleDateChange = useCallback((newValue) => {
+    if (newValue) {
+      const iso = newValue.toISOString().split("T")[0];
+      dispatch(setLiveStreamMode(false));
+      dispatch(setDate(iso));
+      dispatch(setTime("00:00:00"));
+    }
+    setDatePickerOpen(false);
+  }, [dispatch]);
+  const handleTimeChange = useCallback((newValue) => {
+    if (newValue) {
+      const t = newValue.toTimeString().split(" ")[0];
+      dispatch(setLiveStreamMode(false));
+      dispatch(setTime(t));
+    }
+    setTimePickerOpen(false);
+  }, [dispatch]);
+
   return (
     <div className="datetime-viewer split" ref={ref}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <div style={{ position: "relative" }}>
-          <div
-            className={`dtv-box dtv-date ${!darkMode ? "dtv-light" : ""}`}
-            style={{ cursor: "pointer" }}
-            onClick={() => setDatePickerOpen(true)}
-            ref={dateBoxRef}
-          >
-            {formatDate(date, selectedTimezone)}
-          </div>
-          <DatePicker
-            open={datePickerOpen}
-            onClose={() => setDatePickerOpen(false)}
-            value={date ? createDate(date) : null}
-            onChange={(newValue) => {
-              if (newValue) {
-                const iso = newValue.toISOString().split("T")[0];
-                dispatch(setLiveStreamMode(false));
-                dispatch(setDate(iso));
-                dispatch(setTime("00:00:00"));
-              }
-              setDatePickerOpen(false);
-            }}
-            slotProps={{
-              textField: {
-                size: "small",
-                sx: { display: "none" }, // Hide the input, only show picker popup
-              },
-              desktopPaper: {
-                sx: {
-                  background: "rgba(34, 40, 60, 0.35) !important",
-                  backdropFilter: "blur(12px) saturate(1.4) !important",
-                  color: "#e0e0e0 !important",
-                  fontWeight: 600,
-                },
-              },
-              
-              popper: {
-                sx: { zIndex: 1500 },
-                anchorEl: dateBoxRef.current,
-                placement: "bottom",
-                modifiers: [
-                  {
-                    name: "offset",
-                    options: {
-                      offset: [0, 8], // 8px vertical offset
-                    },
-                  },
-                  {
-                    name: "flip",
-                    enabled: true,
-                  },
-                  {
-                    name: "preventOverflow",
-                    enabled: true,
-                  },
-                  {
-                    name: "computeStyles",
-                    options: {
-                      gpuAcceleration: false,
-                    },
-                  },
-                ],
-              },
-            }}
-            disableFuture
-            disableHighlightToday
-            slotPropsPopper={{
-              placement: "bottom-start",
-            }}
-          />
-        </div>
-      </LocalizationProvider>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <div style={{ position: "relative" }}>
-          <div
-            className={`dtv-box dtv-time ${!darkMode ? "dtv-light" : ""}`}
-            style={{ cursor: "pointer" }}
-            onClick={() => setTimePickerOpen(true)}
-            ref={timeBoxRef}
-          >
-            {time}
-          </div>
-          <TimePicker
-            open={timePickerOpen}
-            onClose={() => setTimePickerOpen(false)}
-            value={time ? createDate(`${date}T${time}`) : null}
-            onChange={(newValue) => {
-              if (newValue) {
-                const t = newValue.toTimeString().split(" ")[0];
-                dispatch(setLiveStreamMode(false));
-                dispatch(setTime(t));
-              }
-              setTimePickerOpen(false);
-            }}
-            slotProps={{
-              textField: {
-                size: "small",
-                sx: { display: "none" },
-              },
-              actionBar: {
-                actions: [],
-              },
-              popper: {
-                sx: { zIndex: 1500 },
-                anchorEl: timeBoxRef?.current,
-                placement: "bottom",
-                modifiers: [
-                  { name: "offset", options: { offset: [0, 8] } },
-                  { name: "flip", enabled: true },
-                  { name: "preventOverflow", enabled: true },
-                  {
-                    name: "computeStyles",
-                    options: { gpuAcceleration: false },
-                  },
-                ],
-              },
-            }}
-            ampm={false}
-            minutesStep={1}
-            slotPropsPopper={{ placement: "bottom-start" }}
-          />
-        </div>
-      </LocalizationProvider>
+      <DateBox
+        date={date}
+        selectedTimezone={selectedTimezone}
+        darkMode={darkMode}
+        onOpen={handleDatePickerOpen}
+        dateBoxRef={dateBoxRef}
+        onChange={handleDateChange}
+        open={datePickerOpen}
+      />
+      <TimeBox
+        date={date}
+        time={time}
+        darkMode={darkMode}
+        onOpen={handleTimePickerOpen}
+        timeBoxRef={timeBoxRef}
+        onChange={handleTimeChange}
+        open={timePickerOpen}
+      />
       <Button
         disableRipple
         sx={{
@@ -359,7 +399,10 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
           }}
           slotProps={{
             input: {
-              style: { fontSize: "0.875rem", color: darkMode ? "#fff" : "#222" },
+              style: {
+                fontSize: "0.875rem",
+                color: darkMode ? "#fff" : "#222",
+              },
             },
           }}
           onKeyDown={(e) => e.stopPropagation()}

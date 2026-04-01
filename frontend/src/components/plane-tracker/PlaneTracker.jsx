@@ -157,7 +157,7 @@ const PlaneTracker = () => {
     dispatch(fetchGeoelectric());
     dispatch(fetchElectricTransmissionLines());
     dispatch(fetchAirports());
-  }, [dispatch]);
+  }, [dispatch, liveStreamMode]);
 
   // Plane filtering logic
   const filteredPlanes = useMemo(() => {

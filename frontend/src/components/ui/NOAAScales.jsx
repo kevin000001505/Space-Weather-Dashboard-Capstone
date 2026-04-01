@@ -3,7 +3,8 @@ import "./styles/NOAAScales.css";
 import { useSelector } from "react-redux";
 import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
-import { IconButton } from "@mui/material";
+import { IconButton, Tooltip } from "@mui/material";
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 // Helper to get color by scale
 const getBoxColor = (scale, type) => {
   if (scale === null || scale === undefined || scale === "0" || scale === 0)
@@ -63,7 +64,21 @@ export const NOAAScales = () => {
 
   return (
     <div className={`noaa-scales-root ${darkMode ? "noaa-dark" : ""}`}>
-      <div className="noaa-scales-title">CURRENT SPACE WEATHER CONDITIONS</div>
+      <div className="noaa-scales-title">
+        CURRENT SPACE WEATHER CONDITIONS{" "}
+        <>
+          <Tooltip title="Click to Learn More About Kp Index">
+            <IconButton
+              onClick={() =>
+                window.open("/help", "_blank", "noopener,noreferrer")
+              }
+              aria-label="Help"
+            >
+              <InfoOutlineIcon fontSize="small" sx={{ color: darkMode ? "#a78bfa" : "#232526" }} />
+            </IconButton>
+          </Tooltip>
+        </>
+      </div>
       <div className="noaa-scales-section">
         <div className="noaa-scales-label">24-Hour Observed Maximums</div>
         <div className="noaa-scales-row">

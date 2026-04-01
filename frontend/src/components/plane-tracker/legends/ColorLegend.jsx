@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { getStops, rgbToHex } from "../../../utils/mapUtils";
+import { IconButton } from "@mui/material";
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import "./styles/ColorLegend.css";
 
 const DRAP_STOPS = [
@@ -140,6 +142,17 @@ const LegendSection = ({ section, index }) => {
           </div>
         </>
       </div>
+      <IconButton
+        sx={{
+          position: "absolute",
+          top: 1,
+          left: 1,
+        }}
+        onClick={() => window.open('/help', '_blank', 'noopener,noreferrer')}
+        aria-label="Help"
+      >
+        <InfoOutlineIcon fontSize="small" sx={{color: "#fff"}} />
+      </IconButton>
     </div>
   );
 };

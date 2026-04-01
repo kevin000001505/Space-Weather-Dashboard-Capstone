@@ -2,7 +2,15 @@
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import React from "react";
 import { Bar } from "react-chartjs-2";
-import { Card, CardContent, Box, CardHeader } from "@mui/material";
+import {
+  Card,
+  CardContent,
+  Box,
+  CardHeader,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import { useSelector, useDispatch } from "react-redux";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Chart } from "chart.js";
@@ -10,7 +18,7 @@ import zoomPlugin from "chartjs-plugin-zoom";
 import { sortByTimeTag } from "../helpers/helpers";
 import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
-
+import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 Chart.register(annotationPlugin, zoomPlugin);
 
 import { G_LEVELS, KP_COLORS } from "../helpers/constants";
@@ -19,7 +27,6 @@ const KpIndexChart = ({ chartRef }) => {
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,
   );
-  const borderWidth = useSelector((state) => state.charts.borderWidth);
   const timeZones = useAllTimezones();
 
   const kpGLevelBackgroundPlugin = React.useMemo(
@@ -143,8 +150,15 @@ const KpIndexChart = ({ chartRef }) => {
     [mousePosRef, sortedKpIndex, selectedTimezone],
   );
 
+  const handleResetZoom = () => {
+    const chartWrapper = chartRef.current;
+    const chart = chartWrapper?.chart || chartWrapper;
+    if (chart && chart.resetZoom) {
+      chart.resetZoom();
+    }
+  };
+
   return (
-    // Chart ref for reset zoom
     <Card
       sx={{
         height: 500,
@@ -161,6 +175,32 @@ const KpIndexChart = ({ chartRef }) => {
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
+        action={
+          <>
+            <Tooltip title="Reset Zoom">
+              <IconButton
+                onClick={handleResetZoom}
+                size="small"
+                aria-label="reset zoom"
+              >
+                <RefreshIcon
+                  fontSize="small"
+                  sx={{ color: darkMode ? "#fff" : "#000" }}
+                />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Click to Learn More About Kp Index">
+              <IconButton
+                onClick={() =>
+                  window.open("/help", "_blank", "noopener,noreferrer")
+                }
+                aria-label="Help"
+              >
+                <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />
+              </IconButton>
+            </Tooltip>
+          </>
+        }
       />
       <CardContent
         sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}

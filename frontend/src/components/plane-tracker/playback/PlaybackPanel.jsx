@@ -26,11 +26,10 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.ui);
   const drapPlayback = useSelector((state) => state.drap.playback);
-  const snapshots = drapPlayback?.snapshots || [];
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isLooping, setIsLooping] = React.useState(false);
-  const [speed, setSpeed] = React.useState(1); // snapshots per second
+  const [speed, setSpeed] = React.useState(1); 
   const intervalRef = React.useRef();
 
   const allowedSpeeds = [0.25, 0.5, 1, 2, 4, 8];
@@ -41,16 +40,16 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   };
 
   React.useEffect(() => {
-    if (currentIndex >= snapshots.length) {
-      setCurrentIndex(snapshots.length > 0 ? snapshots.length - 1 : 0);
+    if (currentIndex >= drapPlayback.length) {
+      setCurrentIndex(drapPlayback.length > 0 ? drapPlayback.length - 1 : 0);
     }
-  }, [snapshots.length]);
+  }, [drapPlayback.length]);
 
   React.useEffect(() => {
-    if (!isPlaying || snapshots.length === 0) return;
+    if (!isPlaying || drapPlayback.length === 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => {
-        if (prev < snapshots.length - 1) {
+        if (prev < drapPlayback.length - 1) {
           return prev + 1;
         } else if (isLooping) {
           return 0;
@@ -62,25 +61,26 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     }, 1000 / speed);
     intervalRef.current = interval;
     return () => clearInterval(interval);
-  }, [isPlaying, speed, snapshots.length, isLooping]);
+  }, [isPlaying, speed, drapPlayback.length, isLooping]);
 
   const handleStepBackward = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
   };
   const handleStepForward = () => {
-    setCurrentIndex((prev) => Math.min(snapshots.length - 1, prev + 1));
+    setCurrentIndex((prev) => Math.min(drapPlayback.length - 1, prev + 1));
   };
 
   const formatTime = (idx) => {
-    if (!snapshots[idx]) return "--";
-    return new Date(snapshots[idx].timestamp).toLocaleString();
+    if (!drapPlayback[idx]) return "--";
+    return new Date(drapPlayback[idx].requested_time).toLocaleString();
   };
 
   React.useEffect(() => {
-    if (snapshots.length > 0 && snapshots[currentIndex]) {
-      dispatch(setDRAPPoints(snapshots[currentIndex].points));
+    if (drapPlayback.length > 0 && drapPlayback[currentIndex]) {
+      dispatch(setDRAPPoints(drapPlayback[currentIndex].points));
     }
-  }, [currentIndex, snapshots, dispatch]);
+  }, [currentIndex, drapPlayback, dispatch]);
+  
   const transportButtonSx = {
     width: 42,
     height: 42,
@@ -117,7 +117,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       },
     },
   };
-  const disabled = snapshots.length === 0;
+  const disabled = drapPlayback.length === 0;
   return (
     <Paper
       elevation={0}
@@ -147,7 +147,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
           <Slider
             value={currentIndex}
             min={0}
-            max={snapshots.length > 0 ? snapshots.length - 1 : 0}
+            max={drapPlayback.length > 0 ? drapPlayback.length - 1 : 0}
             onChange={(_, value) => {
               if (typeof value === "number") setCurrentIndex(value);
             }}
@@ -175,7 +175,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
           >
             <span>{formatTime(currentIndex)}</span>
             <span>
-              {formatTime(snapshots.length > 0 ? snapshots.length - 1 : 0)}
+              {formatTime(drapPlayback.length > 0 ? drapPlayback.length - 1 : 0)}
             </span>
           </Stack>
         </Stack>
@@ -220,6 +220,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
                       color: alpha("#fff", 0.6),
                     },
                   }}
+                  disabled={disabled}
                 >
                   {isPlaying ? (
                     <PauseRoundedIcon sx={{ fontSize: 30 }} />
@@ -300,7 +301,6 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
               <span>
                 <IconButton
                   onClick={() => dispatch(setLiveStreamMode(true))}
-                  disabled={disabled}
                   aria-label="Return to Live"
                   sx={{
                     minWidth: 42,

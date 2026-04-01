@@ -11,8 +11,6 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Popover from "@mui/material/Popover";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 
 const buttonSx = (darkMode) => ({
@@ -145,105 +143,101 @@ const CustomDateTime = ({
           Custom
         </ToggleButton>
       </ToggleButtonGroup>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-        <Popover
-          open={dialogOpen}
-          anchorEl={anchorEl}
-          onClose={handlePopoverClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-          transformOrigin={{ vertical: "top", horizontal: "center" }}
-          slotProps={{
-            paper: {
-              sx: {
-                width: { xs: 340, sm: 520 },
-                maxWidth: "98vw",
-                p: 1,
-                mt: 1.5,
-                backgroundColor: darkMode ? "#23272e" : "#fff",
-                color: darkMode ? "#e0e0e0" : "#181a1b",
-                border: `1px solid ${darkMode ? "#555" : "#ccc"}`,
-                boxShadow: "var(--ui-shadow)",
-                borderRadius: 2,
-                position: "relative",
-              },
-              className: darkMode ? "mui-dark-datetime" : undefined,
+      <Popover
+        open={dialogOpen}
+        anchorEl={anchorEl}
+        onClose={handlePopoverClose}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        transformOrigin={{ vertical: "top", horizontal: "center" }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: { xs: 340, sm: 520 },
+              maxWidth: "98vw",
+              p: 1,
+              mt: 1.5,
+              backgroundColor: darkMode ? "#23272e" : "#fff",
+              color: darkMode ? "#e0e0e0" : "#181a1b",
+              border: `1px solid ${darkMode ? "#555" : "#ccc"}`,
+              boxShadow: "var(--ui-shadow)",
+              borderRadius: 2,
+              position: "relative",
             },
+            className: darkMode ? "mui-dark-datetime" : undefined,
+          },
+        }}
+      >
+        <div
+          style={{
+            fontWeight: 600,
+            fontSize: "1rem",
+            marginBottom: 8,
+            borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`,
+            paddingBottom: 4,
           }}
         >
-          <div
-            style={{
-              fontWeight: 600,
-              fontSize: "1rem",
-              marginBottom: 8,
-              borderBottom: `1px solid ${darkMode ? "#555" : "#ccc"}`,
-              paddingBottom: 4,
+          Custom Date Range
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 16,
+            flexWrap: "wrap",
+            justifyContent: "center",
+          }}
+        >
+          <DateTimePicker
+            label="Start Date & Time"
+            value={customdt.start ? new Date(customdt.start) : null}
+            maxDateTime={customdt.end ? new Date(customdt.end) : undefined}
+            disableHighlightToday
+            onChange={(date) =>
+              dispatch(
+                setCustomDateTime({
+                  ...customdt,
+                  start: date ? date.toISOString() : null,
+                  range: "custom",
+                }),
+              )
+            }
+            slotProps={{
+              actionBar: { actions: [] },
+              popper: {
+                className: darkMode ? "mui-dark-datetime-popper" : undefined,
+              },
             }}
-          >
-            Custom Date Range
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 16,
-              flexWrap: "wrap",
-              justifyContent: "center",
+            renderInput={(params) => (
+              <TextField {...params} margin="normal" fullWidth />
+            )}
+          />
+          <DateTimePicker
+            label="End Date & Time"
+            value={customdt.end ? new Date(customdt.end) : null}
+            minDateTime={customdt.start ? new Date(customdt.start) : undefined}
+            disableHighlightToday
+            onChange={(date) =>
+              dispatch(
+                setCustomDateTime({
+                  ...customdt,
+                  end: date ? date.toISOString() : null,
+                  range: "custom",
+                }),
+              )
+            }
+            slotProps={{
+              actionBar: { actions: [] },
+              popper: {
+                className: darkMode ? "mui-dark-datetime-popper" : undefined,
+              },
             }}
-          >
-            <DateTimePicker
-              label="Start Date & Time"
-              value={customdt.start ? new Date(customdt.start) : null}
-              maxDateTime={customdt.end ? new Date(customdt.end) : undefined}
-              disableHighlightToday
-              onChange={(date) =>
-                dispatch(
-                  setCustomDateTime({
-                    ...customdt,
-                    start: date ? date.toISOString() : null,
-                    range: "custom",
-                  }),
-                )
-              }
-              slotProps={{
-                actionBar: { actions: [] },
-                popper: {
-                  className: darkMode ? "mui-dark-datetime-popper" : undefined,
-                },
-              }}
-              renderInput={(params) => (
-                <TextField {...params} margin="normal" fullWidth />
-              )}
-            />
-            <DateTimePicker
-              label="End Date & Time"
-              value={customdt.end ? new Date(customdt.end) : null}
-              minDateTime={
-                customdt.start ? new Date(customdt.start) : undefined
-              }
-              disableHighlightToday
-              onChange={(date) =>
-                dispatch(
-                  setCustomDateTime({
-                    ...customdt,
-                    end: date ? date.toISOString() : null,
-                    range: "custom",
-                  }),
-                )
-              }
-              slotProps={{
-                actionBar: { actions: [] },
-                popper: {
-                  className: darkMode ? "mui-dark-datetime-popper" : undefined,
-                },
-              }}
-              renderInput={(params) => (
-                <TextField {...params} margin="normal" fullWidth />
-              )}
-            />
-          </div>
-          {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
-        </Popover>
-      </LocalizationProvider>
+            renderInput={(params) => (
+              <TextField {...params} margin="normal" fullWidth />
+            )}
+          />
+        </div>
+        {error && <div style={{ color: "red", marginTop: 8 }}>{error}</div>}
+      </Popover>
     </>
   );
 };

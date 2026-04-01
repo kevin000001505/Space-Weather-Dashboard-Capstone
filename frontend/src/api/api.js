@@ -44,7 +44,7 @@ export const fetchHistoricalDRAP = createAsyncThunk(
     try {
       const { start, end } = time_range;
       // console.log(encodeURIComponent(start), encodeURIComponent(end));
-      const response = await fetch(`${API_BASE_URL}/drap?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+      const response = await fetch(`${API_BASE_URL}/drap/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
       if (!response.ok) {
         throw new Error("Failed to fetch DRAP data");
       }

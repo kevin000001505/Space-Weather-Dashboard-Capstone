@@ -5,7 +5,7 @@ const drapSlice = createSlice({
   name: "drap",
   initialState: {
     points: [],
-    playback: {},
+    playback: [],
     timestamp: null,
     count: 0,
     loading: false,
@@ -17,6 +17,9 @@ const drapSlice = createSlice({
     },
     setDRAPPoints: (state, action) => {
       state.points = action.payload;
+    },
+    setDRAPPlayback: (state, action) => {
+      state.playback = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -42,14 +45,6 @@ const drapSlice = createSlice({
       })
       .addCase(fetchHistoricalDRAP.fulfilled, (state, action) => {
         state.loading = false;
-        let playback = action.payload || {};
-        if (playback.snapshots && Array.isArray(playback.snapshots)) {
-          playback = {
-            ...playback,
-            snapshots: [...playback.snapshots].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp)),
-          };
-        }
-        state.playback = playback;
       })
       .addCase(fetchHistoricalDRAP.rejected, (state, action) => {
         state.loading = false;
@@ -58,5 +53,5 @@ const drapSlice = createSlice({
   },
 });
 
-export const { setDRAPPoints, injectLiveDRAP } = drapSlice.actions;
+export const { setDRAPPoints, injectLiveDRAP, setDRAPPlayback } = drapSlice.actions;
 export default drapSlice.reducer;

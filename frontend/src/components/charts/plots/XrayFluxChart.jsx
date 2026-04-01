@@ -15,10 +15,11 @@ import {
   Title,
   Tooltip,
 } from "chart.js";
-
+import RefreshIcon from "@mui/icons-material/Refresh";
 import annotationPlugin from "chartjs-plugin-annotation";
 import zoomPlugin from "chartjs-plugin-zoom";
 import { Card, CardContent, Box, CardHeader } from "@mui/material";
+import { IconButton, Tooltip as MuiTooltip } from "@mui/material";
 import {
   sortByTimeTag,
   getUniqueTimeTags,
@@ -31,7 +32,7 @@ import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin
 import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 import { R_LEVELS } from "../helpers/constants";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
-
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 // Register zoom plugin
 Chart.register(
   CategoryScale,
@@ -226,6 +227,14 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
   // Chart ref for reset zoom or export
   const chartRef = externalChartRef;
 
+  const handleResetZoom = () => {
+    const chartWrapper = chartRef.current;
+    const chart = chartWrapper?.chart || chartWrapper;
+    if (chart && chart.resetZoom) {
+      chart.resetZoom();
+    }
+  };
+
   return (
     <Card
       sx={{
@@ -243,6 +252,32 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
+        action={
+          <>
+            <MuiTooltip title="Reset Zoom">
+              <IconButton
+                onClick={handleResetZoom}
+                size="small"
+                aria-label="reset zoom"
+              >
+                <RefreshIcon
+                  fontSize="small"
+                  sx={{ color: darkMode ? "#fff" : "#000" }}
+                />
+              </IconButton>
+            </MuiTooltip>
+            <MuiTooltip title="Click to Learn More About X-ray Flux">
+              <IconButton
+                onClick={() =>
+                  window.open("/help", "_blank", "noopener,noreferrer")
+                }
+                aria-label="Help"
+              >
+                <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />
+              </IconButton>
+            </MuiTooltip>
+          </>
+        }
       />
       <CardContent
         sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}

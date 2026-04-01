@@ -4,6 +4,8 @@ import { Line } from "react-chartjs-2";
 import { Chart } from "chart.js";
 import annotationPlugin from "chartjs-plugin-annotation";
 import { Card, CardContent, Box, CardHeader } from "@mui/material";
+
+import { IconButton, Tooltip as MuiTooltip } from "@mui/material";
 import {
   formatChartLabel,
   sortByTimeTag,
@@ -17,6 +19,8 @@ import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 import { S_LEVELS } from "../helpers/constants";
 import { debounce } from "lodash";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 
 Chart.register(annotationPlugin);
 
@@ -221,6 +225,14 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
     [mousePosRef, protonFlux, selectedTimezone],
   );
 
+  const handleResetZoom = () => {
+    const chartWrapper = chartRef.current;
+    const chart = chartWrapper?.chart || chartWrapper;
+    if (chart && chart.resetZoom) {
+      chart.resetZoom();
+    }
+  };
+
   return (
     <Card
       sx={{
@@ -238,6 +250,32 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
           fontWeight: "bold",
           borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
         }}
+        action={
+          <>
+            <MuiTooltip title="Reset Zoom">
+              <IconButton
+                onClick={handleResetZoom}
+                size="small"
+                aria-label="reset zoom"
+              >
+                <RefreshIcon
+                  fontSize="small"
+                  sx={{ color: darkMode ? "#fff" : "#000" }}
+                />
+              </IconButton>
+            </MuiTooltip>
+            <MuiTooltip title="Click to Learn More About Proton Flux">
+              <IconButton
+                onClick={() =>
+                  window.open("/help", "_blank", "noopener,noreferrer")
+                }
+                aria-label="Help"
+              >
+                <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />
+              </IconButton>
+            </MuiTooltip>
+          </>
+        }
       />
       <CardContent
         sx={{ height: "90%", backgroundColor: darkMode ? "#23272e" : "#fff" }}

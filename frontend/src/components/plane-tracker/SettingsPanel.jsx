@@ -35,6 +35,7 @@ import {
   CardHeader,
   FormControlLabel,
   Slide,
+  Tooltip,
 } from "@mui/material";
 import {
   setElectricTransmissionLinesVoltageRange,
@@ -45,7 +46,7 @@ import {
   setShowOverheadLines,
   setShowUndergroundLines,
 } from "../../store/slices/electricTransmissionLinesSlice";
-
+import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 const PANEL_WIDTH = 550;
 const SettingsPanel = () => {
   const dispatch = useDispatch();
@@ -377,6 +378,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Dashboard Settings"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -591,6 +614,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Airplane Filtering"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -696,6 +741,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Airport Filtering"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -958,6 +1025,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Electric Transmission Lines"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -1177,7 +1266,7 @@ const SettingsPanel = () => {
                                 sx={{ marginRight: 1, p: 0.5 }}
                               />
                               <span style={{ fontSize: "0.92rem" }}>
-                                Reported (Not Estimated) Voltage Only 
+                                Reported (Not Estimated) Voltage Only
                               </span>
                             </MenuItem>
                             <MenuItem
@@ -1277,6 +1366,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About DRAP Region Filtering"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -1386,6 +1497,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Aurora Probability Region"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
@@ -1501,6 +1634,28 @@ const SettingsPanel = () => {
                         fontSize: "1rem",
                         borderBottom: `2px solid ${darkMode ? "#444" : "#e0e0e0"}`,
                       }}
+                      action={
+                        <Tooltip
+                          title="Click to Learn About Geoelectric Field"
+                          placement="top"
+                        >
+                          <IconButton
+                            onClick={() =>
+                              window.open(
+                                "/help",
+                                "_blank",
+                                "noopener,noreferrer",
+                              )
+                            }
+                            aria-label="Help"
+                          >
+                            <InfoOutlineIcon
+                              fontSize="small"
+                              sx={{ color: "#fff" }}
+                            />
+                          </IconButton>
+                        </Tooltip>
+                      }
                     />
                     <Card
                       sx={{
