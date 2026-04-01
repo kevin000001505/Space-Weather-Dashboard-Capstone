@@ -13,7 +13,6 @@ from tasks.models import FlightStateRecord
 from database.queries import (
     ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
     CLEANUP_OLD_FLIGHT_DATA_QUERY,
-    CREATE_PARTITION_IF_MISSING_QUERY,
     FLIGHT_STATES_STAGING_DDL,
     FLIGHT_STATES_STAGING_COLUMNS,
     FLIGHT_STATES_STAGING_GEOM_SQL,
@@ -23,6 +22,7 @@ from database.queries import (
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STATES_QUERY,
 )
+from database.create import CREATE_PARTITION_IF_MISSING_QUERY
 
 # Pull from the shared volume
 from shared.redis import (
