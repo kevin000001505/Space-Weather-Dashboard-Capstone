@@ -34,6 +34,7 @@ EOSQL
 # ── 4. Create PostGIS extension as SUPERUSER (prefect) ──
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$DEVELOPER_DB" <<-EOSQL
     CREATE EXTENSION IF NOT EXISTS postgis;
+    CREATE EXTENSION IF NOT EXISTS btree_gist;
 EOSQL
 
 # ── 5. Create tables, indexes, functions as developer ──

@@ -960,15 +960,15 @@ async def range_data_retrieve(
 
     result = []
     for row in rows:
-        # Convert the asyncpg.Record to a standard dictionary
         row_dict = dict(row)
+        raw_points = row_dict.get("points")
+        row_dict["points"] = (
+            points_adapter.validate_json(raw_points)
+            if raw_points is not None
+            else None
+        )
+        result.append(SnapshotResponse.model_validate(row_dict))
 
-        # Parse the JSON string from Postgres into a native Python list using Rust
-        row_dict["points"] = points_adapter.validate_json(row_dict["points"])
-
-        result.append(row_dict)
-
-    # 5. Return the list. FastAPI will validate it against List[SnapshotResponse]
     return result
 
 

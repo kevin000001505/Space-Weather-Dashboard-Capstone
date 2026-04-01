@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 
 from shared.db_utils import ensure_table_exists, cleanup_old_data
-from database.queries import (
+from database.create import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
     COUNTRIES_CREATE_TABLE_SQL,
@@ -83,21 +83,6 @@ async def initial_airport_db(conn: Connection):
         logger.error(f"Failed to initialize airports table: {e}")
         raise
 
-
-# @task(cache_policy=NO_CACHE)
-# async def initial_latest_xray_db(conn: Connection):
-#     """Task to initialize the xray table."""
-#     logger = _logger()
-#     try:
-#         logger.info("Ensuring xray table exists...")
-#         await ensure_table_exists(
-#             conn, "goes_xray_events", create_sql=LATEST_X_RAY_CREATE_TABLE_SQL
-#         )
-#         logger.info("xray table is ready!")
-
-#     except Exception as e:
-#         logger.error(f"Failed to initialize xray table: {e}")
-#         raise
 
 
 @task(cache_policy=NO_CACHE)

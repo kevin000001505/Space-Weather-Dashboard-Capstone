@@ -268,59 +268,125 @@ WHERE a.ident = $1
 # -----------------------------
 # Range Query
 
-
 DRAP_RANGE_QUERY = """
-SELECT 
-    date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, 
-    JSON_AGG(JSON_BUILD_ARRAY(lat, long, absorption)) AS points
-FROM drap_region
-WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
-    ARRAY(
-        SELECT generate_series(
-            $1::timestamptz,
-            $2::timestamptz,
-            make_interval(mins => $3::int)
-        )
-    )
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observed_at
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observed_at
+		FROM drap_region
+		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
+		ORDER BY observed_at <-> t.requested_time
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
 )
-GROUP BY 1
-ORDER BY observed_at DESC
+SELECT
+	e.requested_time,
+	e.observed_at,
+	JSON_AGG(
+		JSON_BUILD_ARRAY(
+			d.lat,
+			d.long,
+			COALESCE(d.absorption, 0)
+		)
+	) AS points
+FROM events e
+LEFT JOIN drap_region d 
+ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
 """
 
 AURORA_RANGE_QUERY = """
-SELECT 
-    date_trunc('minute', observation_time AT TIME ZONE 'UTC') AS observed_at, 
-    JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
-FROM aurora_forecast
-WHERE date_trunc('minute', observation_time AT TIME ZONE 'UTC') = ANY(
-    ARRAY(
-        SELECT generate_series(
-            $1::timestamptz,
-            $2::timestamptz,
-            make_interval(mins => $3::int)
-        )
-    )
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observation_time
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observation_time
+		FROM aurora_forecast
+		WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
+		  AND observation_time <= t.requested_time + INTERVAL '5 minute'
+		ORDER BY observation_time <-> t.requested_time
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
 )
-GROUP BY 1
-ORDER BY observed_at DESC
+SELECT
+	e.requested_time,
+	e.observation_time AS observed_at,
+	JSON_AGG(
+		JSON_BUILD_ARRAY(
+			d.lat,
+			d.long,
+			COALESCE(d.aurora, 0),
+		)
+	) AS points
+FROM events e
+LEFT JOIN aurora_forecast d 
+ON d.observation_time = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
 """
 
 GEOELECTRIC_RANGE_QUERY = """
-SELECT 
-    date_trunc('minute', observed_at AT TIME ZONE 'UTC') AS observed_at, 
-    JSON_AGG(JSON_BUILD_ARRAY(lat, long, e_magnitude)) AS points
-FROM geoelectric_field
-WHERE date_trunc('minute', observed_at AT TIME ZONE 'UTC') = ANY(
-    ARRAY(
-        SELECT generate_series(
-            $1::timestamptz,
-            $2::timestamptz,
-            make_interval(mins => $3::int)
-        )
-    )
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observed_at
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observed_at
+		FROM geoelectric_field
+		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
+		ORDER BY observed_at <-> t.requested_time
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
 )
-GROUP BY 1
-ORDER BY observed_at DESC
+SELECT
+	e.requested_time,
+	e.observed_at,
+	JSON_AGG(
+		JSON_BUILD_ARRAY(
+			d.lat,
+			d.long,
+			COALESCE(d.e_magnitude, 0),
+            quality_flag
+		)
+	) AS points
+FROM events e
+LEFT JOIN geoelectric_field d 
+ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
 """
 
 FLIGHTS_RANGE_QUERY = """"""

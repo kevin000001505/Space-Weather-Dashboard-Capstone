@@ -187,8 +187,9 @@ class GeoelectricRangeResponse(BaseModel):
 
 
 class SnapshotResponse(BaseModel):
-    observed_at: datetime
-    points: List[List[float]]
+    requested_time: datetime
+    observed_at: Optional[datetime] = None
+    points: Optional[List[List[float]]] = None
 
 
 class TimeTestingData(BaseModel):
