@@ -258,6 +258,17 @@ services:
       - web_network
       - data_network
 
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_AUTH_PROVIDER: simple
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dozzle:/data
+    networks:
+      - web_network
 
 volumes:
   prefect_home:
@@ -267,6 +278,8 @@ volumes:
   redis_data:
     driver: local
   pgadmin_data:
+    driver: local
+  dozzle:
     driver: local
 
 networks:
