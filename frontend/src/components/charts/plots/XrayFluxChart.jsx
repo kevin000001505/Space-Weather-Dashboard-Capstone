@@ -269,15 +269,34 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
                   },
                   onHover: (e) => {
                     const target = e?.native?.target || e?.chart?.canvas;
-                    if (target) target.style.cursor = 'pointer';
+                    if (target) target.style.cursor = "pointer";
                   },
                   onLeave: (e) => {
                     const target = e?.native?.target || e?.chart?.canvas;
-                    if (target) target.style.cursor = '';
+                    if (target) target.style.cursor = "";
                   },
                 },
                 tooltip: {
                   enabled: false,
+                },
+                zoom: {
+                  pan: {
+                    enabled: true,
+                    mode: "x",
+                    modifierKey: "ctrl",
+                  },
+                  zoom: {
+                    drag: {
+                      enabled: true,
+                    },
+                    mode: "x",
+                    wheel: {
+                      enabled: true,
+                    },
+                    pinch: {
+                      enabled: true,
+                    },
+                  },
                 },
               },
               scales: {

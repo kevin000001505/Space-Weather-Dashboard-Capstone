@@ -13,15 +13,13 @@ import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 
 Chart.register(annotationPlugin, zoomPlugin);
 
-import { G_LEVELS, KP_COLORS} from "../helpers/constants";
+import { G_LEVELS, KP_COLORS } from "../helpers/constants";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
 const KpIndexChart = ({ chartRef }) => {
   const backgroundBandsOpacity = useSelector(
     (state) => state.charts.backgroundBandsOpacity,
   );
-  const borderWidth = useSelector(
-    (state) => state.charts.borderWidth,
-  );
+  const borderWidth = useSelector((state) => state.charts.borderWidth);
   const timeZones = useAllTimezones();
 
   const kpGLevelBackgroundPlugin = React.useMemo(
@@ -187,6 +185,25 @@ const KpIndexChart = ({ chartRef }) => {
                 },
                 tooltip: {
                   enabled: false,
+                },
+                zoom: {
+                  pan: {
+                    enabled: true,
+                    mode: "x",
+                    modifierKey: "ctrl",
+                  },
+                  zoom: {
+                    drag: {
+                      enabled: true,
+                    },
+                    mode: "x",
+                    wheel: {
+                      enabled: true,
+                    },
+                    pinch: {
+                      enabled: true,
+                    },
+                  },
                 },
                 datalabels: {
                   anchor: "end",

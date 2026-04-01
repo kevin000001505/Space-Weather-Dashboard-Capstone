@@ -274,6 +274,25 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                 tooltip: {
                   enabled: false,
                 },
+                zoom: {
+                  pan: {
+                    enabled: true,
+                    mode: "x",
+                    modifierKey: "ctrl",
+                  },
+                  zoom: {
+                    drag: {
+                      enabled: true,
+                    },
+                    mode: "x",
+                    wheel: {
+                      enabled: true,
+                    },
+                    pinch: {
+                      enabled: true,
+                    },
+                  },
+                },
                 annotation: (() => {
                   const dateLines = {};
                   let prevDateStr = null;

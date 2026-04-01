@@ -14,7 +14,7 @@ export function getIntervalMs(range) {
   if (range === "3days") return 10 * 60 * 1000; // 10 min
   if (range === "24hours") return 5 * 60 * 1000; // 5 min
   if (range === "6hours") return 2 * 60 * 1000; // 2 min
-  return 5 * 60 * 1000; // default 15 min
+  return 30 * 60 * 1000; // default 15 min
 }
 // Format a number as scientific notation like '5 × 10⁻⁷'
 export function formatSciNotation(val) {
