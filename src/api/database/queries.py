@@ -129,7 +129,7 @@ LATEST_GEOELECTRIC_QUERY = """
     SELECT 
         MAX(observed_at) AS timestamp,
         COUNT(*) AS count,
-        JSON_AGG(JSON_BUILD_ARRAY(lat, long, e_magnitude, quality_flag)) AS points
+        JSON_AGG(JSON_BUILD_ARRAY(lat, long, ROUND(e_magnitude::numeric, 2), quality_flag)) AS points
     FROM latest_grid;
 """
 
@@ -382,7 +382,7 @@ SELECT
 		JSON_BUILD_ARRAY(
 			d.lat,
 			d.long,
-			COALESCE(d.e_magnitude, 0),
+			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2),
             quality_flag
 		)
 	) AS points
