@@ -382,7 +382,7 @@ SELECT
 		JSON_BUILD_ARRAY(
 			d.lat,
 			d.long,
-			COALESCE(d.e_magnitude, 0)
+			COALESCE(d.e_magnitude, 0),
             quality_flag
 		)
 	) AS points
