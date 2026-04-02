@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchDRAP, fetchHistoricalDRAP } from "../../api/api";
 
 const drapSlice = createSlice({
   name: "drap",

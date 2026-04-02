@@ -4,14 +4,19 @@ import { fetchAurora } from '../../api/api';
 const auroraSlice = createSlice({
   name: 'aurora',
   initialState: {
-    data: null, // Will hold the { "Observation Time", "Forecast Time", "coordinates" } object
+    data: null, 
+    playback: [],
     loading: false,
     error: null,
   },
   reducers: {
     injectLiveAurora: (state, action) => {
       state.data = action.payload; 
+    },
+    setAuroraPlayback: (state, action) => {
+      state.playback = action.payload;
     }
+
   },
   extraReducers: (builder) => {
     builder
@@ -30,5 +35,5 @@ const auroraSlice = createSlice({
   }
 });
 
-export const { injectLiveAurora } = auroraSlice.actions;
+export const { injectLiveAurora, setAuroraPlayback } = auroraSlice.actions;
 export default auroraSlice.reducer;

@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { fetchDRAP, fetchHistoricalDRAP } from "../../api/api";
+import { fetchDRAP } from "../../api/api";
 
 const drapSlice = createSlice({
   name: "drap",
@@ -35,18 +35,6 @@ const drapSlice = createSlice({
         state.count = action.payload.count || 0;
       })
       .addCase(fetchDRAP.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
-    builder
-      .addCase(fetchHistoricalDRAP.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchHistoricalDRAP.fulfilled, (state, action) => {
-        state.loading = false;
-      })
-      .addCase(fetchHistoricalDRAP.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

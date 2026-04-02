@@ -14,7 +14,6 @@ import {
   fetchAurora,
   fetchAirports,
   fetchGeoelectric,
-  fetchHistoricalDRAP,
   fetchElectricTransmissionLines,
 } from "../../api/api";
 

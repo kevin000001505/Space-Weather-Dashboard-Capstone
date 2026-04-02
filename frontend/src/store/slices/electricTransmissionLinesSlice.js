@@ -1,8 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import {
-  fetchDRAP,
   fetchElectricTransmissionLines,
-  fetchHistoricalDRAP,
 } from "../../api/api";
 
 const electricTransmissionLinesSlice = createSlice({
