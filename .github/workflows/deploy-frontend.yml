@@ -33,8 +33,12 @@ jobs:
             exit 0
           fi
 
-          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
-          if echo "$DIFF" | grep -qE '^\+.*frontend|^\-.*frontend'; then
+          git show HEAD~1:docker-compose.yaml > /tmp/old-compose.yaml
+          OLD=$(awk '/^  frontend:/{found=1; print; next} found && /^  [^ ]/{exit} found{print}' /tmp/old-compose.yaml)
+          NEW=$(awk '/^  frontend:/{found=1; print; next} found && /^  [^ ]/{exit} found{print}' docker-compose.yaml)
+          rm -f /tmp/old-compose.yaml
+
+          if [ "$OLD" != "$NEW" ]; then
             echo "compose_only=true" >> "$GITHUB_OUTPUT"
             echo "service_affected=true" >> "$GITHUB_OUTPUT"
           else

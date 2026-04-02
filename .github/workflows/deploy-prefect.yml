@@ -26,12 +26,19 @@ jobs:
       - name: Detect change type
         id: check
         run: |
-          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
-          if echo "$DIFF" | grep -qE '^\+.*prefect|^\-.*prefect'; then
-            echo "service_affected=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "service_affected=false" >> "$GITHUB_OUTPUT"
-          fi
+          git show HEAD~1:docker-compose.yaml > /tmp/old-compose.yaml
+          AFFECTED=false
+          for SVC in prefect-server prefect-init prefect-worker-noaa prefect-worker-flight; do
+            OLD=$(awk -v s="  ${SVC}:" '$0==s{f=1; print; next} f && /^  [^ ]/{exit} f{print}' /tmp/old-compose.yaml)
+            NEW=$(awk -v s="  ${SVC}:" '$0==s{f=1; print; next} f && /^  [^ ]/{exit} f{print}' docker-compose.yaml)
+            if [ "$OLD" != "$NEW" ]; then
+              AFFECTED=true
+              break
+            fi
+          done
+          rm -f /tmp/old-compose.yaml
+
+          echo "service_affected=$AFFECTED" >> "$GITHUB_OUTPUT"
 
   guard:
     name: Confirm Intent

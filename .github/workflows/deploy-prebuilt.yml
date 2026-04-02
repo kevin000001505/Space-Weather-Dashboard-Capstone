@@ -63,23 +63,29 @@ jobs:
             exit 0
           fi
 
-          # Push trigger — diff-based detection
-          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
+          # Push trigger — compare each service block between commits
+          git show HEAD~1:docker-compose.yaml > /tmp/old-compose.yaml
 
-          if [ -z "$DIFF" ]; then
-            echo "services=" >> "$GITHUB_OUTPUT"
-            echo "No changes detected in docker-compose.yaml"
-            exit 0
-          fi
+          extract_service() {
+            local file="$1" svc="$2"
+            awk -v svc="  ${svc}:" '
+              $0 == svc { found=1; print; next }
+              found && /^  [^ ]/ { exit }
+              found { print }
+            ' "$file"
+          }
 
-          # Check each prebuilt service name against changed lines in the diff
           DEPLOY=""
           for SVC in $PREBUILT_SERVICES; do
-            if echo "$DIFF" | grep -qE "^\+.*${SVC}|^\-.*${SVC}"; then
+            OLD=$(extract_service /tmp/old-compose.yaml "$SVC")
+            NEW=$(extract_service docker-compose.yaml "$SVC")
+            if [ "$OLD" != "$NEW" ]; then
               DEPLOY="$DEPLOY $SVC"
             fi
           done
           DEPLOY=$(echo "$DEPLOY" | xargs)
+
+          rm -f /tmp/old-compose.yaml
 
           echo "services=$DEPLOY" >> "$GITHUB_OUTPUT"
           echo "Services to deploy: ${DEPLOY:-none}"
