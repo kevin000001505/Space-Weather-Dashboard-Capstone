@@ -246,7 +246,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./secrets/users.yml:/data/users.yml:ro
-      - dozzle:/data
     networks:
       - web_network
 
@@ -281,8 +280,6 @@ volumes:
   redis_data:
     driver: local
   pgadmin_data:
-    driver: local
-  dozzle:
     driver: local
 
 networks:
