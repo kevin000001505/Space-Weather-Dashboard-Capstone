@@ -245,6 +245,7 @@ services:
       DOZZLE_BASE: /dozzle
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./secrets/users.yml:/data/users.yml:ro
       - dozzle:/data
     networks:
       - web_network

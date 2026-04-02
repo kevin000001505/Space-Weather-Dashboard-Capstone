@@ -45,7 +45,7 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Write env file
+      - name: Write env and secret files
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
           echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
@@ -54,6 +54,8 @@ jobs:
           echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
           echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
           echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+          mkdir -p ./secrets
+          echo "${{ secrets.DOZZLE_AUTH }}" > ./secrets/users.yml
 
       - name: Detect services to deploy
         id: detect
