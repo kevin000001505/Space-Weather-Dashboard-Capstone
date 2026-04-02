@@ -38,8 +38,8 @@ export const fetchDRAP = createAsyncThunk(
     }
   },
 );
-export const fetchHistoricalDRAP = createAsyncThunk(
-  "drap/fetchHistoricalDRAP",
+export const fetchHistoricalData = createAsyncThunk(
+  "drap/fetchHistoricalData",
   async (time_range, { rejectWithValue }) => {
     try {
       const { start, end, event, interval } = time_range;

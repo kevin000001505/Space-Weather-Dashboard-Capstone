@@ -5,6 +5,7 @@ const geoElectricSlice = createSlice({
   name: "geoelectric",
   initialState: {
     data: null,
+    playback: [],
     loading: false,
     error: null,
     showGeoElectric: false,
@@ -19,6 +20,9 @@ const geoElectricSlice = createSlice({
     },
     setGeoElectricLogRange: (state, action) => {
       state.geoElectricLogRange = action.payload;
+    },
+    setGeoElectricPlayback: (state, action) => {
+      state.playback = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -42,5 +46,6 @@ export const {
   injectLiveGeoElectric,
   setShowGeoElectric,
   setGeoElectricLogRange,
+  setGeoElectricPlayback,
 } = geoElectricSlice.actions;
 export default geoElectricSlice.reducer;

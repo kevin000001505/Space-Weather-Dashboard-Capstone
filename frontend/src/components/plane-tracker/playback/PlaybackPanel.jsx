@@ -26,10 +26,48 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.ui);
   const drapPlayback = useSelector((state) => state.drap.playback);
-  const [currentIndex, setCurrentIndex] = React.useState(0);
+
+  // --- Time-based playback state ---
+  // Determine time range (midnight to midnight of first data day, or today if no data)
+  const getDayRange = React.useCallback(() => {
+    if (drapPlayback.length > 0) {
+      const first = new Date(drapPlayback[0].requested_time);
+      const start = new Date(first);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      return [start.getTime(), end.getTime()];
+    } else {
+      const now = new Date();
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      return [start.getTime(), end.getTime()];
+    }
+  }, [drapPlayback]);
+
+  const [startTime, setStartTime] = React.useState(null);
+  const [endTime, setEndTime] = React.useState(null);
+  const stepMs = 300 * 1000; // 5 minute step
+  const [currentTime, setCurrentTime] = React.useState(null);
+
+  // Update time range and reset currentTime if range changes
+  React.useEffect(() => {
+    if (drapPlayback.length > 0) {
+      const [newStart, newEnd] = getDayRange();
+      setStartTime((prevStart) => {
+        if (prevStart !== newStart) {
+          setCurrentTime(newStart);
+        }
+        return newStart;
+      });
+      setEndTime(newEnd);
+    }
+  }, [drapPlayback, getDayRange]);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isLooping, setIsLooping] = React.useState(false);
-  const [speed, setSpeed] = React.useState(1); 
+  const [speed, setSpeed] = React.useState(1);
   const intervalRef = React.useRef();
 
   const allowedSpeeds = [0.25, 0.5, 1, 2, 4, 8];
@@ -39,20 +77,15 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     setSpeed(allowedSpeeds[nextIdx]);
   };
 
+  // Playback effect: step through time
   React.useEffect(() => {
-    if (currentIndex >= drapPlayback.length) {
-      setCurrentIndex(drapPlayback.length > 0 ? drapPlayback.length - 1 : 0);
-    }
-  }, [drapPlayback.length]);
-
-  React.useEffect(() => {
-    if (!isPlaying || drapPlayback.length === 0) return;
+    if (!isPlaying) return;
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => {
-        if (prev < drapPlayback.length - 1) {
-          return prev + 1;
+      setCurrentTime((prev) => {
+        if (prev + stepMs <= endTime) {
+          return prev + stepMs;
         } else if (isLooping) {
-          return 0;
+          return startTime;
         } else {
           setIsPlaying(false);
           return prev;
@@ -61,25 +94,50 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     }, 1000 / speed);
     intervalRef.current = interval;
     return () => clearInterval(interval);
-  }, [isPlaying, speed, drapPlayback.length, isLooping]);
+  }, [isPlaying, speed, startTime, endTime, isLooping]);
 
+  // Step backward/forward by stepMs
   const handleStepBackward = () => {
-    setCurrentIndex((prev) => Math.max(0, prev - 1));
+    setCurrentTime((prev) => Math.max(startTime, prev - stepMs));
   };
   const handleStepForward = () => {
-    setCurrentIndex((prev) => Math.min(drapPlayback.length - 1, prev + 1));
+    setCurrentTime((prev) => Math.min(endTime, prev + stepMs));
   };
 
-  const formatTime = (idx) => {
-    if (!drapPlayback[idx]) return "--";
-    return new Date(drapPlayback[idx].requested_time).toLocaleString();
-  };
-
-  React.useEffect(() => {
-    if (drapPlayback.length > 0 && drapPlayback[currentIndex]) {
-      dispatch(setDRAPPoints(drapPlayback[currentIndex].points));
+  // Find closest data point to currentTime
+  const findClosestIndex = (time) => {
+    if (drapPlayback.length === 0) return -1;
+    let lo = 0, hi = drapPlayback.length - 1, best = 0;
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2);
+      const t = new Date(drapPlayback[mid].requested_time).getTime();
+      if (t < time) {
+        lo = mid + 1;
+      } else if (t > time) {
+        hi = mid - 1;
+      } else {
+        return mid;
+      }
+      if (Math.abs(t - time) < Math.abs(new Date(drapPlayback[best].requested_time).getTime() - time)) {
+        best = mid;
+      }
     }
-  }, [currentIndex, drapPlayback, dispatch]);
+    return best;
+  };
+
+  // Update DRAP points on time change
+  React.useEffect(() => {
+    const idx = findClosestIndex(currentTime);
+    if (idx !== -1 && drapPlayback[idx]) {
+      dispatch(setDRAPPoints(drapPlayback[idx].points));
+    }
+  }, [currentTime, drapPlayback, dispatch]);
+
+  // Format time for display
+  const formatTime = (ms) => {
+    if (!ms) return "--/--/----, --:--:-- --";
+    return new Date(ms).toLocaleString();
+  };
   
   const transportButtonSx = {
     width: 42,
@@ -145,13 +203,15 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       <Stack spacing={1}>
         <Stack spacing={0.2}>
           <Slider
-            value={currentIndex}
-            min={0}
-            max={drapPlayback.length > 0 ? drapPlayback.length - 1 : 0}
+            value={currentTime ?? 0}
+            min={startTime ?? 0}
+            max={endTime ?? 0}
+            step={stepMs}
             onChange={(_, value) => {
-              if (typeof value === "number") setCurrentIndex(value);
+              if (typeof value === "number") setCurrentTime(value);
             }}
-            aria-label="Playback position"
+            aria-label="Playback time"
+            disabled={startTime === null || endTime === null}
             sx={{
               ...sliderSx,
               "& .MuiSlider-track": {
@@ -168,15 +228,13 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
             direction="row"
             justifyContent="space-between"
             sx={{
-              fontSize: "0.75rem",
+              fontSize: "1rem",
               color: "#fff",
               fontVariantNumeric: "tabular-nums",
             }}
           >
-            <span>{formatTime(currentIndex)}</span>
-            <span>
-              {formatTime(drapPlayback.length > 0 ? drapPlayback.length - 1 : 0)}
-            </span>
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(endTime)}</span>
           </Stack>
         </Stack>
 

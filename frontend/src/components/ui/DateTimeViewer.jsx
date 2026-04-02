@@ -19,8 +19,10 @@ import {
   formatTime,
   utcToZonedTime,
 } from "./helpers/helper";
-import { fetchHistoricalDRAP } from "../../api/api";
+import { fetchHistoricalData } from "../../api/api";
 import { setDRAPPlayback } from "../../store/slices/drapSlice";
+import { setGeoElectricPlayback } from "../../store/slices/geoelectricSlice";
+import { setAuroraPlayback } from "../../store/slices/auroraSlice";
 
 // Memoized DateBox
 const DateBox = React.memo(function DateBox({ date, selectedTimezone, darkMode, onOpen, dateBoxRef, onChange, open }) {
@@ -172,47 +174,54 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
     if (!date || liveStreamMode) return;
     // Parse the selected date (YYYY-MM-DD)
     const [year, month, day] = date.split("-").map(Number);
-    const fetchAllHours = async () => {
-      const promises = [];
-      for (let hour = 0; hour < 24; hour++) {
-        const start = new Date(year, month - 1, day, hour, 0, 0, 0);
-        const end = new Date(year, month - 1, day, hour + 1, 0, 0, 0);
-        promises.push(
-          dispatch(
-            fetchHistoricalDRAP({
-              start: start.toISOString(),
-              end: end.toISOString(),
-              event: "drap",
-              interval: 5,
+    const fetchAllEvents = async () => {
+      const events = [
+        { event: "drap", setPlayback: setDRAPPlayback },
+        // { event: "geoelectric", setPlayback: setGeoElectricPlayback },
+        // { event: "aurora", setPlayback: setAuroraPlayback },
+      ];
+      for (const { event, setPlayback } of events) {
+        const promises = [];
+        for (let hour = 0; hour < 24; hour++) {
+          const start = new Date(year, month - 1, day, hour, 0, 0, 0);
+          const end = new Date(year, month - 1, day, hour + 1, 0, 0, 0);
+          promises.push(
+            dispatch(
+              fetchHistoricalData({
+                start: start.toISOString(),
+                end: end.toISOString(),
+                event,
+                interval: 5,
+              })
+            ).unwrap()
+          );
+        }
+        try {
+          const results = await Promise.allSettled(promises);
+          // Flatten, filter fulfilled, and merge all data arrays
+          const merged = results
+            .filter(r => r.status === 'fulfilled')
+            .flatMap(r => r.value.data || r.value);
+
+          // Sort by requested_time ascending and filter out duplicates
+          const seen = new Set();
+          const allData = merged
+            .filter(item => {
+              if (!item.requested_time) return false;
+              if (seen.has(item.requested_time)) return false;
+              seen.add(item.requested_time);
+              return true;
             })
-          ).unwrap()
-        );
-      }
-      try {
-        const results = await Promise.allSettled(promises);
-        // Flatten, filter fulfilled, and merge all data arrays
-        const merged = results
-          .filter(r => r.status === 'fulfilled')
-          .flatMap(r => r.value.data || r.value);
+            .sort((a, b) => new Date(a.requested_time) - new Date(b.requested_time));
 
-        // Sort by requested_time ascending and filter out duplicates
-        const seen = new Set();
-        const allData = merged
-          .filter(item => {
-            if (!item.requested_time) return false;
-            if (seen.has(item.requested_time)) return false;
-            seen.add(item.requested_time);
-            return true;
-          })
-          .sort((a, b) => new Date(a.requested_time) - new Date(b.requested_time));
-
-        dispatch(setDRAPPlayback(allData));
-      } catch (err) {
-        console.log(err)
+          dispatch(setPlayback(allData));
+        } catch (err) {
+          console.log(`Error fetching ${event} data:`, err);
+        }
       }
     };
-    fetchAllHours();
-  }, [date, time, selectedTimezone]);
+    fetchAllEvents();
+  }, [date, time, selectedTimezone, dispatch]);
 
   const filteredTimeZones = React.useMemo(() => {
     if (!debouncedTzSearch.trim()) return timeZones;
