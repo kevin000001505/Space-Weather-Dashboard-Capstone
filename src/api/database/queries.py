@@ -394,3 +394,43 @@ ORDER BY e.requested_time;
 """
 
 FLIGHTS_RANGE_QUERY = """"""
+
+PAST_RANGE_DATA = """
+WITH time_ticks AS (
+    SELECT generate_series(
+        $1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+    ) AS requested_time
+),
+events AS (
+    SELECT DISTINCT ON (t.requested_time)
+        t.requested_time,
+        d.observed_at
+    FROM time_ticks t
+    LEFT JOIN LATERAL (
+        SELECT observed_at
+        FROM drap_region
+        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+          AND observed_at <= t.requested_time + INTERVAL '1 minute'
+        ORDER BY observed_at DESC
+        LIMIT 1
+    ) d ON true
+    ORDER BY t.requested_time
+)
+SELECT
+    e.requested_time,
+    e.observed_at,
+    JSON_AGG(
+        JSON_BUILD_ARRAY(
+            d.lat,
+            d.long,
+            ROUND(COALESCE(d.absorption, 0)::numeric, 2)
+        )
+    ) AS points
+FROM events e
+LEFT JOIN drap_region d
+    ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
+"""
