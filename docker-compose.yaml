@@ -258,6 +258,7 @@ services:
       - web_network
       - data_network
 
+  # Monitoring
   dozzle:
     image: amir20/dozzle:latest
     container_name: dozzle

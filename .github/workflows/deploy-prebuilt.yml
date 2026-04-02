@@ -1,0 +1,107 @@
+name: Prebuilt Services CI/CD
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker-compose.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker-compose.yaml'
+
+jobs:
+  validate:
+    name: Validate Compose File
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate docker-compose syntax
+        run: docker compose config --quiet
+
+  deploy-prebuilt:
+    name: Deploy Prebuilt Services to VM
+    needs: validate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Write env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+
+      - name: Detect changed prebuilt services
+        id: detect
+        run: |
+          # Services owned by this workflow (prebuilt images only)
+          PREBUILT_SERVICES="nginx postgis pgadmin redis dozzle"
+
+          # Get the diff of docker-compose.yaml against the previous commit
+          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
+
+          if [ -z "$DIFF" ]; then
+            echo "services=" >> "$GITHUB_OUTPUT"
+            echo "No changes detected in docker-compose.yaml"
+            exit 0
+          fi
+
+          # Extract service names from changed lines (top-level service blocks start with 2-space indent)
+          CHANGED=""
+          CURRENT_SERVICE=""
+          while IFS= read -r line; do
+            # Match added/removed lines that define a top-level service (e.g., "+  nginx:" or "-  nginx:")
+            if echo "$line" | grep -qE '^\+  [a-zA-Z]' || echo "$line" | grep -qE '^\-  [a-zA-Z]'; then
+              SVC=$(echo "$line" | sed 's/^[+-]  //' | cut -d: -f1 | tr -d ' ')
+              CURRENT_SERVICE="$SVC"
+            fi
+            # Match changed lines within a service block (deeper indentation)
+            if echo "$line" | grep -qE '^\+    |^\-    '; then
+              # Use the last seen service header
+              if [ -n "$CURRENT_SERVICE" ]; then
+                CHANGED="$CHANGED $CURRENT_SERVICE"
+              fi
+            fi
+          done <<< "$DIFF"
+
+          # Also capture service headers themselves as changes
+          for SVC in $(echo "$DIFF" | grep -E '^\+  [a-zA-Z]|^\-  [a-zA-Z]' | sed 's/^[+-]  //' | cut -d: -f1 | tr -d ' '); do
+            CHANGED="$CHANGED $SVC"
+          done
+
+          # Filter to only prebuilt services and deduplicate
+          DEPLOY=""
+          for SVC in $PREBUILT_SERVICES; do
+            if echo "$CHANGED" | grep -qw "$SVC"; then
+              DEPLOY="$DEPLOY $SVC"
+            fi
+          done
+          DEPLOY=$(echo "$DEPLOY" | xargs)
+
+          echo "services=$DEPLOY" >> "$GITHUB_OUTPUT"
+          echo "Services to deploy: ${DEPLOY:-none}"
+
+      - name: Pull latest images
+        if: steps.detect.outputs.services != ''
+        run: |
+          for SVC in ${{ steps.detect.outputs.services }}; do
+            docker compose pull "$SVC"
+          done
+
+      - name: Deploy changed services
+        if: steps.detect.outputs.services != ''
+        run: |
+          docker compose up -d --force-recreate --no-deps \
+            ${{ steps.detect.outputs.services }}
+
+      - name: System Cleanup
+        if: steps.detect.outputs.services != ''
+        run: docker image prune -f

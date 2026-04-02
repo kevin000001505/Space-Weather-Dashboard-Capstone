@@ -5,14 +5,47 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'docker-compose.yaml'
   pull_request:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'docker-compose.yaml'
 
 jobs:
+  check-compose:
+    name: Check if compose changes affect frontend
+    runs-on: ubuntu-latest
+    outputs:
+      compose_only: ${{ steps.check.outputs.compose_only }}
+      service_affected: ${{ steps.check.outputs.service_affected }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Detect change type
+        id: check
+        run: |
+          NON_COMPOSE=$(git diff --name-only HEAD~1 -- 'frontend/' | head -1)
+          if [ -n "$NON_COMPOSE" ]; then
+            echo "compose_only=false" >> "$GITHUB_OUTPUT"
+            echo "service_affected=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
+          if echo "$DIFF" | grep -qE '^\+.*frontend|^\-.*frontend'; then
+            echo "compose_only=true" >> "$GITHUB_OUTPUT"
+            echo "service_affected=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "compose_only=true" >> "$GITHUB_OUTPUT"
+            echo "service_affected=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test-static:
     name: Folder Structure & Coverage Enforcement
+    needs: check-compose
+    if: needs.check-compose.outputs.compose_only == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,7 +58,8 @@ jobs:
 
   test-frontend:
     name: Run Frontend Tests
-    needs: test-static
+    needs: [check-compose, test-static]
+    if: needs.check-compose.outputs.compose_only == 'false'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -45,8 +79,11 @@ jobs:
 
   deploy-frontend:
     name: Deploy Frontend to VM
-    needs: [test-static, test-frontend]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+    needs: [check-compose, test-static, test-frontend]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.check-compose.outputs.service_affected == 'true' &&
+      (needs.check-compose.outputs.compose_only == 'true' || (needs.test-static.result == 'success' && needs.test-frontend.result == 'success'))
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6

@@ -7,10 +7,35 @@ on:
         description: 'Type DEPLOY to confirm Prefect redeploy'
         required: true
         default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'docker-compose.yaml'
 
 jobs:
+  check-compose:
+    name: Check if compose changes affect Prefect
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      service_affected: ${{ steps.check.outputs.service_affected }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Detect change type
+        id: check
+        run: |
+          DIFF=$(git diff HEAD~1 -- docker-compose.yaml || true)
+          if echo "$DIFF" | grep -qE '^\+.*prefect|^\-.*prefect'; then
+            echo "service_affected=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "service_affected=false" >> "$GITHUB_OUTPUT"
+          fi
+
   guard:
     name: Confirm Intent
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Check confirmation
@@ -22,6 +47,7 @@ jobs:
   test-static:
     name: Folder Structure & Coverage Enforcement
     needs: guard
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -35,6 +61,7 @@ jobs:
   test-flows:
     name: Run Flows Tests
     needs: test-static
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
       postgis:
@@ -91,8 +118,10 @@ jobs:
 
   deploy-prefect:
     name: Deploy Prefect to VM
-    needs: [test-static, test-flows]
-    if: success()
+    needs: [check-compose, guard, test-static, test-flows]
+    if: |
+      (github.event_name == 'workflow_dispatch' && needs.test-static.result == 'success' && needs.test-flows.result == 'success') ||
+      (github.event_name == 'push' && needs.check-compose.outputs.service_affected == 'true')
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
