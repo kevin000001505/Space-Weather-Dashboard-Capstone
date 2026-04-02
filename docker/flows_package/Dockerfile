@@ -8,5 +8,3 @@ WORKDIR /opt/prefect-app
 
 # Don't generate byte code to prevent permission errors
 ENV PYTHONDONTWRITEBYTECODE=1
-
-COPY prefect_workflows/ .

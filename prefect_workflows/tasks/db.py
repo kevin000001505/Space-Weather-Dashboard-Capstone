@@ -223,11 +223,10 @@ async def initial_partition_function(conn: Connection):
 async def create_tables_partition(
     conn: Connection, table_name: str, datetime: datetime
 ):
-    """Task to create all the table partition"""
+    """Create previous, current, and next month partitions for a table."""
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime - timedelta(days=30))
     await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime)
-    await conn.execute(
-        CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30)
-    )
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30))
 
 
 # -----
