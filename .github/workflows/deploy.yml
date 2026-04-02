@@ -18,10 +18,17 @@ on:
           - prebuilt
           - api
           - frontend
+  workflow_call:
+    inputs:
+      services:
+        description: 'Which services to deploy'
+        required: true
+        type: string
 
 jobs:
   guard:
     name: Confirm Intent
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Check confirmation
@@ -33,6 +40,7 @@ jobs:
   deploy:
     name: Deploy Services
     needs: guard
+    if: always() && !cancelled() && (needs.guard.result == 'success' || needs.guard.result == 'skipped')
     runs-on: self-hosted
     steps:
       - name: Clean Docker-created directories

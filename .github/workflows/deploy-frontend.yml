@@ -88,15 +88,7 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       needs.check-compose.outputs.service_affected == 'true' &&
       (needs.check-compose.outputs.compose_only == 'true' || (needs.test-static.result == 'success' && needs.test-frontend.result == 'success'))
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Build and Deploy Frontend Container
-        env:
-          DOCKER_BUILDKIT: 1
-        run: |
-          docker compose up -d --build --force-recreate --no-deps frontend
-
-      - name: System Cleanup
-        run: docker image prune -f
+    uses: ./.github/workflows/deploy.yml
+    with:
+      services: frontend
+    secrets: inherit
