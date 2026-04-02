@@ -92,9 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Write env file
-        run: echo "${{ secrets.ENV_FILE }}" > .env
-
       - name: Build and Deploy Frontend Container
         env:
           DOCKER_BUILDKIT: 1

@@ -1,0 +1,106 @@
+name: Deploy to VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DEPLOY to confirm'
+        required: true
+        default: ''
+      services:
+        description: 'Which services to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - prefect
+          - prebuilt
+          - api
+          - frontend
+
+jobs:
+  guard:
+    name: Confirm Intent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: inputs.confirm != 'DEPLOY'
+        run: |
+          echo "Confirmation not provided. Aborting."
+          exit 1
+
+  deploy:
+    name: Deploy Services
+    needs: guard
+    runs-on: self-hosted
+    steps:
+      - name: Clean Docker-created directories
+        run: sudo rm -rf secrets
+
+      - uses: actions/checkout@v6
+
+      - name: Write env file
+        run: |
+          cat <<'ENDOFFILE' > .env
+          ${{ secrets.ENV_FILE }}
+          ENDOFFILE
+          cat >> .env <<EOF
+          PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}
+          PG_WORK_MEM=${{ vars.PG_WORK_MEM }}
+          PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}
+          PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}
+          PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}
+          PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}
+          RETENTION_DAYS_FLIGHT_STATES=${{ vars.RETENTION_DAYS_FLIGHT_STATES }}
+          RETENTION_DAYS_DRAP_REGION=${{ vars.RETENTION_DAYS_DRAP_REGION }}
+          RETENTION_DAYS_AURORA_FORECAST=${{ vars.RETENTION_DAYS_AURORA_FORECAST }}
+          RETENTION_DAYS_GEOELECTRIC_FIELD=${{ vars.RETENTION_DAYS_GEOELECTRIC_FIELD }}
+          RETENTION_DAYS_GOES_XRAY_6HOUR=${{ vars.RETENTION_DAYS_GOES_XRAY_6HOUR }}
+          RETENTION_DAYS_GOES_PROTON_FLUX=${{ vars.RETENTION_DAYS_GOES_PROTON_FLUX }}
+          RETENTION_DAYS_KP_INDEX=${{ vars.RETENTION_DAYS_KP_INDEX }}
+          EOF
+
+      - name: Write secrets
+        run: |
+          mkdir -p ./secrets
+          [ -d ./secrets/pyopensky-settings ] && sudo rm -rf ./secrets/pyopensky-settings
+          cat <<'ENDOFFILE' > ./secrets/pyopensky-settings
+          ${{ secrets.PYOPENSKY_CONFIG }}
+          ENDOFFILE
+          [ -d ./secrets/users.yml ] && sudo rm -rf ./secrets/users.yml
+          cat <<'ENDOFFILE' > ./secrets/users.yml
+          ${{ secrets.DOZZLE_AUTH }}
+          ENDOFFILE
+
+      - name: Deploy Prefect
+        if: inputs.services == 'all' || inputs.services == 'prefect'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps \
+            prefect-server prefect-worker-noaa prefect-worker-flight
+
+      - name: Deploy Prebuilt Services
+        if: inputs.services == 'all' || inputs.services == 'prebuilt'
+        run: |
+          docker compose pull nginx postgis pgadmin redis dozzle
+          docker compose up -d --force-recreate --no-deps \
+            nginx postgis pgadmin redis dozzle
+
+      - name: Deploy API
+        if: inputs.services == 'all' || inputs.services == 'api'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps fastapi
+
+      - name: Deploy Frontend
+        if: inputs.services == 'all' || inputs.services == 'frontend'
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker compose up -d --build --force-recreate --no-deps frontend
+
+      - name: System Cleanup
+        run: docker image prune -f

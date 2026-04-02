@@ -23,13 +23,17 @@ jobs:
       - uses: actions/checkout@v6
       - name: Write env file
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
-          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
-          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
-          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
-          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
-          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
-          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+          cat <<'ENDOFFILE' > .env
+          ${{ secrets.ENV_FILE }}
+          ENDOFFILE
+          cat >> .env <<EOF
+          PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}
+          PG_WORK_MEM=${{ vars.PG_WORK_MEM }}
+          PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}
+          PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}
+          PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}
+          PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}
+          EOF
       - name: Validate docker-compose syntax
         run: docker compose config --quiet
 
@@ -44,21 +48,6 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 2
-
-      - name: Write env and secret files
-        run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
-          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
-          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
-          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
-          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
-          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
-          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
-          mkdir -p ./secrets
-          [ -d ./secrets/users.yml ] && rm -rf ./secrets/users.yml
-          cat <<'EOF' > ./secrets/users.yml
-          ${{ secrets.DOZZLE_AUTH }}
-          EOF
 
       - name: Detect services to deploy
         id: detect

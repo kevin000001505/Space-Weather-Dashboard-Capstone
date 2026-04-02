@@ -24,13 +24,16 @@ jobs:
 
       - name: Install Dependencies
         run: pip install -r docker/flows_package/requirements.txt
-      
-      - name: Write pyopensky config
+
+      - name: Write env and secrets
         run: |
-          echo "${{ secrets.ENV_FILE }}" > .env
+          cat <<'ENDOFFILE' > .env
+          ${{ secrets.ENV_FILE }}
+          ENDOFFILE
           mkdir -p ./secrets
-          [ -d ./secrets/pyopensky-settings ] && sudo rm -rf ./secrets/pyopensky-settings
-          echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
+          cat <<'ENDOFFILE' > ./secrets/pyopensky-settings
+          ${{ secrets.PYOPENSKY_CONFIG }}
+          ENDOFFILE
 
       - name: Run API Health Tests
         run: pytest tests/test_api_health/ -v
