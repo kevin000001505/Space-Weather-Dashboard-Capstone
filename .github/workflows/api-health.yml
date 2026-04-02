@@ -29,6 +29,7 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
           mkdir -p ./secrets
+          [ -d ./secrets/pyopensky-settings ] && sudo rm -rf ./secrets/pyopensky-settings
           echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
 
       - name: Run API Health Tests

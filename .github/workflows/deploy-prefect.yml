@@ -137,6 +137,7 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
           mkdir -p ./secrets
+          [ -d ./secrets/pyopensky-settings ] && sudo rm -rf ./secrets/pyopensky-settings
           echo "${{ secrets.PYOPENSKY_CONFIG }}" > ./secrets/pyopensky-settings
           echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
           echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
