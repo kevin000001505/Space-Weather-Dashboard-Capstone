@@ -2,17 +2,15 @@
 
 import json
 import pandas as pd
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from asyncpg import Connection
 from prefect import task
 from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
-from prefect.variables import Variable
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
 from database.queries import (
     ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
-    CLEANUP_OLD_FLIGHT_DATA_QUERY,
     FLIGHT_STATES_STAGING_DDL,
     FLIGHT_STATES_STAGING_COLUMNS,
     FLIGHT_STATES_STAGING_GEOM_SQL,
@@ -22,7 +20,7 @@ from database.queries import (
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STATES_QUERY,
 )
-from database.create import CREATE_PARTITION_IF_MISSING_QUERY
+from database.create import CREATE_TABLE_PARTITION_IF_MISSING
 
 # Pull from the shared volume
 from shared.redis import (
@@ -135,7 +133,7 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
 
     tuples = [r.to_tuple() for r in records]  # convert once, not per batch
 
-    await conn.execute(CREATE_PARTITION_IF_MISSING_QUERY, records[0].time)
+    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, "flight_states", records[0].time)
 
     try:
         async with conn.transaction():
@@ -217,15 +215,3 @@ async def broadcast_active_flights_to_redis(conn: Connection) -> None:
 
     except Exception as e:
         logger.error(f"Failed to broadcast to Redis: {e}")
-
-
-@task(name="Cleanup Old Flight Data", cache_policy=NO_CACHE)
-async def cleanup_db(conn: Connection) -> None:
-    """Clean up old flight state records based on retention policy."""
-    logger = get_logger(__name__)
-
-    retention_days = await Variable[int].aget("flight_data_retention_days", default=30)
-    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
-
-    res = await conn.execute(CLEANUP_OLD_FLIGHT_DATA_QUERY, cutoff)
-    logger.info(f"Cleaned old data: {res}")

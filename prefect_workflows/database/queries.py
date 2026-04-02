@@ -1,6 +1,7 @@
 """SQL queries for creating tables, indexes, performing upserts, and latest queries to insert into redis for the space weather data pipeline."""
 
 PARTITION_TABLE_LISTS = [
+    "flight_states",
     "drap_region",
     "goes_xray_6hour",
     "goes_proton_flux",
@@ -12,6 +13,17 @@ PARTITION_TABLE_LISTS = [
 CLEANUP_OLD_FLIGHT_DATA_QUERY = """
 DELETE FROM flight_states WHERE time < $1
 """
+
+# Table name -> (time column, env var for retention days)
+RETENTION_CONFIG = {
+    "flight_states":     ("time",             "RETENTION_DAYS_FLIGHT_STATES"),
+    "drap_region":       ("observed_at",      "RETENTION_DAYS_DRAP_REGION"),
+    "aurora_forecast":   ("observation_time", "RETENTION_DAYS_AURORA_FORECAST"),
+    "geoelectric_field": ("observed_at",      "RETENTION_DAYS_GEOELECTRIC_FIELD"),
+    "goes_xray_6hour":   ("time_tag",         "RETENTION_DAYS_GOES_XRAY_6HOUR"),
+    "goes_proton_flux":  ("time_tag",         "RETENTION_DAYS_GOES_PROTON_FLUX"),
+    "kp_index":          ("time_tag",         "RETENTION_DAYS_KP_INDEX"),
+}
 
 
 # ---------------------------------------------------------------------------

@@ -1,8 +1,9 @@
 """Database initialization and maintenance tasks."""
 
+import os
 from datetime import datetime, timedelta
 
-from shared.db_utils import ensure_table_exists, cleanup_old_data
+from shared.db_utils import ensure_table_exists
 from database.create import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
     AIRPORT_CREATE_TABLE_SQL,
@@ -14,11 +15,13 @@ from database.create import (
     RUNWAYS_CREATE_TABLE_SQL,
     AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
+    FLIGHT_STATES_CREATE_TABLE_SQL,
     KP_INDEX_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
+    READONLY_GRANTS_SQL,
     CREATE_TABLE_PARTITION_IF_MISSING,
 )
 from database.functions import CREATE_PARTITION_FUNCTION_SQL
@@ -43,6 +46,20 @@ async def initial_drap_db(conn: Connection):
 
 
 @task(cache_policy=NO_CACHE)
+async def initial_flight_states_db(conn: Connection):
+    """Task to initialize the flight_states partitioned table."""
+    logger = get_logger(__name__)
+    try:
+        logger.info("Ensuring flight_states table exists...")
+        await ensure_table_exists(
+            conn, "flight_states", create_sql=FLIGHT_STATES_CREATE_TABLE_SQL
+        )
+    except Exception as e:
+        logger.error(f"Failed to initialize flight_states table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
 async def initial_activate_flight_db(conn: Connection):
     """Task to initialize the activate_flight table."""
     logger = get_logger(__name__)
@@ -53,6 +70,19 @@ async def initial_activate_flight_db(conn: Connection):
         )
     except Exception as e:
         logger.error(f"Failed to initialize activate_flight table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_readonly_grants(conn: Connection):
+    """Task to grant readonly role access to all tables."""
+    logger = get_logger(__name__)
+    try:
+        logger.info("Applying readonly grants...")
+        await conn.execute(READONLY_GRANTS_SQL)
+        logger.info("Readonly grants applied.")
+    except Exception as e:
+        logger.error(f"Failed to apply readonly grants: {e}")
         raise
 
 
@@ -203,13 +233,11 @@ async def create_tables_partition(
 # -----
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)
-async def cleanup_old_drap_data(conn: Connection, older_than_days: int = 1):
-    """Task to clean up old DRAP data."""
+async def cleanup_table(conn: Connection, table_name: str, time_column: str, retention_days: int):
+    """Delete records older than retention_days from a partitioned table."""
     logger = get_logger(__name__)
-    try:
-        logger.info(f"Cleaning up DRAP data older than {older_than_days} days...")
-        await cleanup_old_data(conn, "drap_region", older_than_days=older_than_days)
-        logger.info("Old DRAP data cleanup completed!")
-    except Exception as e:
-        logger.error(f"Failed to cleanup old DRAP data: {e}")
-        raise
+    logger.info(f"Cleaning {table_name}: removing data older than {retention_days} days...")
+    res = await conn.execute(
+        f'DELETE FROM {table_name} WHERE {time_column} < NOW() - INTERVAL \'{retention_days} days\''
+    )
+    logger.info(f"Cleaned {table_name}: {res}")

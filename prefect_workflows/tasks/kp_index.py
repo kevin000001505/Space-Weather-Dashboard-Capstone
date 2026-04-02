@@ -15,9 +15,8 @@ KP_INDEX_URL = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.j
 def fetch_kp_index() -> List[KPIndexRecord]:
     """Fetch Kp index records from the NOAA API.
 
-    The API returns a list-of-lists where the first row is the header:
-      ['time_tag', 'Kp', 'a_running', 'station_count']
-    Subsequent rows contain string values that are cast to their proper types.
+    The API returns a list of dicts with keys:
+      'time_tag', 'Kp', 'a_running', 'station_count'
     """
     logger = get_logger(__name__)
     logger.info(f"Fetching Kp index data from {KP_INDEX_URL}")
@@ -25,24 +24,22 @@ def fetch_kp_index() -> List[KPIndexRecord]:
     response = requests.get(KP_INDEX_URL, timeout=30)
     response.raise_for_status()
 
-    raw: List[List[str]] = response.json()
+    raw: List[dict] = response.json()
 
-    if not raw or len(raw) < 2:
+    if not raw:
         logger.warning("No Kp index data returned from API")
         return []
 
-    # First row is the header; skip it
-    header, rows = raw[0], raw[1:]
-    logger.info(f"Received {len(rows)} Kp index rows (header: {header})")
+    logger.info(f"Received {len(raw)} Kp index rows")
 
     records: List[KPIndexRecord] = []
-    for row in rows:
+    for row in raw:
         try:
             record = KPIndexRecord(
-                time_tag=datetime.fromisoformat(row[0]),
-                kp=float(row[1]),
-                a_running=int(row[2]),
-                station_count=int(row[3]),
+                time_tag=datetime.fromisoformat(row["time_tag"]),
+                kp=float(row["Kp"]),
+                a_running=int(row["a_running"]),
+                station_count=int(row["station_count"]),
             )
             records.append(record)
         except Exception as e:

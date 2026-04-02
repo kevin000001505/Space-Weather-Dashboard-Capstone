@@ -6,7 +6,6 @@ from tasks.flights import (
     fetch_flights,
     clean_records,
     insert_batch,
-    cleanup_db,
     broadcast_active_flights_to_redis,
 )
 
@@ -23,8 +22,3 @@ async def ingest_flow():
             await broadcast_active_flights_to_redis(conn)
 
 
-@flow(name="Daily Maintenance", log_prints=True)
-async def maintenance_flow():
-    """Daily maintenance flow for cleaning up old flight data."""
-    async with get_connection() as conn:
-        await cleanup_db(conn)

@@ -144,6 +144,13 @@ jobs:
           echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
           echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
           echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+          echo "RETENTION_DAYS_FLIGHT_STATES=${{ vars.RETENTION_DAYS_FLIGHT_STATES }}" >> .env
+          echo "RETENTION_DAYS_DRAP_REGION=${{ vars.RETENTION_DAYS_DRAP_REGION }}" >> .env
+          echo "RETENTION_DAYS_AURORA_FORECAST=${{ vars.RETENTION_DAYS_AURORA_FORECAST }}" >> .env
+          echo "RETENTION_DAYS_GEOELECTRIC_FIELD=${{ vars.RETENTION_DAYS_GEOELECTRIC_FIELD }}" >> .env
+          echo "RETENTION_DAYS_GOES_XRAY_6HOUR=${{ vars.RETENTION_DAYS_GOES_XRAY_6HOUR }}" >> .env
+          echo "RETENTION_DAYS_GOES_PROTON_FLUX=${{ vars.RETENTION_DAYS_GOES_PROTON_FLUX }}" >> .env
+          echo "RETENTION_DAYS_KP_INDEX=${{ vars.RETENTION_DAYS_KP_INDEX }}" >> .env
 
       - name: Build and Deploy Prefect Containers
         env:

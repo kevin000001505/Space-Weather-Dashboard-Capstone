@@ -1,10 +1,44 @@
-CREATE_PARTITION_IF_MISSING_QUERY = """
-SELECT create_partition_if_missing($1)
+CREATE_TABLE_PARTITION_IF_MISSING = """
+SELECT create_monthly_partition_if_missing($1, $2)
 """
 
 
-CREATE_TABLE_PARTITION_IF_MISSING = """
-SELECT create_monthly_partition_if_missing($1, $2)
+FLIGHT_STATES_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS flight_states (
+    time            TIMESTAMPTZ NOT NULL,
+    icao24          CHAR(6) NOT NULL,
+    callsign        VARCHAR(8),
+    origin_country  VARCHAR(100),
+
+    time_pos        TIMESTAMPTZ,
+    lat             DOUBLE PRECISION,
+    lon             DOUBLE PRECISION,
+    geo_altitude    REAL,
+    baro_altitude   REAL,
+
+    velocity        REAL,
+    heading         REAL,
+    vert_rate       REAL,
+    on_ground       BOOLEAN DEFAULT FALSE,
+
+    squawk          VARCHAR(8),
+    spi             BOOLEAN DEFAULT FALSE,
+    source          SMALLINT,
+    sensors         INTEGER[],
+
+    geom            GEOMETRY(POINT, 4326),
+
+    PRIMARY KEY (time, icao24)
+) PARTITION BY RANGE (time);
+
+CREATE INDEX IF NOT EXISTS idx_flight_icao ON flight_states (icao24);
+"""
+
+
+READONLY_GRANTS_SQL = """
+GRANT USAGE  ON SCHEMA public TO readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO readonly;
 """
 
 
