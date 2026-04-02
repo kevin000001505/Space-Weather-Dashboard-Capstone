@@ -6,10 +6,14 @@ on:
     branches: [main]
     paths:
       - 'docker-compose.yaml'
+      - 'docker/nginx/**'
+      - 'docker/db-init-scripts/**'
   pull_request:
     branches: [main]
     paths:
       - 'docker-compose.yaml'
+      - 'docker/nginx/**'
+      - 'docker/db-init-scripts/**'
 
 jobs:
   validate:
@@ -75,6 +79,7 @@ jobs:
             ' "$file"
           }
 
+          # Check compose block changes
           DEPLOY=""
           for SVC in $PREBUILT_SERVICES; do
             OLD=$(extract_service /tmp/old-compose.yaml "$SVC")
@@ -83,9 +88,20 @@ jobs:
               DEPLOY="$DEPLOY $SVC"
             fi
           done
-          DEPLOY=$(echo "$DEPLOY" | xargs)
 
           rm -f /tmp/old-compose.yaml
+
+          # Check mounted config file changes
+          CHANGED_FILES=$(git diff --name-only HEAD~1)
+          if echo "$CHANGED_FILES" | grep -q '^docker/nginx/'; then
+            DEPLOY="$DEPLOY nginx"
+          fi
+          if echo "$CHANGED_FILES" | grep -q '^docker/db-init-scripts/'; then
+            DEPLOY="$DEPLOY postgis"
+          fi
+
+          # Deduplicate
+          DEPLOY=$(echo "$DEPLOY" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
 
           echo "services=$DEPLOY" >> "$GITHUB_OUTPUT"
           echo "Services to deploy: ${DEPLOY:-none}"
