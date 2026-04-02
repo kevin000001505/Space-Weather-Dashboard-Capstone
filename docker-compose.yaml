@@ -241,8 +241,8 @@ services:
     container_name: dozzle
     restart: unless-stopped
     environment:
-      DOZZLE_AUTH_PROVIDER: simple
       DOZZLE_BASE: /dozzle
+      DOZZLE_AUTH_PROVIDER: simple
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - dozzle:/data

@@ -72,27 +72,10 @@ jobs:
             exit 0
           fi
 
-          CHANGED=""
-          CURRENT_SERVICE=""
-          while IFS= read -r line; do
-            if echo "$line" | grep -qE '^\+  [a-zA-Z]' || echo "$line" | grep -qE '^\-  [a-zA-Z]'; then
-              SVC=$(echo "$line" | sed 's/^[+-]  //' | cut -d: -f1 | tr -d ' ')
-              CURRENT_SERVICE="$SVC"
-            fi
-            if echo "$line" | grep -qE '^\+    |^\-    '; then
-              if [ -n "$CURRENT_SERVICE" ]; then
-                CHANGED="$CHANGED $CURRENT_SERVICE"
-              fi
-            fi
-          done <<< "$DIFF"
-
-          for SVC in $(echo "$DIFF" | grep -E '^\+  [a-zA-Z]|^\-  [a-zA-Z]' | sed 's/^[+-]  //' | cut -d: -f1 | tr -d ' '); do
-            CHANGED="$CHANGED $SVC"
-          done
-
+          # Check each prebuilt service name against changed lines in the diff
           DEPLOY=""
           for SVC in $PREBUILT_SERVICES; do
-            if echo "$CHANGED" | grep -qw "$SVC"; then
+            if echo "$DIFF" | grep -qE "^\+.*${SVC}|^\-.*${SVC}"; then
               DEPLOY="$DEPLOY $SVC"
             fi
           done
