@@ -21,7 +21,7 @@ import {
 } from "./helpers/helper";
 import { fetchHistoricalData } from "../../api/api";
 import { setDRAPPlayback } from "../../store/slices/drapSlice";
-import { setGeoElectricPlayback } from "../../store/slices/geoelectricSlice";
+import { setGeoElectricPlayback } from "../../store/slices/geoElectricSlice";
 import { setAuroraPlayback } from "../../store/slices/auroraSlice";
 
 // Memoized DateBox
