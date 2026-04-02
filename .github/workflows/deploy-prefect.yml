@@ -127,8 +127,10 @@ jobs:
     name: Deploy Prefect to VM
     needs: [check-compose, guard, test-static, test-flows]
     if: |
-      (github.event_name == 'workflow_dispatch' && needs.test-static.result == 'success' && needs.test-flows.result == 'success') ||
-      (github.event_name == 'push' && needs.check-compose.outputs.service_affected == 'true')
+      always() &&
+      !cancelled() &&
+      ((github.event_name == 'workflow_dispatch' && needs.test-static.result == 'success' && needs.test-flows.result == 'success') ||
+       (github.event_name == 'push' && needs.check-compose.outputs.service_affected == 'true'))
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6
