@@ -5,8 +5,10 @@ import tasks.db as db_tasks
 
 from tasks.db import (
     initial_drap_db,
+    initial_flight_states_db,
     initial_activate_flight_db,
     initial_airport_db,
+    initial_readonly_grants,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
@@ -82,6 +84,13 @@ class TestInitialDrapDb:
     async def test_creates_table(self, conn):
         await initial_drap_db.fn(conn)
         assert await table_exists(conn, "drap_region")
+
+
+class TestInitialFlightStatesDb:
+    @pytest.mark.asyncio
+    async def test_creates_table(self, conn):
+        await initial_flight_states_db.fn(conn)
+        assert await table_exists(conn, "flight_states")
 
 
 class TestInitialAirportDb:
@@ -162,10 +171,18 @@ class TestInitializeDbFlow:
         async def mock_get_connection():
             yield conn
 
-        with patch("flows.db_maintain.get_connection", mock_get_connection):
+        async def noop_flow():
+            pass
+
+        with (
+            patch("flows.db_maintain.get_connection", mock_get_connection),
+            patch("flows.db_maintain.partition_maintain", noop_flow),
+            patch("flows.db_maintain.seed_empty_tables", noop_flow),
+        ):
             await initialize_db_flow.fn()
 
         expected = [
+            "flight_states",
             "drap_region",
             "activate_flight",
             "airports",
@@ -185,7 +202,14 @@ class TestInitializeDbFlow:
         async def mock_get_connection():
             yield conn
 
-        with patch("flows.db_maintain.get_connection", mock_get_connection):
+        async def noop_flow():
+            pass
+
+        with (
+            patch("flows.db_maintain.get_connection", mock_get_connection),
+            patch("flows.db_maintain.partition_maintain", noop_flow),
+            patch("flows.db_maintain.seed_empty_tables", noop_flow),
+        ):
             await initialize_db_flow.fn()
             await initialize_db_flow.fn()  # second run must not raise
 
