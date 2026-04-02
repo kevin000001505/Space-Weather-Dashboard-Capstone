@@ -235,6 +235,20 @@ services:
       - prefect_network
       - data_network
 
+  # Monitoring
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    environment:
+      DOZZLE_AUTH_PROVIDER: simple
+      DOZZLE_BASE: /dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./secrets/users.yml:/data/users.yml:ro
+    networks:
+      - web_network
+
   fastapi:
     build:
       context: .
@@ -257,7 +271,6 @@ services:
     networks:
       - web_network
       - data_network
-
 
 volumes:
   prefect_home:

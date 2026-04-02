@@ -1,0 +1,129 @@
+name: Prebuilt Services CI/CD
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'docker-compose.yaml'
+      - 'docker/nginx/**'
+      - 'docker/db-init-scripts/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docker-compose.yaml'
+      - 'docker/nginx/**'
+      - 'docker/db-init-scripts/**'
+
+jobs:
+  validate:
+    name: Validate Compose File
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Write env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+      - name: Validate docker-compose syntax
+        run: docker compose config --quiet
+
+  deploy-prebuilt:
+    name: Deploy Prebuilt Services to VM
+    needs: validate
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Write env and secret files
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > .env
+          echo "PG_SHARED_BUFFERS=${{ vars.PG_SHARED_BUFFERS }}" >> .env
+          echo "PG_WORK_MEM=${{ vars.PG_WORK_MEM }}" >> .env
+          echo "PG_EFFECTIVE_CACHE_SIZE=${{ vars.PG_EFFECTIVE_CACHE_SIZE }}" >> .env
+          echo "PG_MAINTENANCE_WORK_MEM=${{ vars.PG_MAINTENANCE_WORK_MEM }}" >> .env
+          echo "PG_WAL_BUFFERS=${{ vars.PG_WAL_BUFFERS }}" >> .env
+          echo "PG_CHECKPOINT_COMPLETION_TARGET=${{ vars.PG_CHECKPOINT_COMPLETION_TARGET }}" >> .env
+          mkdir -p ./secrets
+          [ -d ./secrets/users.yml ] && rm -rf ./secrets/users.yml
+          cat <<'EOF' > ./secrets/users.yml
+          ${{ secrets.DOZZLE_AUTH }}
+          EOF
+
+      - name: Detect services to deploy
+        id: detect
+        run: |
+          PREBUILT_SERVICES="nginx postgis pgadmin redis dozzle"
+
+          # Manual dispatch deploys all prebuilt services
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "services=$PREBUILT_SERVICES" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch — deploying all: $PREBUILT_SERVICES"
+            exit 0
+          fi
+
+          # Push trigger — compare each service block between commits
+          git show HEAD~1:docker-compose.yaml > /tmp/old-compose.yaml
+
+          extract_service() {
+            local file="$1" svc="$2"
+            awk -v svc="  ${svc}:" '
+              $0 == svc { found=1; print; next }
+              found && /^  [^ ]/ { exit }
+              found { print }
+            ' "$file"
+          }
+
+          # Check compose block changes
+          DEPLOY=""
+          for SVC in $PREBUILT_SERVICES; do
+            OLD=$(extract_service /tmp/old-compose.yaml "$SVC")
+            NEW=$(extract_service docker-compose.yaml "$SVC")
+            if [ "$OLD" != "$NEW" ]; then
+              DEPLOY="$DEPLOY $SVC"
+            fi
+          done
+
+          rm -f /tmp/old-compose.yaml
+
+          # Check mounted config file changes
+          CHANGED_FILES=$(git diff --name-only HEAD~1)
+          if echo "$CHANGED_FILES" | grep -q '^docker/nginx/'; then
+            DEPLOY="$DEPLOY nginx"
+          fi
+          if echo "$CHANGED_FILES" | grep -q '^docker/db-init-scripts/'; then
+            DEPLOY="$DEPLOY postgis"
+          fi
+
+          # Deduplicate
+          DEPLOY=$(echo "$DEPLOY" | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
+
+          echo "services=$DEPLOY" >> "$GITHUB_OUTPUT"
+          echo "Services to deploy: ${DEPLOY:-none}"
+
+      - name: Pull latest images
+        if: steps.detect.outputs.services != ''
+        run: |
+          for SVC in ${{ steps.detect.outputs.services }}; do
+            docker compose pull "$SVC"
+          done
+
+      - name: Deploy changed services
+        if: steps.detect.outputs.services != ''
+        run: |
+          docker compose up -d --force-recreate --no-deps \
+            ${{ steps.detect.outputs.services }}
+
+      - name: System Cleanup
+        if: steps.detect.outputs.services != ''
+        run: docker image prune -f

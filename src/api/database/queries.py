@@ -129,7 +129,7 @@ LATEST_GEOELECTRIC_QUERY = """
     SELECT 
         MAX(observed_at) AS timestamp,
         COUNT(*) AS count,
-        JSON_AGG(JSON_BUILD_ARRAY(lat, long, e_magnitude, quality_flag)) AS points
+        JSON_AGG(JSON_BUILD_ARRAY(lat, long, ROUND(e_magnitude::numeric, 2), quality_flag)) AS points
     FROM latest_grid;
 """
 
@@ -317,35 +317,39 @@ WITH time_ticks AS (
 	) AS requested_time
 ),
 events AS (
-	SELECT DISTINCT ON (t.requested_time)
-		t.requested_time,
-		d.observation_time
-	FROM time_ticks t
-	LEFT JOIN LATERAL (
-		SELECT observation_time
-		FROM aurora_forecast
-		WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
-		  AND observation_time <= t.requested_time + INTERVAL '5 minute'
-		ORDER BY observation_time <-> t.requested_time
-		LIMIT 1
-	) d ON true
-	ORDER BY t.requested_time
+    SELECT DISTINCT ON (t.requested_time)
+        t.requested_time,
+        d.observation_time AS observed_at
+    FROM time_ticks t
+    LEFT JOIN LATERAL (
+        SELECT observation_time
+        FROM aurora_forecast
+        WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
+          AND observation_time <= t.requested_time + INTERVAL '5 minutes'
+        ORDER BY observation_time <-> t.requested_time
+        LIMIT 1
+    ) d ON true
+    ORDER BY t.requested_time
+),
+event_points AS (
+    SELECT
+        e.requested_time,
+        e.observed_at,
+        f.lat,
+        f.long,
+        COALESCE(f.aurora, 0) AS aurora
+    FROM events e
+    LEFT JOIN aurora_forecast f ON f.observation_time = e.observed_at
 )
 SELECT
-	e.requested_time,
-	e.observation_time AS observed_at,
-	JSON_AGG(
-		JSON_BUILD_ARRAY(
-			d.lat,
-			d.long,
-			COALESCE(d.aurora, 0),
-		)
-	) AS points
-FROM events e
-LEFT JOIN aurora_forecast d 
-ON d.observation_time = e.observed_at
-GROUP BY e.requested_time, e.observed_at
-ORDER BY e.requested_time;
+    requested_time,
+    observed_at,
+    JSON_AGG(
+        JSON_BUILD_ARRAY(lat, long, aurora)
+    ) AS points
+FROM event_points
+GROUP BY requested_time, observed_at
+ORDER BY requested_time;
 """
 
 GEOELECTRIC_RANGE_QUERY = """
@@ -378,7 +382,7 @@ SELECT
 		JSON_BUILD_ARRAY(
 			d.lat,
 			d.long,
-			COALESCE(d.e_magnitude, 0),
+			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2),
             quality_flag
 		)
 	) AS points
