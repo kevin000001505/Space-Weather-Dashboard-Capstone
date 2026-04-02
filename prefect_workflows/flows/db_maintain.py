@@ -110,5 +110,16 @@ async def partition_maintain():
 
 if __name__ == "__main__":
     import asyncio
+    import asyncpg
+    import shared.db_utils as db_utils
 
-    asyncio.run(initialize_db_flow())
+    async def run():
+        db_utils._pool = await asyncpg.create_pool(
+            os.environ["DATABASE_URL"], min_size=2, max_size=10
+        )
+        try:
+            await initialize_db_flow.fn()
+        finally:
+            await db_utils._pool.close()
+
+    asyncio.run(run())

@@ -221,6 +221,17 @@ class TestInitializeDbFlow:
         async def mock_get_connection():
             yield conn
 
+        async def noop_flow():
+            pass
+
+        # Create tables first (each test gets a fresh transaction)
+        with (
+            patch("flows.db_maintain.get_connection", mock_get_connection),
+            patch("flows.db_maintain.partition_maintain", noop_flow),
+            patch("flows.db_maintain.seed_empty_tables", noop_flow),
+        ):
+            await initialize_db_flow.fn()
+
         with patch("flows.db_maintain.get_connection", mock_get_connection):
             await partition_maintain.fn()
 
