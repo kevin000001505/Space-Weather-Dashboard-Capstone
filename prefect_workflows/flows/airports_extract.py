@@ -8,6 +8,7 @@ import asyncio
 @flow(
     log_prints=True,
     description="ETL flow for airports data extraction.",
+    retries=3,
 )
 async def airports_extract_flow():
     logger = get_logger(__name__)

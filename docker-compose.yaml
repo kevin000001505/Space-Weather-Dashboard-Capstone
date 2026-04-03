@@ -198,7 +198,7 @@ services:
       - -c
       - |
         cd /opt/prefect-app
-        prefect worker start --pool NOAA-pool 
+        prefect worker start --pool NOAA-pool --name noaa-worker
     restart: unless-stopped
     volumes:
       - ./prefect_workflows:/opt/prefect-app
@@ -232,7 +232,7 @@ services:
       - -c
       - |
         cd /opt/prefect-app
-        prefect worker start --pool flight-pool
+        prefect worker start --pool flight-pool --name flight-worker
     restart: unless-stopped
     volumes:
       - ./prefect_workflows:/opt/prefect-app
