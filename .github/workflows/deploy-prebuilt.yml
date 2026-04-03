@@ -16,6 +16,36 @@ on:
       - 'docker/db-init-scripts/**'
 
 jobs:
+  check-compose:
+    name: Check if compose changes affect prebuilt services
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      service_affected: ${{ steps.check.outputs.service_affected }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Detect change type
+        id: check
+        run: |
+          AFFECTED=false
+          for SVC in nginx postgis pgadmin redis dozzle; do
+            OLD=$(awk -v s="  ${SVC}:" '$0==s{f=1; print; next} f && /^  [^ ]/{exit} f{print}' <(git show HEAD~1:docker-compose.yaml))
+            NEW=$(awk -v s="  ${SVC}:" '$0==s{f=1; print; next} f && /^  [^ ]/{exit} f{print}' docker-compose.yaml)
+            if [ "$OLD" != "$NEW" ]; then
+              AFFECTED=true
+              break
+            fi
+          done
+
+          CHANGED_FILES=$(git diff --name-only HEAD~1)
+          if echo "$CHANGED_FILES" | grep -q '^docker/nginx/\|^docker/db-init-scripts/'; then
+            AFFECTED=true
+          fi
+
+          echo "service_affected=$AFFECTED" >> "$GITHUB_OUTPUT"
+
   validate:
     name: Validate Compose File
     runs-on: ubuntu-latest
@@ -39,10 +69,13 @@ jobs:
 
   deploy-prebuilt:
     name: Deploy Prebuilt Services to VM
-    needs: validate
+    needs: [check-compose, validate]
     if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch'
+      always() &&
+      !cancelled() &&
+      needs.validate.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.check-compose.outputs.service_affected == 'true') ||
+       github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/deploy.yml
     with:
       services: prebuilt
