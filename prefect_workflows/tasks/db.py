@@ -10,7 +10,6 @@ from database.create import (
     COUNTRIES_CREATE_TABLE_SQL,
     REGIONS_CREATE_TABLE_SQL,
     FREQUENCIES_CREATE_TABLE_SQL,
-    AIRPORT_COMMENTS_CREATE_TABLE_SQL,
     NAVAIDS_CREATE_TABLE_SQL,
     RUNWAYS_CREATE_TABLE_SQL,
     AURORA_CREATE_TABLE_SQL,
@@ -97,7 +96,6 @@ async def initial_airport_db(conn: Connection):
         ("airports", AIRPORT_CREATE_TABLE_SQL),
         ("runways", RUNWAYS_CREATE_TABLE_SQL),
         ("airport_frequencies", FREQUENCIES_CREATE_TABLE_SQL),
-        ("airport_comments", AIRPORT_COMMENTS_CREATE_TABLE_SQL),
         ("navaids", NAVAIDS_CREATE_TABLE_SQL),
     ]
 

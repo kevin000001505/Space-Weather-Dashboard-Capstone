@@ -21,7 +21,6 @@ import {
 import { useLiveStream } from "../../hooks/useLiveStream";
 
 // Component imports
-import AltitudeLegend from "./legends/AltitudeLegend";
 import SettingsPanel from "./SettingsPanel";
 import StatsPanel from "./legends/StatsPanel";
 import DateTimeViewer from "../ui/DateTimeViewer";
@@ -371,6 +370,7 @@ const PlaneTracker = () => {
     flightPath,
     isolateMode,
     selectedAirportsPanels,
+    selectedFlightsPanels,
     hoveredRunwayId,
     airportIconSize,
     flightIconSize,

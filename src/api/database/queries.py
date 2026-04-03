@@ -215,20 +215,6 @@ airport_navs AS (
     FROM navaids
     WHERE associated_airport = $1
     GROUP BY associated_airport
-),
-airport_comms AS (
-    SELECT airport_ident, jsonb_agg(
-        jsonb_build_object(
-            'id', id,
-            'subject', subject,
-            'body', body,
-            'author', author,
-            'date', date
-        )
-    ) AS comments
-    FROM airport_comments
-    WHERE airport_ident = $1
-    GROUP BY airport_ident
 )
 SELECT
     a.id,
@@ -253,15 +239,13 @@ SELECT
     r.name AS region_name,
     COALESCE(rw.runways, '[]'::jsonb) AS runways,
     COALESCE(f.frequencies, '[]'::jsonb) AS frequencies,
-    COALESCE(n.navaids, '[]'::jsonb) AS navaids,
-    COALESCE(ac.comments, '[]'::jsonb) AS comments
+    COALESCE(n.navaids, '[]'::jsonb) AS navaids
 FROM airports a
 LEFT JOIN countries c ON a.iso_country = c.code
 LEFT JOIN regions r ON a.iso_region = r.code
 LEFT JOIN airport_runways rw ON a.ident = rw.airport_ident
 LEFT JOIN airport_freqs f ON a.ident = f.airport_ident
 LEFT JOIN airport_navs n ON a.ident = n.associated_airport
-LEFT JOIN airport_comms ac ON a.ident = ac.airport_ident
 WHERE a.ident = $1
 """
 

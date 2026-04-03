@@ -324,29 +324,6 @@ class NavaidRecord(BaseCSVModel):
     model_config = ConfigDict(validate_assignment=True, extra="ignore")
 
 
-class CommentRecord(BaseCSVModel):
-    id: Optional[int] = Field(default=None)
-    airport_ident: str = Field(alias="airportIdent")
-    subject: Optional[str] = Field(default=None)
-    body: Optional[str] = Field(default=None)
-    author: Optional[str] = Field(default=None, alias="memberNickname")
-    date: Optional[datetime] = Field(default=None)
-
-    def to_tuple(self) -> tuple:
-        return (
-            self.id,
-            self.airport_ident,
-            self.subject,
-            self.body,
-            self.author,
-            self.date,
-        )
-
-    model_config = ConfigDict(
-        populate_by_name=True, validate_assignment=True, extra="ignore"
-    )
-
-
 class DrapRecord(BaseModel):
     """DRAP (D-Region Absorption Prediction) record for database insertion."""
 

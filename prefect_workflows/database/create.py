@@ -289,23 +289,6 @@ CREATE INDEX idx_frequencies_type ON airport_frequencies(type);
 """
 
 
-AIRPORT_COMMENTS_CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS airport_comments (
-    id INTEGER PRIMARY KEY,
-    airport_ref INTEGER REFERENCES airports(id) ON DELETE CASCADE,
-    airport_ident VARCHAR(10) REFERENCES airports(ident) ON DELETE CASCADE,
-    subject VARCHAR(255),
-    body TEXT,
-    author VARCHAR(255),
-    date TIMESTAMPTZ,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX idx_comments_airport_ref ON airport_comments(airport_ref);
-CREATE INDEX idx_comments_airport_ident ON airport_comments(airport_ident);
-"""
-
 NAVAIDS_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS navaids (
     id INTEGER PRIMARY KEY,

@@ -100,14 +100,6 @@ class NavaidModel(BaseModel):
     dme_geom: Optional[Dict[str, Any]] = None
 
 
-class CommentModel(BaseModel):
-    id: int
-    subject: Optional[str] = None
-    body: Optional[str] = None
-    author: Optional[str] = None
-    date: Optional[datetime] = None
-
-
 class AirportDetailResponse(BaseModel):
     id: int
     ident: str
@@ -134,7 +126,6 @@ class AirportDetailResponse(BaseModel):
     runways: List[RunwayModel] = []
     frequencies: List[FrequencyModel] = []
     navaids: List[NavaidModel] = []
-    comments: List[CommentModel] = []
 
 
 class KpIndexResponse(BaseModel):

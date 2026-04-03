@@ -31,13 +31,11 @@ async def airports_extract_flow():
             get_connection() as conn1,
             get_connection() as conn2,
             get_connection() as conn3,
-            get_connection() as conn4,
         ):
             await asyncio.gather(
                 airports.ingest_runways_csv(conn1),
                 airports.ingest_frequencies_csv(conn2),
                 airports.ingest_navaids_csv(conn3),
-                airports.ingest_comments_csv(conn4),
             )
         logger.info("Airports data extraction and ingestion completed successfully!")
     except Exception as e:

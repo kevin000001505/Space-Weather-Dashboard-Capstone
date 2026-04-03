@@ -439,32 +439,6 @@ ON CONFLICT (id) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP
 """
 
-COMMENTS_STAGING_DDL = """
-CREATE TEMP TABLE comments_staging (
-    id INTEGER,
-    airport_ident VARCHAR(10),
-    subject VARCHAR(255),
-    body TEXT,
-    author VARCHAR(255),
-    date TIMESTAMPTZ
-) ON COMMIT DROP
-"""
-
-COMMENTS_STAGING_COLUMNS = ["id", "airport_ident", "subject", "body", "author", "date"]
-
-COMMENTS_TRANSFORM_SQL = """
-INSERT INTO airport_comments (id, airport_ident, subject, body, author, date)
-SELECT id, airport_ident, subject, body, author, date
-FROM comments_staging
-ON CONFLICT (id) DO UPDATE SET
-    airport_ident = EXCLUDED.airport_ident,
-    subject = EXCLUDED.subject,
-    body = EXCLUDED.body,
-    author = EXCLUDED.author,
-    date = EXCLUDED.date,
-    updated_at = CURRENT_TIMESTAMP
-"""
-
 RUNWAYS_STAGING_DDL = """
 CREATE TEMP TABLE runways_staging (
     id INTEGER,

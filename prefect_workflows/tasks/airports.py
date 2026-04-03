@@ -11,9 +11,6 @@ from database.queries import (
     FREQUENCIES_STAGING_DDL,
     FREQUENCIES_STAGING_COLUMNS,
     FREQUENCIES_TRANSFORM_SQL,
-    COMMENTS_STAGING_DDL,
-    COMMENTS_STAGING_COLUMNS,
-    COMMENTS_TRANSFORM_SQL,
     RUNWAYS_STAGING_DDL,
     RUNWAYS_STAGING_COLUMNS,
     RUNWAYS_TRANSFORM_SQL,
@@ -31,7 +28,6 @@ from tasks.models import (
     FrequencyRecord,
     RunwayRecord,
     NavaidRecord,
-    CommentRecord,
 )
 from asyncpg import Connection
 import requests
@@ -47,7 +43,6 @@ regions_url = f"{airports_base_url}regions.csv"
 runways_url = f"{airports_base_url}runways.csv"
 navaids_url = f"{airports_base_url}navaids.csv"
 freqs_url = f"{airports_base_url}airport-frequencies.csv"
-comments_url = f"{airports_base_url}airport-comments.csv"
 
 
 def parse_float(value):
@@ -126,14 +121,6 @@ async def run_ingest_pipeline(
         )
         logger.info(f"Starting COPY to {staging_table}...")
 
-        async with conn.transaction():
-            await conn.execute(staging_ddl)
-            await conn.copy_records_to_table(
-                staging_table,
-                records=all_tuples,
-                columns=columns,
-            )
-            await conn.execute(transform_sql)
         async with conn.transaction():
             await conn.execute(staging_ddl)
             await conn.copy_records_to_table(
@@ -224,18 +211,5 @@ async def ingest_navaids_csv(conn: Connection):
         NAVAIDS_STAGING_DDL,
         NAVAIDS_STAGING_COLUMNS,
         NAVAIDS_TRANSFORM_SQL,
-        conn,
-    )
-
-
-@task(cache_policy=NO_CACHE)
-async def ingest_comments_csv(conn: Connection):
-    await run_ingest_pipeline(
-        comments_url,
-        CommentRecord,
-        "comments_staging",
-        COMMENTS_STAGING_DDL,
-        COMMENTS_STAGING_COLUMNS,
-        COMMENTS_TRANSFORM_SQL,
         conn,
     )

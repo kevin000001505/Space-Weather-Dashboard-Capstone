@@ -248,23 +248,6 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
               )) : <div>No local navaid data available.</div>}
             </div>
           )}
-
-          {/* COMMENTS */}
-          <div style={headerStyle} onClick={() => toggleSection('comments')}>
-            <span>💬 Comments ({airport.comments?.length || 0})</span>
-            <span>{expandedSection === 'comments' ? '▼' : '▶'}</span>
-          </div>
-          {expandedSection === 'comments' && (
-            <div style={contentStyle}>
-              {airport.comments?.length > 0 ? airport.comments.map(c => (
-                <div key={c.id} style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '1px solid rgba(128,128,128,0.2)' }}>
-                  <strong>{c.subject || 'No Subject'}</strong>
-                  <br/><span style={{ color: 'var(--ui-border)', fontSize: '0.625rem' }}>By {c.author} on {c.date ? new Date(c.date).toLocaleDateString() : 'Unknown'}</span>
-                  <p style={{ margin: '4px 0 0 0', whiteSpace: 'pre-wrap', fontStyle: 'italic', backgroundColor: 'rgba(128,128,128,0.05)', padding: '6px', borderRadius: '4px' }}>"{c.body}"</p>
-                </div>
-              )) : <div>No comments available.</div>}
-            </div>
-          )}
         </div>
 
         {children}

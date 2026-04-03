@@ -12,7 +12,6 @@ AVIATION_ENDPOINTS = {
     "runways_url": f"{airports_base_url}runways.csv",
     "navaids_url": f"{airports_base_url}navaids.csv",
     "freqs_url": f"{airports_base_url}airport-frequencies.csv",
-    "comments_url": f"{airports_base_url}airport-comments.csv",
 }
 
 

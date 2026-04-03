@@ -416,7 +416,7 @@ async def get_airport_details(
             )
 
         airport_data = dict(row)
-        json_fields = ["geom", "runways", "frequencies", "navaids", "comments"]
+        json_fields = ["geom", "runways", "frequencies", "navaids"]
         for field in json_fields:
             val = airport_data.get(field)
             if isinstance(val, str):
