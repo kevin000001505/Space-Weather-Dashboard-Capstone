@@ -102,7 +102,7 @@ export default function Help() {
           >
             <LeftTopicsNav />
 
-            <MainContent article={article} sections={flatContents} />
+            <MainContent article={article} />
 
             <RightContentsNav sections={flatContents} />
           </Box>

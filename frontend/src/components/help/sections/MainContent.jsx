@@ -1,12 +1,191 @@
-import React, { useEffect, useMemo, useRef } from "react";
 import { slugify } from "../helpers/helper";
 import { TOPBAR_HEIGHT } from "../helpers/constants";
-import { Box, Divider, Stack, Typography } from "@mui/material";
+import FlightIcon from "@mui/icons-material/Flight";
+import { Box, Divider, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useSelector } from "react-redux";
 
-const MainContent = ({ article, flatContents }) => {
+const mediaComponentRegistry = {
+  headingIndicatorPreview: () => (
+    <Paper
+      variant="outlined"
+      sx={(theme) => ({
+        p: 2,
+        borderRadius: 3,
+        borderColor: theme.palette.divider,
+        backgroundColor:
+          theme.palette.mode === "dark"
+            ? "rgba(255, 255, 255, 0.03)"
+            : "rgba(15, 23, 42, 0.02)",
+      })}
+    >
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={2}
+        alignItems={{ sm: "center" }}
+      >
+        <Box
+          sx={(theme) => ({
+            width: 72,
+            height: 72,
+            borderRadius: "50%",
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+            border: `1px solid ${theme.palette.divider}`,
+            background:
+              theme.palette.mode === "dark"
+                ? "linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(249, 115, 22, 0.16))"
+                : "linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(249, 115, 22, 0.1))",
+          })}
+        >
+          <FlightIcon
+            sx={{
+              fontSize: 32,
+              color: "primary.main",
+              transform: "rotate(40deg)",
+            }}
+          />
+        </Box>
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 0.5 }}>
+            Heading Indicator
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            The aircraft icon rotates to match its current heading.
+          </Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  ),
+};
+
+const MainContent = ({ article }) => {
   const activeTopic = useSelector((state) => state.help.activeTopic);
+
+  const renderMedia = (entry) => {
+    const MediaComponent = entry.componentKey
+      ? mediaComponentRegistry[entry.componentKey]
+      : null;
+
+    if (!entry.image && !MediaComponent) {
+      return null;
+    }
+
+    return (
+      <Stack spacing={2} sx={{ mb: 2.25 }}>
+        {entry.image && (
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent:
+                entry.image.align === "center"
+                  ? "center"
+                  : entry.image.align === "right"
+                    ? "flex-end"
+                    : "flex-start",
+            }}
+          >
+            <Box
+              component="img"
+              src={entry.image.src}
+              alt={entry.image.alt}
+              loading="lazy"
+              sx={(theme) => ({
+                width: entry.image.width || "100%",
+                maxWidth: entry.image.maxWidth || "100%",
+                display: "block",
+                borderRadius: 3,
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: theme.shadows[1],
+                objectFit: "cover",
+              })}
+            />
+          </Box>
+        )}
+
+        {entry.image?.caption && (
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            {entry.image.caption}
+          </Typography>
+        )}
+
+        {MediaComponent && <MediaComponent />}
+      </Stack>
+    );
+  };
+
+  const renderBody = (body, prefix) => {
+    const paragraphs = Array.isArray(body) ? body : body ? [body] : [];
+
+    return (
+      <Stack spacing={2}>
+        {paragraphs.map((paragraph, index) => (
+          <Typography
+            key={`${prefix}-p-${index}`}
+            variant="body1"
+            sx={{ color: "text.secondary", maxWidth: "72ch" }}
+          >
+            {paragraph}
+          </Typography>
+        ))}
+      </Stack>
+    );
+  };
+
+  const hasMedia = (entry) => Boolean(entry?.image || entry?.componentKey);
+
+  const getInlineDirection = (entry) => {
+    const side = entry.side === "right" ? "right" : "left";
+    return side === "right"
+      ? { xs: "column", md: "row-reverse" }
+      : { xs: "column", md: "row" };
+  };
+
+  const getInlineMediaWidth = (entry) => {
+    if (typeof entry?.image?.width === "number") {
+      return entry.image.width;
+    }
+
+    return 360;
+  };
+
+  const renderEntryContent = (entry, prefix) => {
+    const layout = entry.layout === "inline" ? "inline" : "stack";
+
+    if (layout === "inline" && hasMedia(entry)) {
+      const mediaWidth = getInlineMediaWidth(entry);
+
+      return (
+        <Stack
+          direction={getInlineDirection(entry)}
+          spacing={3}
+          alignItems="flex-start"
+        >
+          <Box
+            sx={{
+              flex: { md: `0 0 ${mediaWidth}px` },
+              width: { xs: "100%", md: mediaWidth },
+              maxWidth: "100%",
+            }}
+          >
+            {renderMedia(entry)}
+          </Box>
+
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {renderBody(entry.body, prefix)}
+          </Box>
+        </Stack>
+      );
+    }
+
+    return (
+      <Stack spacing={2.25}>
+        {renderMedia(entry)}
+        {renderBody(entry.body, prefix)}
+      </Stack>
+    );
+  };
 
   return (
     <Box
@@ -56,17 +235,7 @@ const MainContent = ({ article, flatContents }) => {
               <Typography variant="h2" sx={{ mb: 1.75 }}>
                 {section.title}
               </Typography>
-              <Stack spacing={2}>
-                {section.body.map((paragraph, index) => (
-                  <Typography
-                    key={`${section.id}-p-${index}`}
-                    variant="body1"
-                    sx={{ color: "text.secondary", maxWidth: "72ch" }}
-                  >
-                    {paragraph}
-                  </Typography>
-                ))}
-              </Stack>
+              {renderEntryContent(section, section.id)}
 
               {section.list && (
                 <Box
@@ -117,12 +286,7 @@ const MainContent = ({ article, flatContents }) => {
                     <Typography variant="h3" sx={{ mb: 1.15 }}>
                       {subsection.title}
                     </Typography>
-                    <Typography
-                      variant="body1"
-                      sx={{ color: "text.secondary", maxWidth: "72ch" }}
-                    >
-                      {subsection.body}
-                    </Typography>
+                    {renderEntryContent(subsection, subsection.id)}
                   </Box>
                 ))}
               </Stack>

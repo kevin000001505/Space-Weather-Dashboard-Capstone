@@ -60,23 +60,20 @@ export default function RightContentsNav({ sections }) {
               mb: 0.25,
               alignItems: "flex-start",
               color:
-                activeAnchor === entry.id
+                // activeAnchor === entry.id
+                false
                   ? theme.palette.text.primary
                   : theme.palette.text.secondary,
               backgroundColor:
-                activeAnchor === entry.id
-                  ? alpha(
-                      theme.palette.primary.main,
-                      darkMode ? 0.14 : 0.08,
-                    )
+                // activeAnchor === entry.id
+                false
+                  ? alpha(theme.palette.primary.main, darkMode ? 0.14 : 0.08)
                   : "transparent",
               "&:hover": {
                 backgroundColor:
-                  activeAnchor === entry.id
-                    ? alpha(
-                        theme.palette.primary.main,
-                        darkMode ? 0.18 : 0.12,
-                      )
+                  // activeAnchor === entry.id
+                  false
+                    ? alpha(theme.palette.primary.main, darkMode ? 0.18 : 0.12)
                     : theme.palette.action.hover,
               },
             })}
@@ -85,7 +82,8 @@ export default function RightContentsNav({ sections }) {
               primary={entry.title}
               primaryTypographyProps={{
                 fontSize: entry.level === 3 ? "0.875rem" : "1rem",
-                fontWeight: activeAnchor === entry.id ? 700 : 500,
+                // activeAnchor === entry.id
+                fontWeight: false ? 700 : 500,
                 lineHeight: 1.4,
               }}
             />

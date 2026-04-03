@@ -753,6 +753,15 @@ const topicContent = {
       {
         id: "markers-flights",
         title: "Flight Colors",
+        image: {
+          src: "/help/flight-color-legend.png",
+          alt: "A preview of the flight altitude color gradient",
+          caption:
+            "",
+          align: "left",
+          maxWidth: 620,
+        },
+        layout: "inline",
         body: [
           "Flight icons are colored based on geometric altitude. The altitude color legend at the bottom of the map (toggle with the 'A' legend button) shows the full gradient from low to high altitude.",
           "Selected flights are highlighted with a distinct outline. Flight paths for pinned flights are drawn as lines on the map.",
@@ -761,6 +770,9 @@ const topicContent = {
           {
             id: "markers-flights-heading",
             title: "Heading Indicator",
+            componentKey: "headingIndicatorPreview",
+            layout: "inline",
+            side: "right",
             body: "Each flight icon is rotated to match the aircraft's current heading, giving you a visual indication of its direction of travel.",
           },
         ],
@@ -769,7 +781,10 @@ const topicContent = {
         id: "markers-overlays",
         title: "Overlay Color Gradients",
         body: [
-          "DRAP: yellow (low absorption) to red (high absorption). Aurora: green (low probability) to red (high probability). Geoelectric: blue (weak field) to red (intense field). Power lines: colored by voltage level.",
+          "DRAP: yellow (low absorption) to red (high absorption).",
+          "Aurora: green (low probability) to red (high probability).",
+          "Geoelectric: blue (weak field) to red (intense field).",
+          "Power lines: colored by voltage level.",
         ],
         subsections: [
           {
@@ -1492,7 +1507,9 @@ const fallbackTopic = (title) => ({
     {
       id: "placeholder",
       title: "Overview",
-      body: ["Detailed information for this topic will be added in a future update."],
+      body: [
+        "Detailed information for this topic will be added in a future update.",
+      ],
       subsections: [],
     },
   ],
