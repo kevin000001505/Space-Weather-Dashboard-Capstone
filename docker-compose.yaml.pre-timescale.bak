@@ -27,7 +27,7 @@ services:
       - fastapi
 
   postgis:
-    image: timescale/timescaledb-ha:pg18
+    image: postgis/postgis:16-3.4
     container_name: postgis
     restart: unless-stopped  # Auto-restart if crashes
     stop_grace_period: 60s   # Clean shutdown
