@@ -181,10 +181,11 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 @app.middleware("http")
-async def add_process_time_header(request, call_next):
-    t0 = time.perf_counter()
+async def add_process_time_header(request: Request, call_next):
+    start = time.perf_counter()
     response = await call_next(request)
-    response.headers["X-Process-Time"] = str(time.perf_counter() - t0)
+    process_time = time.perf_counter() - start
+    response.headers["X-Process-Time"] = f"{process_time:.6f}"
     return response
 
 
@@ -620,31 +621,15 @@ async def kp_index(
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
-    t_start = time.perf_counter()
-    try:
-        start_utc, end_utc = _resolve_time_window(start, end, default_hours=3)
-
-        t_query_start = time.perf_counter()
-        rows = await conn.fetch(KP_INDEX_RANGE_QUERY, start_utc, end_utc)
-        t_query_end = time.perf_counter()
-
-        if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
-
-        return [dict(row) for row in rows]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching latest Kp index: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return await fetch_time_series(
+        conn=conn,
+        query=KP_INDEX_RANGE_QUERY,
+        start=start,
+        end=end,
+        debug=debug,
+        default_hours=3,
+        error_message="Error fetching Kp index",
+    )
 
 
 @app.get("/api/v1/xray", response_model=List[XRayResponse])
@@ -672,31 +657,15 @@ async def xray_flux(
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
-    t_start = time.perf_counter()
-    try:
-        start_utc, end_utc = _resolve_time_window(start, end)
-
-        t_query_start = time.perf_counter()
-        rows = await conn.fetch(XRAY_FLUX_RANGE_QUERY, start_utc, end_utc)
-        t_query_end = time.perf_counter()
-
-        if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
-
-        return [dict(row) for row in rows]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching latest X-ray flux: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return await fetch_time_series(
+        conn=conn,
+        query=XRAY_FLUX_RANGE_QUERY,
+        start=start,
+        end=end,
+        debug=debug,
+        default_hours=3,
+        error_message="Error fetching Kp index",
+    )
 
 
 @app.get("/api/v1/proton-flux", response_model=List[ProtonFluxResponse])
@@ -724,31 +693,15 @@ async def proton_flux(
 
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
-    t_start = time.perf_counter()
-    try:
-        start_utc, end_utc = _resolve_time_window(start, end)
-
-        t_query_start = time.perf_counter()
-        rows = await conn.fetch(PROTON_FLUX_RANGE_QUERY, start_utc, end_utc)
-        t_query_end = time.perf_counter()
-
-        if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
-
-        return [dict(row) for row in rows]
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error fetching proton flux: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    return await fetch_time_series(
+        conn=conn,
+        query=PROTON_FLUX_RANGE_QUERY,
+        start=start,
+        end=end,
+        debug=debug,
+        default_hours=3,
+        error_message="Error fetching proton flux",
+    )
 
 
 @app.get("/api/v1/aurora", response_model=AuroraResponse)
@@ -975,3 +928,44 @@ async def range_data_retrieve(
 @app.get("/api/kermit")
 def get_image():
     return FileResponse("/app/images/evil-laugh-kermit.gif", media_type="image/gif")
+
+
+# --- Helper Function ---
+
+async def fetch_time_series(
+    conn: asyncpg.Connection,
+    query: str,
+    start: datetime | None,
+    end: datetime | None,
+    debug: bool,
+    default_hours: int = 3,
+    error_message: str = "Database error",
+):
+    t_start = time.perf_counter()
+
+    try:
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=default_hours)
+
+        t_query_start = time.perf_counter()
+        rows = await conn.fetch(query, start_utc, end_utc)
+        t_query_end = time.perf_counter()
+
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+
+        return [dict(row) for row in rows]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("%s: %s", error_message, str(e))
+        raise HTTPException(status_code=500, detail=f"{error_message}: {str(e)}")
+
+def add_timing_headers(
+    response: Response,
+    t_start: float,
+    t_query_start: float,
+    t_query_end: float,
+) -> None:
+    finish = time.perf_counter()
+    response.headers["X-Query-Time"] = f"{t_query_end - t_query_start:.6f}"
+    response.headers["X-Handler-Time"] = f"{finish - t_start:.6f}"
