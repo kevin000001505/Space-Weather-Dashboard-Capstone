@@ -8,7 +8,6 @@ from tasks.db import (
     initial_flight_states_db,
     initial_activate_flight_db,
     initial_airport_db,
-    initial_readonly_grants,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,

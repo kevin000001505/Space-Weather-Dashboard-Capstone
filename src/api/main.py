@@ -331,22 +331,20 @@ async def get_latest_airports(
         if cached_bytes:
             t_query_end = time.perf_counter()
             if debug:
-                return JSONResponse(
-                    content=TimeTestingData(
-                        start=t_start,
-                        query_start=t_query_start,
-                        query_end=t_query_end,
-                        finish=time.perf_counter(),
-                    ).result()
-                )
+                return timing_debug_response(t_start, t_query_start, t_query_end)
+
             if limit:
-                
                 airports_data = airports_adapter.validate_json(cached_bytes)
-                return Response(
+                response = Response(
                     content=airports_adapter.dump_json(airports_data[:limit]),
                     media_type="application/json",
                 )
-            return Response(content=cached_bytes, media_type="application/json")
+                add_timing_headers(response, t_start, t_query_start, t_query_end)
+                return response
+
+            response = Response(content=cached_bytes, media_type="application/json")
+            add_timing_headers(response, t_start, t_query_start, t_query_end)
+            return response
 
         rows = await conn.fetch(AIRPORTS_LATEST_QUERY)
         t_query_end = time.perf_counter()
@@ -365,22 +363,19 @@ async def get_latest_airports(
         )
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
         if limit:
-            return Response(
+            response = Response(
                 content=airports_adapter.dump_json(airports_models[:limit]),
                 media_type="application/json",
             )
+            add_timing_headers(response, t_start, t_query_start, t_query_end)
+            return response
 
-        return Response(content=cache_payload_bytes, media_type="application/json")
+        response = Response(content=cache_payload_bytes, media_type="application/json")
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return response
 
     except HTTPException:
         raise
@@ -390,9 +385,11 @@ async def get_latest_airports(
     finally:
         await redis_client.aclose()
 
+
 @app.get("/api/v1/airport/{ident}", response_model=AirportDetailResponse)
 async def get_airport_details(
     ident: str,
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     debug: bool = Query(False),
 ):
@@ -407,14 +404,7 @@ async def get_airport_details(
             raise HTTPException(status_code=404, detail=f"Airport {ident} not found")
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
         airport_data = dict(row)
         json_fields = ["geom", "runways", "frequencies", "navaids"]
@@ -423,6 +413,7 @@ async def get_airport_details(
             if isinstance(val, str):
                 airport_data[field] = json.loads(val)
 
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
         return AirportDetailResponse(**airport_data)
 
     except HTTPException:
@@ -435,6 +426,7 @@ async def get_airport_details(
 @app.get("/api/v1/flight-path/{icao24}", response_model=FlightPathResponse)
 async def get_flight_path(
     icao24: str,
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     debug: bool = Query(False),
 ):
@@ -449,18 +441,12 @@ async def get_flight_path(
             raise HTTPException(status_code=404, detail="No flight data available")
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
         row = rows[0]
         path_points = row["path_points"] or []
 
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
         return FlightPathResponse(
             icao24=row["icao24"],
             callsign=row["callsign"],
@@ -477,6 +463,7 @@ async def get_flight_path(
 
 @app.get("/api/v1/active-flight-states/latest")
 async def get_activate_flight_states(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     limit: int = Query(None, ge=1, le=20000),
     debug: bool = Query(False),
@@ -499,10 +486,8 @@ async def get_activate_flight_states(
         if limit:
             rows = rows[:limit]
 
-        # 3. Fast Dictionary Conversion: No manual mapping needed!
         flights_data = [dict(row) for row in rows]
 
-        # 4. Construct the raw Python dictionary payload
         payload_dict = {
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "count": len(flights_data),
@@ -514,18 +499,17 @@ async def get_activate_flight_states(
         json_bytes = payload_model.model_dump_json()
 
         t_finish = time.perf_counter()
-        timing = TimeTestingData(
-            start=t_start,
-            query_start=t_query_start,
-            query_end=t_query_end,
-            finish=t_finish,
-        )
-        logger.info(f"Retrieved {len(flights_data)} flights - {timing.result()}")
 
         if debug:
-            return JSONResponse(content=timing.result())
+            return timing_debug_response(
+                t_start, t_query_start, t_query_end, finish=t_finish
+            )
 
-        return Response(content=json_bytes, media_type="application/json")
+        response = Response(content=json_bytes, media_type="application/json")
+        add_timing_headers(
+            response, t_start, t_query_start, t_query_end, finish=t_finish
+        )
+        return response
 
     except HTTPException:
         raise
@@ -547,16 +531,11 @@ async def latest_drap(
 
         if cached_drap:
             if debug:
-                return JSONResponse(
-                    content=TimeTestingData(
-                        start=t_start,
-                        query_start=t_query_start,
-                        query_end=t_query_end,
-                        finish=time.perf_counter(),
-                    ).result()
-                )
+                return timing_debug_response(t_start, t_query_start, t_query_end)
 
-            return Response(content=cached_drap, media_type="application/json")
+            response = Response(content=cached_drap, media_type="application/json")
+            add_timing_headers(response, t_start, t_query_start, t_query_end)
+            return response
 
         t_query_start = time.perf_counter()
         row = await conn.fetchrow(LATEST_DRAP_QUERY)
@@ -578,16 +557,11 @@ async def latest_drap(
         )
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
-        return Response(content=cache_payload_bytes, media_type="application/json")
+        response = Response(content=cache_payload_bytes, media_type="application/json")
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return response
 
     except HTTPException:
         raise
@@ -597,6 +571,7 @@ async def latest_drap(
 
 @app.get("/api/v1/kp-index", response_model=List[KpIndexResponse])
 async def kp_index(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
         default=None,
@@ -622,6 +597,7 @@ async def kp_index(
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     return await fetch_time_series(
+        response=response,
         conn=conn,
         query=KP_INDEX_RANGE_QUERY,
         start=start,
@@ -634,6 +610,7 @@ async def kp_index(
 
 @app.get("/api/v1/xray", response_model=List[XRayResponse])
 async def xray_flux(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
         default=None,
@@ -658,6 +635,7 @@ async def xray_flux(
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     return await fetch_time_series(
+        response=response,
         conn=conn,
         query=XRAY_FLUX_RANGE_QUERY,
         start=start,
@@ -670,6 +648,7 @@ async def xray_flux(
 
 @app.get("/api/v1/proton-flux", response_model=List[ProtonFluxResponse])
 async def proton_flux(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
         default=None,
@@ -694,6 +673,7 @@ async def proton_flux(
     - **start** and **end**: Optional custom range (both required together, minimum span: 1 hour)
     """
     return await fetch_time_series(
+        response=response,
         conn=conn,
         query=PROTON_FLUX_RANGE_QUERY,
         start=start,
@@ -706,6 +686,7 @@ async def proton_flux(
 
 @app.get("/api/v1/aurora", response_model=AuroraResponse)
 async def aurora(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     utc_time: Optional[str] = Query(
         default=None,
@@ -736,19 +717,13 @@ async def aurora(
                 raw_data = json.loads(cached_data)
 
                 if debug:
-                    return JSONResponse(
-                        content=TimeTestingData(
-                            start=t_start,
-                            query_start=t_query_start,
-                            query_end=t_query_end,
-                            finish=time.perf_counter(),
-                        ).result()
-                    )
+                    return timing_debug_response(t_start, t_query_start, t_query_end)
                 payload = {
                     "observation_time": raw_data.get("observation_time"),
                     "forecast_time": raw_data.get("forecast_time"),
                     "coordinates": raw_data.get("coordinates", []),
                 }
+                add_timing_headers(response, t_start, t_query_start, t_query_end)
                 return payload
 
         # Option B: Historical time provided (or Redis was empty). Hit Postgres.
@@ -783,23 +758,9 @@ async def aurora(
             )
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
-        timing = TimeTestingData(
-            start=t_start,
-            query_start=t_query_start,
-            query_end=t_query_end,
-            finish=time.perf_counter(),
-        ).result()
-        payload["query_time_ms"] = timing["query_time_ms"]
-        payload["total_time_ms"] = timing["total_time_ms"]
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
         return payload
 
     except HTTPException:
@@ -814,6 +775,7 @@ async def aurora(
 
 @app.get("/api/v1/alert", response_model=List[AlertResponse])
 async def get_alerts(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     days: int = Query(default=1, ge=1, le=30),
     debug: bool = Query(False),
@@ -829,15 +791,9 @@ async def get_alerts(
         t_query_end = time.perf_counter()
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
         return [dict(row) for row in rows]
 
     except HTTPException:
@@ -849,7 +805,9 @@ async def get_alerts(
 
 @app.get("/api/v1/geoelectric/latest", response_model=GeoelectricResponse)
 async def latest_geoelectric(
-    conn: asyncpg.Connection = Depends(get_db_connection), debug: bool = Query(False)
+    response: Response,
+    conn: asyncpg.Connection = Depends(get_db_connection),
+    debug: bool = Query(False),
 ):
     t_start = time.perf_counter()
     try:
@@ -866,15 +824,9 @@ async def latest_geoelectric(
         )
 
         if debug:
-            return JSONResponse(
-                content=TimeTestingData(
-                    start=t_start,
-                    query_start=t_query_start,
-                    query_end=t_query_end,
-                    finish=time.perf_counter(),
-                ).result()
-            )
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
         return geoelectric_data
 
     except HTTPException:
@@ -885,6 +837,7 @@ async def latest_geoelectric(
 
 @app.get("/api/v1/kermit/", response_model=List[SnapshotResponse])
 async def range_data_retrieve(
+    response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
         default=None,
@@ -899,12 +852,15 @@ async def range_data_retrieve(
     ),
     interval: int = Query(default=5, description="The time range for each data gap."),
 ):
+    t_start = time.perf_counter()
     start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
     start_utc = start_utc.replace(second=0, microsecond=0)
     end_utc = end_utc.replace(second=0, microsecond=0)
     query = query_dict[event]
 
+    t_query_start = time.perf_counter()
     rows = await conn.fetch(query, start_utc, end_utc, interval)
+    t_query_end = time.perf_counter()
 
     if not rows:
         raise HTTPException(
@@ -916,12 +872,11 @@ async def range_data_retrieve(
         row_dict = dict(row)
         raw_points = row_dict.get("points")
         row_dict["points"] = (
-            points_adapter.validate_json(raw_points)
-            if raw_points is not None
-            else None
+            points_adapter.validate_json(raw_points) if raw_points is not None else None
         )
         result.append(SnapshotResponse.model_validate(row_dict))
 
+    add_timing_headers(response, t_start, t_query_start, t_query_end)
     return result
 
 
@@ -932,7 +887,9 @@ def get_image():
 
 # --- Helper Function ---
 
+
 async def fetch_time_series(
+    response: Response,
     conn: asyncpg.Connection,
     query: str,
     start: datetime | None,
@@ -944,11 +901,16 @@ async def fetch_time_series(
     t_start = time.perf_counter()
 
     try:
-        start_utc, end_utc = _resolve_time_window(start, end, default_hours=default_hours)
+        start_utc, end_utc = _resolve_time_window(
+            start, end, default_hours=default_hours
+        )
 
         t_query_start = time.perf_counter()
         rows = await conn.fetch(query, start_utc, end_utc)
         t_query_end = time.perf_counter()
+
+        if debug:
+            return timing_debug_response(t_start, t_query_start, t_query_end)
 
         add_timing_headers(response, t_start, t_query_start, t_query_end)
 
@@ -960,12 +922,41 @@ async def fetch_time_series(
         logger.error("%s: %s", error_message, str(e))
         raise HTTPException(status_code=500, detail=f"{error_message}: {str(e)}")
 
+
 def add_timing_headers(
     response: Response,
     t_start: float,
     t_query_start: float,
     t_query_end: float,
+    finish: float | None = None,
 ) -> None:
-    finish = time.perf_counter()
+    if finish is None:
+        finish = time.perf_counter()
     response.headers["X-Query-Time"] = f"{t_query_end - t_query_start:.6f}"
     response.headers["X-Handler-Time"] = f"{finish - t_start:.6f}"
+
+
+def timing_debug_response(
+    t_start: float,
+    t_query_start: float,
+    t_query_end: float,
+    finish: float | None = None,
+) -> JSONResponse:
+    if finish is None:
+        finish = time.perf_counter()
+    response = JSONResponse(
+        content=TimeTestingData(
+            start=t_start,
+            query_start=t_query_start,
+            query_end=t_query_end,
+            finish=finish,
+        ).result()
+    )
+    add_timing_headers(
+        response,
+        t_start=t_start,
+        t_query_start=t_query_start,
+        t_query_end=t_query_end,
+        finish=finish,
+    )
+    return response

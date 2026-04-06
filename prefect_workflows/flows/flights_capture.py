@@ -20,5 +20,3 @@ async def ingest_flow():
 
         if records:
             await broadcast_active_flights_to_redis(conn)
-
-

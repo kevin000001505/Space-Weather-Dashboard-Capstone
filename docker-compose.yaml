@@ -63,7 +63,7 @@ services:
       - data_network
 
   pgadmin:
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:9.14.0
     container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com

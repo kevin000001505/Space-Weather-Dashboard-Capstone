@@ -1,7 +1,5 @@
 """Database initialization and maintenance tasks."""
 
-import os
-from datetime import datetime, timedelta
 
 from shared.db_utils import ensure_table_exists
 from database.create import (
@@ -21,7 +19,6 @@ from database.create import (
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
     READONLY_GRANTS_SQL,
-    CREATE_TABLE_PARTITION_IF_MISSING,
 )
 from database.functions import CREATE_PARTITION_FUNCTION_SQL
 from prefect import task
@@ -110,7 +107,6 @@ async def initial_airport_db(conn: Connection):
     except Exception as e:
         logger.error(f"Failed to initialize airports table: {e}")
         raise
-
 
 
 @task(cache_policy=NO_CACHE)
@@ -217,24 +213,19 @@ async def initial_partition_function(conn: Connection):
         raise
 
 
-@task(cache_policy=NO_CACHE)
-async def create_tables_partition(
-    conn: Connection, table_name: str, datetime: datetime
-):
-    """Create previous, current, and next month partitions for a table."""
-    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime - timedelta(days=30))
-    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime)
-    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, table_name, datetime + timedelta(days=30))
-
 
 # -----
 # Cleanup tasks
 @task(cache_policy=NO_CACHE)
-async def cleanup_table(conn: Connection, table_name: str, time_column: str, retention_days: int):
+async def cleanup_table(
+    conn: Connection, table_name: str, time_column: str, retention_days: int
+):
     """Delete records older than retention_days from a partitioned table."""
     logger = get_logger(__name__)
-    logger.info(f"Cleaning {table_name}: removing data older than {retention_days} days...")
+    logger.info(
+        f"Cleaning {table_name}: removing data older than {retention_days} days..."
+    )
     res = await conn.execute(
-        f'DELETE FROM {table_name} WHERE {time_column} < NOW() - INTERVAL \'{retention_days} days\''
+        f"DELETE FROM {table_name} WHERE {time_column} < NOW() - INTERVAL '{retention_days} days'"
     )
     logger.info(f"Cleaned {table_name}: {res}")

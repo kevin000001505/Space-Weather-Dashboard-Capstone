@@ -94,15 +94,6 @@ deployments:
     schedules:
       - cron: "0 0 * * *"
         timezone: UTC
-  
-  - name: partition-create
-    entrypoint: flows/db_maintain.py:partition_maintain
-    description: "Creates database partitions for the current day if missing every 2 weeks"
-    work_pool:
-      name: NOAA-pool
-    schedules:
-      - cron: "0 0 1,15 * *"
-        timezone: UTC
 
   # --- Data Maintenance Flows ---
 

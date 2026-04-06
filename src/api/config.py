@@ -160,11 +160,9 @@ class XRayResponse(BaseModel):
     energy: str
 
 
-
 class AlertResponse(BaseModel):
     time: datetime
     message: str
-
 
 
 class GeoelectricResponse(BaseModel):
