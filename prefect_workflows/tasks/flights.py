@@ -20,7 +20,6 @@ from database.queries import (
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STATES_QUERY,
 )
-from database.create import CREATE_TABLE_PARTITION_IF_MISSING
 
 # Pull from the shared volume
 from shared.redis import (
@@ -132,8 +131,6 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
     logger.info(f"Inserting {len(records)} records.")
 
     tuples = [r.to_tuple() for r in records]  # convert once, not per batch
-
-    await conn.execute(CREATE_TABLE_PARTITION_IF_MISSING, "flight_states", records[0].time)
 
     try:
         async with conn.transaction():

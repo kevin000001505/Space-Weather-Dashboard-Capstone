@@ -43,7 +43,6 @@ export const fetchHistoricalData = createAsyncThunk(
   async (time_range, { rejectWithValue }) => {
     try {
       const { start, end, event, interval } = time_range;
-      // console.log(encodeURIComponent(start), encodeURIComponent(end));
       const response = await fetch(`${API_BASE_URL}/kermit/?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&event=${event}&interval=${interval}`);
       if (!response.ok) {
         throw new Error("Failed to fetch DRAP data");
@@ -247,7 +246,6 @@ export const fetchElectricTransmissionLines = createAsyncThunk(
       if (!response.ok) {
         throw new Error("Failed to fetch Electric Transmission Lines data");
       }
-      console.log(response)
       const data = await response.json();
       return data;
     } catch (error) {

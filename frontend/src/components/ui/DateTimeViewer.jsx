@@ -7,6 +7,8 @@ import {
   setDate,
   setTime,
   setLiveStreamMode,
+  resetPlaybackHourStatuses,
+  setPlaybackHourStatus,
 } from "../../store/slices/playbackSlice";
 import { Button, Menu, MenuItem, TextField } from "@mui/material";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
@@ -20,9 +22,81 @@ import {
   utcToZonedTime,
 } from "./helpers/helper";
 import { fetchHistoricalData } from "../../api/api";
-import { setDRAPPlayback } from "../../store/slices/drapSlice";
-import { setGeoElectricPlayback } from "../../store/slices/geoElectricSlice";
-import { setAuroraPlayback } from "../../store/slices/auroraSlice";
+import {
+  injectLiveDRAP,
+  setDRAPPoints,
+  setDRAPPlayback,
+} from "../../store/slices/drapSlice";
+import {
+  injectLiveGeoElectric,
+  setGeoElectricPlayback,
+} from "../../store/slices/geoElectricSlice";
+import { injectLiveAurora, setAuroraPlayback } from "../../store/slices/auroraSlice";
+import { injectLivePlanes } from "../../store/slices/planesSlice";
+
+const getPlaybackTime = (item) =>
+  item?.playbackTime ||
+  item?.requested_time ||
+  item?.observation_time ||
+  item?.timestamp ||
+  item?.observed_at ||
+  null;
+
+const normalizePlaybackItem = (event, item) => {
+  const playbackTime = getPlaybackTime(item);
+  if (!playbackTime) {
+    return null;
+  }
+
+  if (event === "aurora") {
+    return {
+      ...item,
+      playbackTime,
+      coordinates: Array.isArray(item.coordinates) ? item.coordinates : Array.isArray(item.points) ? item.points : [],
+    };
+  }
+
+  if (event === "geoelectric") {
+    return {
+      ...item,
+      playbackTime,
+      points: Array.isArray(item.points) ? item.points : [],
+    };
+  }
+
+  return {
+    ...item,
+    playbackTime,
+    points: Array.isArray(item.points) ? item.points : [],
+  };
+};
+
+const normalizePlaybackChunk = (event, rawChunk) => {
+  const items = Array.isArray(rawChunk)
+    ? rawChunk
+    : Array.isArray(rawChunk?.snapshots)
+      ? rawChunk.snapshots
+      : Array.isArray(rawChunk?.data)
+        ? rawChunk.data
+        : rawChunk
+          ? [rawChunk]
+          : [];
+
+  const normalized = items
+    .map((item) => normalizePlaybackItem(event, item))
+    .filter(Boolean);
+
+  const seen = new Set();
+  return normalized
+    .filter((item) => {
+      if (seen.has(item.playbackTime)) {
+        return false;
+      }
+      seen.add(item.playbackTime);
+      return true;
+    })
+    .sort((left, right) => new Date(left.playbackTime) - new Date(right.playbackTime));
+};
 
 // Memoized DateBox
 const DateBox = React.memo(function DateBox({ date, selectedTimezone, darkMode, onOpen, dateBoxRef, onChange, open }) {
@@ -172,56 +246,123 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
 
   useEffect(() => {
     if (!date || liveStreamMode) return;
-    // Parse the selected date (YYYY-MM-DD)
+
     const [year, month, day] = date.split("-").map(Number);
-    const fetchAllEvents = async () => {
-      const events = [
-        { event: "drap", setPlayback: setDRAPPlayback },
-        // { event: "geoelectric", setPlayback: setGeoElectricPlayback },
-        // { event: "aurora", setPlayback: setAuroraPlayback },
-      ];
-      for (const { event, setPlayback } of events) {
-        const promises = [];
-        for (let hour = 0; hour < 24; hour++) {
-          const start = new Date(year, month - 1, day, hour, 0, 0, 0);
-          const end = new Date(year, month - 1, day, hour + 1, 0, 0, 0);
-          promises.push(
-            dispatch(
+    let isCancelled = false;
+    const playbackBuffers = {
+      drap: [],
+      geoelectric: [],
+      aurora: [],
+    };
+
+    const dedupeAndSortPlayback = (items) => {
+      const seen = new Set();
+      return items
+        .filter((item) => {
+          if (!item.playbackTime) return false;
+          if (seen.has(item.playbackTime)) return false;
+          seen.add(item.playbackTime);
+          return true;
+        })
+        .sort((a, b) => new Date(a.playbackTime) - new Date(b.playbackTime));
+    };
+
+    const updatePlaybackBuffer = (event, chunk) => {
+      if (isCancelled) return;
+      playbackBuffers[event].push(...chunk);
+      const normalized = dedupeAndSortPlayback(playbackBuffers[event]);
+
+      if (event === "drap") {
+        dispatch(setDRAPPlayback(normalized));
+      } else if (event === "geoelectric") {
+        dispatch(setGeoElectricPlayback(normalized));
+      } else if (event === "aurora") {
+        dispatch(setAuroraPlayback(normalized));
+      }
+    };
+
+    const loadHourlyPlayback = async () => {
+      dispatch(resetPlaybackHourStatuses());
+      dispatch(setDRAPPlayback([]));
+      dispatch(setAuroraPlayback([]));
+      dispatch(setGeoElectricPlayback([]));
+      dispatch(setDRAPPoints([]));
+      dispatch(injectLiveDRAP({ drap: [] }));
+      dispatch(injectLiveAurora(null));
+      dispatch(injectLiveGeoElectric(null));
+      dispatch(injectLivePlanes({ flights: [] }));
+
+      for (let hour = 0; hour < 24; hour += 1) {
+        if (isCancelled) return;
+
+        ["drap", "geoelectric", "aurora"].forEach((event) => {
+          dispatch(
+            setPlaybackHourStatus({
+              hour,
+              event,
+              status: "fetching",
+              hasData: false,
+              count: 0,
+            }),
+          );
+        });
+
+        const start = new Date(year, month - 1, day, hour, 0, 0, 0);
+        const end = new Date(year, month - 1, day, hour + 1, 0, 0, 0);
+
+        const requests = [
+          { event: "drap" },
+          { event: "geoelectric" },
+          { event: "aurora" },
+        ].map(async ({ event }) => {
+          try {
+            const result = await dispatch(
               fetchHistoricalData({
                 start: start.toISOString(),
                 end: end.toISOString(),
                 event,
                 interval: 5,
-              })
-            ).unwrap()
-          );
-        }
-        try {
-          const results = await Promise.allSettled(promises);
-          // Flatten, filter fulfilled, and merge all data arrays
-          const merged = results
-            .filter(r => r.status === 'fulfilled')
-            .flatMap(r => r.value.data || r.value);
+              }),
+            ).unwrap();
 
-          // Sort by requested_time ascending and filter out duplicates
-          const seen = new Set();
-          const allData = merged
-            .filter(item => {
-              if (!item.requested_time) return false;
-              if (seen.has(item.requested_time)) return false;
-              seen.add(item.requested_time);
-              return true;
-            })
-            .sort((a, b) => new Date(a.requested_time) - new Date(b.requested_time));
+            const eventChunk = normalizePlaybackChunk(event, result?.data || result);
+            updatePlaybackBuffer(event, eventChunk);
+            dispatch(
+              setPlaybackHourStatus({
+                hour,
+                event,
+                status: "ready",
+                hasData: eventChunk.length > 0,
+                count: eventChunk.length,
+              }),
+            );
+            return { event, status: "fulfilled" };
+          } catch (err) {
+            dispatch(
+              setPlaybackHourStatus({
+                hour,
+                event,
+                status: "error",
+                hasData: false,
+                count: 0,
+              }),
+            );
+            return { event, status: "rejected", error: err };
+          }
+        });
 
-          dispatch(setPlayback(allData));
-        } catch (err) {
-          console.log(`Error fetching ${event} data:`, err);
-        }
+        await Promise.all(
+          requests.map((request) => request.then((result) => result)),
+        );
       }
     };
-    fetchAllEvents();
-  }, [date, time, selectedTimezone, dispatch]);
+
+    loadHourlyPlayback();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [date, liveStreamMode, dispatch]);
 
   const filteredTimeZones = React.useMemo(() => {
     if (!debouncedTzSearch.trim()) return timeZones;
@@ -241,9 +382,17 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
   const handleDateChange = useCallback((newValue) => {
     if (newValue) {
       const iso = newValue.toISOString().split("T")[0];
-      dispatch(setLiveStreamMode(false));
       dispatch(setDate(iso));
       dispatch(setTime("00:00:00"));
+      dispatch(setDRAPPoints([]));
+      dispatch(setDRAPPlayback([]));
+      dispatch(setAuroraPlayback([]));
+      dispatch(setGeoElectricPlayback([]));
+      dispatch(injectLiveDRAP({ drap: [] }));
+      dispatch(injectLiveAurora(null));
+      dispatch(injectLiveGeoElectric(null));
+      dispatch(injectLivePlanes({ flights: [] }));
+      dispatch(setLiveStreamMode(false));
     }
     setDatePickerOpen(false);
   }, [dispatch]);

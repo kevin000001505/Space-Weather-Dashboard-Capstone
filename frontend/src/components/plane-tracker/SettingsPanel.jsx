@@ -1183,7 +1183,6 @@ const SettingsPanel = () => {
                                   value.includes("reportedOnly"),
                                 ),
                               );
-                              console.log("Selected Filters:", value);
                               dispatch(setShowACLines(value.includes("ac")));
                               dispatch(setShowDCLines(value.includes("dc")));
                               dispatch(

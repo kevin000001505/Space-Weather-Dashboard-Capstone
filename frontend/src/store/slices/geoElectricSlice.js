@@ -4,7 +4,7 @@ import { fetchGeoelectric } from "../../api/api";
 const geoElectricSlice = createSlice({
   name: "geoelectric",
   initialState: {
-    data: null,
+    data: [],
     playback: [],
     loading: false,
     error: null,

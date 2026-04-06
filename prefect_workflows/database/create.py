@@ -1,8 +1,3 @@
-CREATE_TABLE_PARTITION_IF_MISSING = """
-SELECT create_monthly_partition_if_missing($1, $2)
-"""
-
-
 FLIGHT_STATES_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS flight_states (
     time            TIMESTAMPTZ NOT NULL,
@@ -29,9 +24,16 @@ CREATE TABLE IF NOT EXISTS flight_states (
     geom            GEOMETRY(POINT, 4326),
 
     PRIMARY KEY (time, icao24)
-) PARTITION BY RANGE (time);
+);
 
 CREATE INDEX IF NOT EXISTS idx_flight_icao ON flight_states (icao24);
+
+SELECT create_hypertable(
+    'flight_states', 
+    'time', 
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE
+    );
 """
 
 
@@ -88,15 +90,14 @@ CREATE TABLE IF NOT EXISTS drap_region (
     location GEOGRAPHY(Point, 4326) NOT NULL,
     absorption double precision NOT NULL,
     PRIMARY KEY (observed_at, lat, long)
-)PARTITION BY RANGE (observed_at);
+);
 
-CREATE INDEX idx_drap_trunc_minute ON drap_region (date_trunc('minute', observed_at AT TIME ZONE 'UTC'));
-
-CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
-ON drap_region (observed_at);
-
-CREATE INDEX IF NOT EXISTS idx_drap_region_observed_at_gist
-    ON drap_region USING gist (observed_at);
+SELECT create_hypertable(
+    'drap_region', 
+    'observed_at', 
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE
+    );
 """
 
 
@@ -111,9 +112,14 @@ CREATE TABLE IF NOT EXISTS goes_xray_6hour (
   energy                 text             NOT NULL,
 
   CONSTRAINT goes_xray_6hour_pkey PRIMARY KEY (time_tag, satellite, energy)
-)PARTITION BY RANGE (time_tag);
+);
 
-CREATE INDEX IF NOT EXISTS ix_goes_xray_6hour_time_tag ON goes_xray_6hour (time_tag);
+SELECT create_hypertable(
+    'goes_xray_6hour', 
+    'time_tag', 
+    chunk_time_interval => INTERVAL '7 day',
+    if_not_exists => TRUE
+    );
 """
 
 
@@ -128,9 +134,13 @@ CREATE TABLE IF NOT EXISTS goes_proton_flux (
   flux_500_mev     double precision CHECK (flux_500_mev >= 0),  -- Proton flux >500 MeV
 
   CONSTRAINT goes_proton_flux_pkey PRIMARY KEY (time_tag, satellite)
-)PARTITION BY RANGE (time_tag);
-
-CREATE INDEX IF NOT EXISTS ix_goes_proton_flux_time_tag ON goes_proton_flux (time_tag);
+);
+SELECT create_hypertable(
+    'goes_proton_flux', 
+    'time_tag', 
+    chunk_time_interval => INTERVAL '7 day',
+    if_not_exists => TRUE
+    );
 """
 
 
@@ -142,9 +152,14 @@ CREATE TABLE IF NOT EXISTS kp_index (
   station_count    integer           CHECK (station_count >= 0),   -- Number of stations reporting
 
   CONSTRAINT kp_index_pkey PRIMARY KEY (time_tag)
-)PARTITION BY RANGE (time_tag);
+);
 
-CREATE INDEX IF NOT EXISTS ix_kp_index_time_tag ON kp_index (time_tag);
+SELECT create_hypertable(
+    'kp_index', 
+    'time_tag', 
+    chunk_time_interval => INTERVAL '7 day',
+    if_not_exists => TRUE
+    );
 """
 
 
@@ -165,12 +180,13 @@ CREATE TABLE IF NOT EXISTS aurora_forecast (
     location         GEOGRAPHY(Point, 4326) NOT NULL,
     aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
     PRIMARY KEY (observation_time, lat, long)
-)PARTITION BY RANGE (observation_time);
+);
 
-CREATE INDEX IF NOT EXISTS ix_aurora_forecast_obs_time ON aurora_forecast (observation_time);
-
-CREATE INDEX IF NOT EXISTS idx_aurora_forecast_observation_time_gist
-    ON aurora_forecast USING gist (observation_time);
+SELECT create_hypertable(
+    'aurora_forecast', 
+    'observation_time', 
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE);
 """
 
 GEOELECTRIC_CREATE_TABLE_SQL = """
@@ -185,18 +201,16 @@ CREATE TABLE IF NOT EXISTS geoelectric_field (
     quality_flag             SMALLINT               NOT NULL,
     distance_nearest_station DOUBLE PRECISION       NOT NULL,  -- Distance to nearest magnetometer station (km)
     PRIMARY KEY (observed_at, lat, long)
-)PARTITION BY RANGE (observed_at);
+);
 
 
-CREATE INDEX IF NOT EXISTS ix_geoelectric_field_observed_at ON geoelectric_field (observed_at);
-
-CREATE INDEX IF NOT EXISTS idx_geoelectric_field_observed_at_gist
-    ON geoelectric_field USING gist (observed_at);
+SELECT create_hypertable(
+    'geoelectric_field', 
+    'observed_at', 
+    chunk_time_interval => INTERVAL '1 day', 
+    if_not_exists => TRUE
+    );
 """
-
-
-
-
 
 
 # ------------------------------------------------------------------------------------------

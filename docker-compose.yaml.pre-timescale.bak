@@ -27,7 +27,7 @@ services:
       - fastapi
 
   postgis:
-    image: timescale/timescaledb-ha:pg18
+    image: postgis/postgis:16-3.4
     container_name: postgis
     restart: unless-stopped  # Auto-restart if crashes
     stop_grace_period: 60s   # Clean shutdown
@@ -48,7 +48,7 @@ services:
       - DEVELOPER_PASSWORD=${DEVELOPER_PASSWORD}
       - READONLY_PASSWORD=${READONLY_PASSWORD}
     volumes:
-      - timescale_data:/home/postgres/pgdata/data
+      - postgis_data:/var/lib/postgresql/data
       - ./docker/db-init-scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
     ports:
       - "127.0.0.1:5432:5432" # Bind to localhost for local development
@@ -63,7 +63,7 @@ services:
       - data_network
 
   pgadmin:
-    image: dpage/pgadmin4:9.14.0
+    image: dpage/pgadmin4
     container_name: pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
@@ -282,7 +282,7 @@ services:
 volumes:
   prefect_home:
     driver: local
-  timescale_data:
+  postgis_data:
     driver: local
   redis_data:
     driver: local
