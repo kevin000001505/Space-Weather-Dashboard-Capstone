@@ -1,7 +1,11 @@
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setDRAPPoints } from "../../../store/slices/drapSlice";
 import {
+  setPlaybackTime,
+  setLiveStreamMode,
+} from "../../../store/slices/playbackSlice";
+import {
+  Box,
   alpha,
   Button,
   IconButton,
@@ -10,7 +14,6 @@ import {
   Stack,
   Tooltip,
 } from "@mui/material";
-import { setLiveStreamMode } from "../../../store/slices/playbackSlice";
 
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
@@ -22,53 +25,170 @@ import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
 
+const HOUR_MS = 60 * 60 * 1000;
+const PLAYBACK_EVENTS = ["drap", "aurora", "geoelectric"];
+
+const createDefaultHourStatus = (hour) => ({
+  hour,
+  aggregate: "idle",
+  progress: 0,
+  hasData: false,
+  events: PLAYBACK_EVENTS.reduce((accumulator, event) => {
+    accumulator[event] = { status: "idle", hasData: false, count: 0 };
+    return accumulator;
+  }, {}),
+});
+
+const normalizeHourStatus = (status, hour) => {
+  const fallback = createDefaultHourStatus(hour);
+
+  if (!status || typeof status !== "object") {
+    return fallback;
+  }
+
+  const normalized = {
+    ...fallback,
+    ...status,
+    events: { ...fallback.events },
+  };
+
+  PLAYBACK_EVENTS.forEach((event) => {
+    normalized.events[event] = {
+      ...fallback.events[event],
+      ...(status.events?.[event] || {}),
+    };
+  });
+
+  return normalized;
+};
+
+const formatHourLabel = (timestamp) =>
+  new Date(timestamp).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.ui);
+  const playbackDate = useSelector((state) => state.playback.date);
   const drapPlayback = useSelector((state) => state.drap.playback);
+  const auroraPlayback = useSelector((state) => state.aurora.playback);
+  const geoElectricPlayback = useSelector(
+    (state) => state.geoelectric.playback,
+  );
+  const playbackHourStatuses = useSelector(
+    (state) =>
+      state.playback.playbackHourStatuses ||
+      Array.from({ length: 24 }, (_, hour) => createDefaultHourStatus(hour)),
+  );
+  const normalizedHourStatuses = React.useMemo(
+    () =>
+      playbackHourStatuses.map((status, hour) =>
+        normalizeHourStatus(status, hour),
+      ),
+    [playbackHourStatuses],
+  );
+  const playbackTimes = React.useMemo(() => {
+    const timestamps = [drapPlayback, auroraPlayback, geoElectricPlayback]
+      .flat()
+      .map((entry) => Date.parse(entry.requested_time))
+      .filter((timestamp) => Number.isFinite(timestamp));
 
-  // --- Time-based playback state ---
-  // Determine time range (midnight to midnight of first data day, or today if no data)
-  const getDayRange = React.useCallback(() => {
-    if (drapPlayback.length > 0) {
-      const first = new Date(drapPlayback[0].requested_time);
+    return Array.from(new Set(timestamps)).sort((left, right) => left - right);
+  }, [drapPlayback, auroraPlayback, geoElectricPlayback]);
+
+  const stepMs = 300 * 1000; // 5 minute step
+  const [startTime, setStartTime] = React.useState(null);
+  const [endTime, setEndTime] = React.useState(null);
+  const [currentTime, setCurrentTime] = React.useState(null);
+  const lastPlaybackRangeRef = React.useRef({ startTime: null, endTime: null });
+
+  const playbackRange = React.useMemo(() => {
+    if (playbackDate) {
+      const [year, month, day] = playbackDate.split("-").map(Number);
+      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 1);
+      return {
+        startTime: start.getTime(),
+        endTime: end.getTime(),
+      };
+    }
+
+    if (playbackTimes.length > 0) {
+      const first = new Date(playbackTimes[0]);
       const start = new Date(first);
       start.setHours(0, 0, 0, 0);
       const end = new Date(start);
       end.setDate(start.getDate() + 1);
-      return [start.getTime(), end.getTime()];
-    } else {
-      const now = new Date();
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 1);
-      return [start.getTime(), end.getTime()];
+      return {
+        startTime: start.getTime(),
+        endTime: end.getTime(),
+      };
     }
-  }, [drapPlayback]);
 
-  const [startTime, setStartTime] = React.useState(null);
-  const [endTime, setEndTime] = React.useState(null);
-  const stepMs = 300 * 1000; // 5 minute step
-  const [currentTime, setCurrentTime] = React.useState(null);
+    const now = new Date();
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 1);
+    return {
+      startTime: start.getTime(),
+      endTime: end.getTime(),
+    };
+  }, [playbackDate, playbackTimes]);
 
-  // Update time range and reset currentTime if range changes
+  const firstPlayableTime = React.useMemo(() => {
+    const firstPlayableHour = normalizedHourStatuses.find(
+      (hourStatus) => hourStatus.hasData,
+    );
+
+    if (!firstPlayableHour) {
+      return null;
+    }
+
+    return playbackRange.startTime + firstPlayableHour.hour * HOUR_MS;
+  }, [normalizedHourStatuses, playbackRange.startTime]);
+
+  const lastPlayableTime = React.useMemo(() => {
+    const lastPlayableHour = [...normalizedHourStatuses]
+      .reverse()
+      .find((hourStatus) => hourStatus.hasData);
+
+    if (!lastPlayableHour) {
+      return null;
+    }
+
+    return (
+      playbackRange.startTime + lastPlayableHour.hour * HOUR_MS + 55 * 60 * 1000
+    );
+  }, [normalizedHourStatuses, playbackRange.startTime]);
+
   React.useEffect(() => {
-    if (drapPlayback.length > 0) {
-      const [newStart, newEnd] = getDayRange();
-      setStartTime((prevStart) => {
-        if (prevStart !== newStart) {
-          setCurrentTime(newStart);
-        }
-        return newStart;
-      });
-      setEndTime(newEnd);
+    setStartTime(playbackRange.startTime);
+    setEndTime(playbackRange.endTime);
+    const rangeChanged =
+      lastPlaybackRangeRef.current.startTime !== playbackRange.startTime ||
+      lastPlaybackRangeRef.current.endTime !== playbackRange.endTime;
+    lastPlaybackRangeRef.current = playbackRange;
+
+    if (firstPlayableTime !== null && (rangeChanged || currentTime === null)) {
+      setCurrentTime(firstPlayableTime);
+      dispatch(setPlaybackTime(firstPlayableTime));
+      setIsPlaying(false);
+    } else if (firstPlayableTime === null) {
+      setCurrentTime(null);
+      dispatch(setPlaybackTime(null));
+      setIsPlaying(false);
     }
-  }, [drapPlayback, getDayRange]);
+  }, [playbackRange, firstPlayableTime, currentTime, dispatch]);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isLooping, setIsLooping] = React.useState(false);
   const [speed, setSpeed] = React.useState(1);
-  const intervalRef = React.useRef();
 
   const allowedSpeeds = [0.25, 0.5, 1, 2, 4, 8];
   const handleSpeedChange = () => {
@@ -79,66 +199,159 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
 
   // Playback effect: step through time
   React.useEffect(() => {
-    if (!isPlaying) return;
+    if (!isPlaying || startTime === null || endTime === null) return;
     const interval = setInterval(() => {
       setCurrentTime((prev) => {
-        if (prev + stepMs <= endTime) {
-          return prev + stepMs;
-        } else if (isLooping) {
-          return startTime;
-        } else {
-          setIsPlaying(false);
-          return prev;
+        if (prev === null) {
+          return firstPlayableTime ?? startTime;
         }
+        let candidate = prev + stepMs;
+
+        while (candidate <= endTime) {
+          const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
+          const hourStatus = normalizedHourStatuses[hourIndex];
+
+          if (hourStatus?.hasData) {
+            return candidate;
+          }
+
+          candidate = startTime + (hourIndex + 1) * HOUR_MS;
+        }
+
+        if (isLooping) {
+          return firstPlayableTime ?? startTime;
+        }
+
+        setIsPlaying(false);
+        return prev;
       });
     }, 1000 / speed);
-    intervalRef.current = interval;
     return () => clearInterval(interval);
-  }, [isPlaying, speed, startTime, endTime, isLooping]);
+  }, [
+    isPlaying,
+    speed,
+    startTime,
+    endTime,
+    isLooping,
+    firstPlayableTime,
+    normalizedHourStatuses,
+  ]);
+
+  React.useEffect(() => {
+    dispatch(setPlaybackTime(currentTime));
+  }, [currentTime, dispatch]);
 
   // Step backward/forward by stepMs
+  const findNextPlayableTime = React.useCallback(
+    (time) => {
+      if (startTime === null || endTime === null) return null;
+      let candidate = Number.isFinite(time)
+        ? time + stepMs
+        : (firstPlayableTime ?? startTime);
+
+      while (candidate <= endTime) {
+        const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
+        if (normalizedHourStatuses[hourIndex]?.hasData) {
+          return candidate;
+        }
+        candidate = startTime + (hourIndex + 1) * HOUR_MS;
+      }
+
+      return isLooping ? (firstPlayableTime ?? startTime) : endTime;
+    },
+    [
+      startTime,
+      endTime,
+      stepMs,
+      normalizedHourStatuses,
+      firstPlayableTime,
+      isLooping,
+    ],
+  );
+
+  const findPreviousPlayableTime = React.useCallback(
+    (time) => {
+      if (startTime === null || endTime === null) return null;
+      let candidate = Number.isFinite(time)
+        ? time - stepMs
+        : (lastPlayableTime ?? startTime);
+
+      while (candidate >= startTime) {
+        const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
+        if (normalizedHourStatuses[hourIndex]?.hasData) {
+          return candidate;
+        }
+        candidate = startTime + hourIndex * HOUR_MS - stepMs;
+      }
+
+      return isLooping ? (lastPlayableTime ?? startTime) : startTime;
+    },
+    [
+      startTime,
+      endTime,
+      stepMs,
+      normalizedHourStatuses,
+      lastPlayableTime,
+      isLooping,
+    ],
+  );
+
   const handleStepBackward = () => {
-    setCurrentTime((prev) => Math.max(startTime, prev - stepMs));
+    if (startTime === null) return;
+    setCurrentTime((prev) => findPreviousPlayableTime(prev));
   };
   const handleStepForward = () => {
-    setCurrentTime((prev) => Math.min(endTime, prev + stepMs));
+    if (endTime === null) return;
+    setCurrentTime((prev) => findNextPlayableTime(prev));
   };
-
-  // Find closest data point to currentTime
-  const findClosestIndex = (time) => {
-    if (drapPlayback.length === 0) return -1;
-    let lo = 0, hi = drapPlayback.length - 1, best = 0;
-    while (lo <= hi) {
-      const mid = Math.floor((lo + hi) / 2);
-      const t = new Date(drapPlayback[mid].requested_time).getTime();
-      if (t < time) {
-        lo = mid + 1;
-      } else if (t > time) {
-        hi = mid - 1;
-      } else {
-        return mid;
-      }
-      if (Math.abs(t - time) < Math.abs(new Date(drapPlayback[best].requested_time).getTime() - time)) {
-        best = mid;
-      }
-    }
-    return best;
-  };
-
-  // Update DRAP points on time change
-  React.useEffect(() => {
-    const idx = findClosestIndex(currentTime);
-    if (idx !== -1 && drapPlayback[idx]) {
-      dispatch(setDRAPPoints(drapPlayback[idx].points));
-    }
-  }, [currentTime, drapPlayback, dispatch]);
 
   // Format time for display
   const formatTime = (ms) => {
-    if (!ms) return "--/--/----, --:--:-- --";
+    if (ms === null || ms === undefined) return "--/--/----, --:--:-- --";
     return new Date(ms).toLocaleString();
   };
-  
+
+  const formatSegmentTooltip = React.useCallback(
+    (hourStatus, hourStart) => (
+      <Stack spacing={0.5} sx={{ py: 0.25 }}>
+        <Box sx={{ fontWeight: 700 }}>{formatHourLabel(hourStart)}</Box>
+        <Box sx={{ fontSize: "0.8rem", opacity: 0.8 }}>
+          {hourStatus.aggregate === "empty"
+            ? "No data for this hour"
+            : `${hourStatus.aggregate.toUpperCase()} • ${hourStatus.progress}% complete`}
+        </Box>
+        {PLAYBACK_EVENTS.map((event) => {
+          const eventStatus = hourStatus.events?.[event] || {};
+          const label =
+            eventStatus.status === "ready"
+              ? eventStatus.hasData
+                ? "Fetched"
+                : "Fetched (empty)"
+              : eventStatus.status === "error"
+                ? "Failed"
+                : eventStatus.status;
+
+          return (
+            <Box
+              key={event}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 1,
+                fontSize: "0.75rem",
+                opacity: eventStatus.status === "idle" ? 0.6 : 1,
+              }}
+            >
+              <span>{event.toUpperCase()}</span>
+              <span>{label}</span>
+            </Box>
+          );
+        })}
+      </Stack>
+    ),
+    [],
+  );
+
   const transportButtonSx = {
     width: 42,
     height: 42,
@@ -154,28 +367,31 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   };
 
   const sliderSx = {
-    px: 0.5,
+    py: 1.25,
     "& .MuiSlider-rail": {
+      bgcolor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.2),
       opacity: 1,
-      bgcolor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.12),
     },
     "& .MuiSlider-track": {
       border: "none",
+      backgroundColor: "transparent",
     },
     "& .MuiSlider-thumb": {
-      width: 16,
-      height: 16,
+      width: 12,
+      height: 12,
       boxShadow: "none",
       border: `2px solid #fff`,
-      "&:hover, &.Mui-focusVisible": {
-        boxShadow: `0 0 0 6px ${alpha(darkMode ? "#a78bfa" : "#1976d2", 0.16)}`,
-      },
-      "&.Mui-active": {
-        boxShadow: `0 0 0 8px ${alpha(darkMode ? "#a78bfa" : "#1976d2", 0.2)}`,
-      },
     },
   };
-  const disabled = drapPlayback.length === 0;
+  const disabled = firstPlayableTime === null;
+  const segmentColors = {
+    idle: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.1),
+    fetching: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.4),
+    buffering: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.66),
+    ready: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.92),
+    error: alpha("#ef4444", 0.72),
+    empty: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.06),
+  };
   return (
     <Paper
       elevation={0}
@@ -201,14 +417,100 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       }}
     >
       <Stack spacing={1}>
-        <Stack spacing={0.2}>
+        <Stack spacing={0.5}>
+          
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(24, minmax(0, 1fr))",
+              gap: "2px",
+              height: 8,
+              mt: 0.2,
+              borderRadius: 999,
+              overflow: "hidden",
+              backgroundColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.06),
+              border: "1px solid",
+              borderColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.12),
+            }}
+          >
+            {normalizedHourStatuses.map((hourStatus, hour) => {
+              const segmentStart = playbackRange.startTime + hour * HOUR_MS;
+              const fillWidth =
+                hourStatus.aggregate === "empty"
+                  ? 0
+                  : Math.max(hourStatus.progress, 6);
+              const fillColor =
+                segmentColors[hourStatus.aggregate] || segmentColors.idle;
+
+              return (
+                <Tooltip
+                  key={hour}
+                  arrow
+                  placement="top"
+                  title={formatSegmentTooltip(hourStatus, segmentStart)}
+                >
+                  <Box
+                    onClick={() => {
+                      if (hourStatus.hasData) {
+                        setCurrentTime(segmentStart);
+                      }
+                    }}
+                    sx={{
+                      position: "relative",
+                      height: "100%",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      bgcolor:
+                        segmentColors[hourStatus.aggregate] ||
+                        segmentColors.idle,
+                      cursor: hourStatus.hasData ? "pointer" : "default",
+                      boxShadow:
+                        hourStatus.aggregate === "fetching" ||
+                        hourStatus.aggregate === "buffering"
+                          ? `inset 0 0 0 1px ${alpha("#fff", 0.18)}`
+                          : "none",
+                      transition:
+                        "background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        width: `${fillWidth}%`,
+                        borderRadius: 999,
+                        background: `linear-gradient(90deg, ${alpha(fillColor, 0.55)} 0%, ${fillColor} 100%)`,
+                        transition:
+                          "width 350ms ease, background-color 180ms ease",
+                      }}
+                    />
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          hourStatus.aggregate === "empty"
+                            ? `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.04)} 100%)`
+                            : `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.08)} 100%)`,
+                        mixBlendMode: "screen",
+                        pointerEvents: "none",
+                      }}
+                    />
+                  </Box>
+                </Tooltip>
+              );
+            })}
+          </Box>
+
           <Slider
             value={currentTime ?? 0}
             min={startTime ?? 0}
             max={endTime ?? 0}
             step={stepMs}
             onChange={(_, value) => {
-              if (typeof value === "number") setCurrentTime(value);
+              if (typeof value === "number") {
+                setCurrentTime(value);
+              }
             }}
             aria-label="Playback time"
             disabled={startTime === null || endTime === null}

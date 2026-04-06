@@ -83,6 +83,45 @@ const DeckGLOverlay = (props) => {
   return null;
 };
 
+const getPlaybackTimestamp = (entry) =>
+  Date.parse(
+    entry?.playbackTime ||
+      entry?.requested_time ||
+      entry?.observation_time ||
+      entry?.timestamp ||
+      entry?.observed_at ||
+      "",
+  );
+
+const findClosestPlaybackIndex = (timestamps, targetTime) => {
+  if (!Array.isArray(timestamps) || timestamps.length === 0 || !Number.isFinite(targetTime)) {
+    return -1;
+  }
+
+  let low = 0;
+  let high = timestamps.length - 1;
+
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    const timestamp = timestamps[mid];
+
+    if (timestamp < targetTime) {
+      low = mid + 1;
+    } else if (timestamp > targetTime) {
+      high = mid - 1;
+    } else {
+      return mid;
+    }
+  }
+
+  return -1;
+};
+
+const resolvePlaybackEntry = (playback, timestamps, targetTime) => {
+  const index = findClosestPlaybackIndex(timestamps, targetTime);
+  return index >= 0 ? playback[index] : null;
+};
+
 const PlaneTracker = () => {
   const [
     hoveredElectricTransmissionLines,
@@ -97,10 +136,15 @@ const PlaneTracker = () => {
     (state) => state.ui.selectedAirportsPanels || [],
   );
   const hoveredRunwayId = useSelector((state) => state.ui.hoveredRunwayId);
-  const { points: drapPoints } = useSelector((state) => state.drap);
-  const { data: auroraData } = useSelector((state) => state.aurora);
+  const { points: drapPoints, playback: drapPlayback } = useSelector(
+    (state) => state.drap,
+  );
+  const { data: auroraData, playback: auroraPlayback } = useSelector(
+    (state) => state.aurora,
+  );
   const {
     data: geoelectricData,
+    playback: geoElectricPlayback,
     geoElectricLogRange,
     showGeoElectric,
   } = useSelector((state) => state.geoelectric);
@@ -130,6 +174,9 @@ const PlaneTracker = () => {
     flightIconSize,
     showIconLegend,
   } = useSelector((state) => state.ui);
+  const { liveStreamMode, currentPlaybackTime } = useSelector(
+    (state) => state.playback,
+  );
   const {
     data: electricTransmissionLinesData,
     showElectricTransmissionLines,
@@ -141,7 +188,6 @@ const PlaneTracker = () => {
     showOverheadLines,
     showUndergroundLines,
   } = useSelector((state) => state.electricTransmissionLines);
-  const { liveStreamMode } = useSelector((state) => state.playback);
   const currentZoom = viewState?.zoom ?? 10;
   const zoomTimeoutRef = useRef(null);
 
@@ -198,49 +244,118 @@ const PlaneTracker = () => {
     ? selectedAirportsPanels
     : filteredAirports;
 
+  const drapPlaybackTimes = useMemo(
+    () =>
+      drapPlayback.map(getPlaybackTimestamp).filter(Number.isFinite),
+    [drapPlayback],
+  );
+  const auroraPlaybackTimes = useMemo(
+    () =>
+      auroraPlayback.map(getPlaybackTimestamp).filter(Number.isFinite),
+    [auroraPlayback],
+  );
+  const geoElectricPlaybackTimes = useMemo(
+    () =>
+      geoElectricPlayback.map(getPlaybackTimestamp).filter(Number.isFinite),
+    [geoElectricPlayback],
+  );
+
+  const activeDrapPlayback = useMemo(
+    () =>
+      !liveStreamMode && currentPlaybackTime
+        ? resolvePlaybackEntry(drapPlayback, drapPlaybackTimes, currentPlaybackTime)
+        : null,
+    [liveStreamMode, currentPlaybackTime, drapPlayback, drapPlaybackTimes],
+  );
+  const activeAuroraPlayback = useMemo(
+    () =>
+      !liveStreamMode && currentPlaybackTime
+        ? resolvePlaybackEntry(auroraPlayback, auroraPlaybackTimes, currentPlaybackTime)
+        : null,
+    [liveStreamMode, currentPlaybackTime, auroraPlayback, auroraPlaybackTimes],
+  );
+  const activeGeoElectricPlayback = useMemo(
+    () =>
+      !liveStreamMode && currentPlaybackTime
+        ? resolvePlaybackEntry(
+            geoElectricPlayback,
+            geoElectricPlaybackTimes,
+            currentPlaybackTime,
+          )
+        : null,
+    [
+      liveStreamMode,
+      currentPlaybackTime,
+      geoElectricPlayback,
+      geoElectricPlaybackTimes,
+    ],
+  );
+
   // Draw DRAP regions as filled cells
-  const { drapGeoJson, drapMapLayers, drapDeckLayers } = useMemo(() => {
-    if (!drapPoints || drapPoints.length === 0) {
-      return { drapGeoJson: null, drapMapLayers: null, drapDeckLayers: [] };
+  const { drapGeoJson, drapMapLayers } = useMemo(() => {
+    const sourcePoints =
+      !liveStreamMode && activeDrapPlayback?.points?.length
+        ? activeDrapPlayback.points
+        : drapPoints;
+
+    if (!sourcePoints || sourcePoints.length === 0) {
+      return { drapGeoJson: null, drapMapLayers: null };
     }
 
     // Filter DRAP points by amplitude range
     const [minAmp, maxAmp] = drapRegionRange || [0, 35];
-    const filteredDrapPoints = drapPoints.filter(
+    const filteredDrapPoints = sourcePoints.filter(
       ([lat, lon, amp]) => amp >= minAmp && amp <= maxAmp,
     );
 
     return {
       drapGeoJson: getDRAPFilledCellsGeoJSON(filteredDrapPoints),
       drapMapLayers: getDRAPFilledCellsMapLayers(isZooming, darkMode),
-      drapDeckLayers: [],
     };
-  }, [drapPoints, isZooming, darkMode, drapRegionRange]);
+  }, [
+    drapPoints,
+    activeDrapPlayback,
+    liveStreamMode,
+    isZooming,
+    darkMode,
+    drapRegionRange,
+  ]);
 
   // Draw Aurora regions as filled cells
   const { auroraGeoJson, auroraMapLayers } = useMemo(() => {
-    if (!auroraData || !auroraData.coordinates) {
+    const sourceData =
+      !liveStreamMode && activeAuroraPlayback ? activeAuroraPlayback : auroraData;
+
+    const sourceCoordinates =
+      sourceData?.coordinates || sourceData?.points || sourceData?.data || [];
+
+    if (!sourceData || !Array.isArray(sourceCoordinates) || sourceCoordinates.length === 0) {
       return { auroraGeoJson: null, auroraMapLayers: null };
     }
 
     // Filter Aurora points by amplitude range
     const [minAmp, maxAmp] = auroraRegionRange || [0, 100];
-    const filteredAuroraPoints = auroraData.coordinates.filter(
+    const filteredAuroraPoints = sourceCoordinates.filter(
       ([lon, lat, pct]) => pct >= minAmp && pct <= maxAmp,
     );
 
     return {
       auroraGeoJson: getAuroraGeoJSON({
-        ...auroraData,
+        ...sourceData,
         coordinates: filteredAuroraPoints,
       }),
       auroraMapLayers: getAuroraMapLayers(isZooming),
     };
-  }, [auroraData, auroraRegionRange, isZooming]);
+  }, [auroraData, activeAuroraPlayback, liveStreamMode, auroraRegionRange, isZooming]);
 
   // Draw GeoElectric regions as filled cells
   const { geoElectricGeoJson, geoElectricMapLayers } = useMemo(() => {
-    if (!geoelectricData || !geoelectricData.points) {
+    const sourceData =
+      !liveStreamMode && activeGeoElectricPlayback
+        ? activeGeoElectricPlayback
+        : geoelectricData;
+
+    if (!sourceData || !sourceData.points) {
       return { geoElectricGeoJson: null, geoElectricMapLayers: null };
     }
     const [minLog, maxLog] =
@@ -249,18 +364,24 @@ const PlaneTracker = () => {
         : [0, 4];
     const minMag = Math.pow(10, minLog);
     const maxMag = Math.pow(10, maxLog);
-    const filteredGeoElectricPoints = geoelectricData.points.filter(
+    const filteredGeoElectricPoints = sourceData.points.filter(
       ([lat, lon, magnitude, quality]) =>
         magnitude >= minMag && magnitude <= maxMag,
     );
     return {
       geoElectricGeoJson: getGeoElectricGeoJSON({
-        ...geoelectricData,
+        ...sourceData,
         points: filteredGeoElectricPoints,
       }),
       geoElectricMapLayers: getGeoElectricMapLayers(isZooming),
     };
-  }, [geoelectricData, geoElectricLogRange, isZooming]);
+  }, [
+    geoelectricData,
+    activeGeoElectricPlayback,
+    liveStreamMode,
+    geoElectricLogRange,
+    isZooming,
+  ]);
 
   const {
     electricTransmissionLinesGeoJson,
@@ -349,14 +470,10 @@ const PlaneTracker = () => {
       airportIconSize,
       flightIconSize,
     });
-    if (showDRAP && drapDeckLayers && drapDeckLayers.length > 0) {
-      return [...drapDeckLayers, ...baseLayers];
-    }
     return baseLayers;
   }, [
     dispatch,
     filteredAirportsIsolate,
-    showDRAP,
     filteredPlanesIsolate,
     showAirportsIsolate,
     showPlanesIsolate,
@@ -366,7 +483,6 @@ const PlaneTracker = () => {
     selectedAirport,
     viewState?.zoom,
     isZooming,
-    drapDeckLayers,
     flightPath,
     isolateMode,
     selectedAirportsPanels,
