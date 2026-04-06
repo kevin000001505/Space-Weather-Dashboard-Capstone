@@ -270,7 +270,7 @@ events AS (
 		FROM drap_region
 		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
 		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
-		ORDER BY observed_at <-> t.requested_time
+        ORDER BY observed_at DESC
 		LIMIT 1
 	) d ON true
 	ORDER BY t.requested_time
@@ -310,7 +310,7 @@ events AS (
         FROM aurora_forecast
         WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
           AND observation_time <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY observation_time <-> t.requested_time
+        ORDER BY observation_time DESC
         LIMIT 1
     ) d ON true
     ORDER BY t.requested_time
@@ -354,7 +354,7 @@ events AS (
 		FROM geoelectric_field
 		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
 		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
-		ORDER BY observed_at <-> t.requested_time
+		ORDER BY observed_at DESC
 		LIMIT 1
 	) d ON true
 	ORDER BY t.requested_time

@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_flight_icao ON flight_states (icao24);
 
 SELECT create_hypertable('flight_states', 'time', if_not_exists => TRUE);
 
-CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
+CREATE INDEX IF NOT EXISTS flight_states_time_idx
 ON flight_states (time);
 """
 
