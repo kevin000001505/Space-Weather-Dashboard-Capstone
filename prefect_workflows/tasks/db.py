@@ -199,18 +199,18 @@ async def initial_geoelectric_db(conn: Connection):
         logger.error(f"Failed to initialize geoelectric_field table: {e}")
         raise
 
-
-@task(cache_policy=NO_CACHE)
-async def initial_partition_function(conn: Connection):
-    """Task to create the partition function in Postgres"""
-    logger = get_logger(__name__)
-    try:
-        logger.info("Start creating partition function in Postgres")
-        await conn.execute(CREATE_PARTITION_FUNCTION_SQL)
-        logger.info("Function create done")
-    except Exception as e:
-        logger.error(f"Failed to create partition function: {e}")
-        raise
+# Future usage if any function in Postgres
+# @task(cache_policy=NO_CACHE)
+# async def initial_partition_function(conn: Connection):
+#     """Task to create the partition function in Postgres"""
+#     logger = get_logger(__name__)
+#     try:
+#         logger.info("Start creating partition function in Postgres")
+#         await conn.execute(CREATE_PARTITION_FUNCTION_SQL)
+#         logger.info("Function create done")
+#     except Exception as e:
+#         logger.error(f"Failed to create partition function: {e}")
+#         raise
 
 
 

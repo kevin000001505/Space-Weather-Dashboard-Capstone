@@ -9,7 +9,7 @@ from tasks.db import (
     initial_flight_states_db,
     initial_activate_flight_db,
     initial_airport_db,
-    initial_partition_function,
+    # initial_partition_function,
     initial_proton_flux_plot_db,
     initial_kp_index_db,
     initial_alert_db,
@@ -49,7 +49,7 @@ async def initialize_db_flow():
     logger.info("Starting database initialization flow...")
     try:
         async with get_connection() as conn:
-            await initial_partition_function(conn)
+            # await initial_partition_function(conn)
             await initial_flight_states_db(conn)
             await initial_drap_db(conn)
             await initial_airport_db(conn)

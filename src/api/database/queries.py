@@ -90,14 +90,14 @@ obs AS (
     SELECT
         observation_time,
         forecast_time,
-        longitude AS lon,
         latitude AS lat,
+        longitude AS lon,
         aurora
     FROM aurora_forecast
     WHERE observation_time = (SELECT obs_time FROM target_time)
 ),
 pts AS (
-    SELECT jsonb_build_array(lon, lat, aurora) AS p
+    SELECT jsonb_build_array(lat, lon, aurora) AS p
     FROM obs
 )
 SELECT jsonb_build_object(
