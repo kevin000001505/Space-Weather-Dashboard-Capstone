@@ -29,9 +29,14 @@ CREATE TABLE IF NOT EXISTS flight_states (
     geom            GEOMETRY(POINT, 4326),
 
     PRIMARY KEY (time, icao24)
-) PARTITION BY RANGE (time);
+);
 
 CREATE INDEX IF NOT EXISTS idx_flight_icao ON flight_states (icao24);
+
+SELECT create_hypertable('flight_states', 'time', if_not_exists => TRUE);
+
+CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
+ON flight_states (time);
 """
 
 
@@ -88,9 +93,11 @@ CREATE TABLE IF NOT EXISTS drap_region (
     location GEOGRAPHY(Point, 4326) NOT NULL,
     absorption double precision NOT NULL,
     PRIMARY KEY (observed_at, lat, long)
-)PARTITION BY RANGE (observed_at);
+);
 
 CREATE INDEX idx_drap_trunc_minute ON drap_region (date_trunc('minute', observed_at AT TIME ZONE 'UTC'));
+
+SELECT create_hypertable('drap_region', 'observed_at', if_not_exists => TRUE);
 
 CREATE INDEX IF NOT EXISTS absorption_grid_time_idx
 ON drap_region (observed_at);
@@ -165,9 +172,12 @@ CREATE TABLE IF NOT EXISTS aurora_forecast (
     location         GEOGRAPHY(Point, 4326) NOT NULL,
     aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
     PRIMARY KEY (observation_time, lat, long)
-)PARTITION BY RANGE (observation_time);
+);
 
 CREATE INDEX IF NOT EXISTS ix_aurora_forecast_obs_time ON aurora_forecast (observation_time);
+
+SELECT create_hypertable('aurora_forecast', 'observation_time', if_not_exists => TRUE);
+
 
 CREATE INDEX IF NOT EXISTS idx_aurora_forecast_observation_time_gist
     ON aurora_forecast USING gist (observation_time);
@@ -185,10 +195,12 @@ CREATE TABLE IF NOT EXISTS geoelectric_field (
     quality_flag             SMALLINT               NOT NULL,
     distance_nearest_station DOUBLE PRECISION       NOT NULL,  -- Distance to nearest magnetometer station (km)
     PRIMARY KEY (observed_at, lat, long)
-)PARTITION BY RANGE (observed_at);
+);
 
 
 CREATE INDEX IF NOT EXISTS ix_geoelectric_field_observed_at ON geoelectric_field (observed_at);
+
+SELECT create_hypertable('geoelectric_field', 'observed_at', if_not_exists => TRUE);
 
 CREATE INDEX IF NOT EXISTS idx_geoelectric_field_observed_at_gist
     ON geoelectric_field USING gist (observed_at);
