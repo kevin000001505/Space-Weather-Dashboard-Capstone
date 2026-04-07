@@ -703,74 +703,29 @@ async def aurora(
     - With **utc_time** (ISO 8601 UTC): returns data for that observation time.
     """
     t_start = time.perf_counter()
-
     try:
         t_query_start = time.perf_counter()
-        # Option A: No time provided? Grab from Redis
-        if not utc_time:
-            redis_client = redis_config.get_redis_client()
-            cached_data = await redis_client.get(redis_config.AURORA_CACHE_KEY)
-            await redis_client.aclose()
-
-            if cached_data:
-                t_query_end = time.perf_counter()
-                raw_data = json.loads(cached_data)
-
-                if debug:
-                    return timing_debug_response(t_start, t_query_start, t_query_end)
-                payload = {
-                    "observation_time": raw_data.get("observation_time"),
-                    "forecast_time": raw_data.get("forecast_time"),
-                    "coordinates": raw_data.get("coordinates", []),
-                }
-                add_timing_headers(response, t_start, t_query_start, t_query_end)
-                return payload
-
-        # Option B: Historical time provided (or Redis was empty). Hit Postgres.
-
-        if utc_time:
-            try:
-                obs_time = datetime.fromisoformat(
-                    utc_time.replace("Z", "+00:00")
-                ).astimezone(timezone.utc)
-            except ValueError:
-                raise HTTPException(
-                    status_code=422,
-                    detail=f"Invalid UTC time format: '{utc_time}'. Use ISO 8601, e.g. 2026-03-13T06:17:00Z",
-                )
-
-            payload = await conn.fetchval(AURORA_QUERY, obs_time)
-        else:
-            payload = await conn.fetchval(AURORA_QUERY, None)
-
+        row = await conn.fetchrow(AURORA_QUERY)
         t_query_end = time.perf_counter()
 
-        if isinstance(payload, str):
-            payload = json.loads(payload)
+        if not row:
+            raise HTTPException(status_code=404, detail="No aurora data available")
 
-        if not payload or payload.get("count", 0) == 0:
-            if utc_time:
-                raise HTTPException(
-                    status_code=404, detail=f"No aurora forecast data for {utc_time}"
-                )
-            raise HTTPException(
-                status_code=404, detail="No aurora forecast data available"
-            )
+        aurora_data = dict(row)
+        aurora_data["points"] = points_adapter.validate_json(
+            aurora_data["points"]
+        )
 
         if debug:
             return timing_debug_response(t_start, t_query_start, t_query_end)
 
         add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return payload
+        return aurora_data
 
     except HTTPException:
         raise
     except Exception as e:
-        if utc_time:
-            logger.error(f"Error fetching aurora forecast for {utc_time}: {str(e)}")
-        else:
-            logger.error(f"Error fetching latest aurora forecast: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @app.get("/api/v1/alert", response_model=List[AlertResponse])

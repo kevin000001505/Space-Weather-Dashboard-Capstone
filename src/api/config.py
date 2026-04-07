@@ -145,9 +145,8 @@ class ProtonFluxResponse(BaseModel):
 
 
 class AuroraResponse(BaseModel):
-    observation_time: datetime
-    forecast_time: datetime
-    coordinates: List[List[int]]  # [lon, lat, aurora]
+    timestamp: datetime
+    points: List[List[float]]
 
 
 class XRayResponse(BaseModel):

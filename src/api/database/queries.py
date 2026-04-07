@@ -1,6 +1,3 @@
-RANGE_EVENT_DATA_QUERY = """
-SELECT """
-
 FLIGHT_PATH_QUERY = """
     SELECT icao24, callsign, path_points
     FROM activate_flight
@@ -64,49 +61,17 @@ ORDER BY time_tag DESC
 """
 
 AURORA_QUERY = """
-WITH target_time AS (
-    SELECT COALESCE(
-        -- 1. If a time is provided, find the closest neighbor using the B-Tree index
-        (
-            SELECT observation_time
-            FROM (
-                (SELECT observation_time FROM aurora_forecast 
-                 WHERE $1::timestamptz IS NOT NULL AND observation_time >= $1::timestamptz 
-                 ORDER BY observation_time ASC LIMIT 1)
-                UNION ALL
-                (SELECT observation_time FROM aurora_forecast 
-                 WHERE $1::timestamptz IS NOT NULL AND observation_time < $1::timestamptz 
-                 ORDER BY observation_time DESC LIMIT 1)
-            ) nearest
-            ORDER BY abs(EXTRACT(epoch FROM (observation_time - $1::timestamptz))) ASC
-            LIMIT 1
-        ),
-        -- 2. If no time is provided ($1 is NULL), fall back to the absolute latest
-        (SELECT MAX(observation_time) FROM aurora_forecast)
-    ) AS obs_time
-),
-obs AS (
-    -- 3. Now extract the full grid ONLY for that single, closest matching time
-    SELECT
-        observation_time,
-        forecast_time,
-        latitude AS lat,
-        longitude AS lon,
-        aurora
-    FROM aurora_forecast
-    WHERE observation_time = (SELECT obs_time FROM target_time)
-),
-pts AS (
-    SELECT jsonb_build_array(lat, lon, aurora) AS p
-    FROM obs
+WITH latest_aurora AS (
+	-- Your existing logic to grab the latest data goes here
+	SELECT observation_time, lat, long, aurora 
+	FROM aurora_forecast
+	WHERE observation_time = (SELECT MAX(observation_time) FROM aurora_forecast)
 )
-SELECT jsonb_build_object(
-    'observation_time', (SELECT MAX(observation_time) FROM obs),
-    'forecast_time',    (SELECT MAX(forecast_time)    FROM obs),
-    'count',            (SELECT COUNT(*)              FROM obs),
-    'coordinates',      COALESCE(jsonb_agg(p), '[]'::jsonb)
-) AS payload
-FROM pts
+SELECT 
+	MAX(observation_time) AS timestamp,
+	COUNT(*) AS count,
+	JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
+FROM latest_aurora;
 """
 
 
