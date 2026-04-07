@@ -8,3 +8,4 @@ redis
 pytest
 uvloop
 pytest-asyncio
+httpx

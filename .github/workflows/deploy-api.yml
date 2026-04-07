@@ -108,7 +108,7 @@ jobs:
           DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
           READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
       - name: Execute API Tests
-        run: echo "pytest tests/api/"
+        run: pytest tests/test_api_response/ -v
         env:
           PYTHONPATH: "."
 
