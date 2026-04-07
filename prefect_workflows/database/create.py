@@ -98,6 +98,14 @@ SELECT create_hypertable(
     chunk_time_interval => INTERVAL '1 day',
     if_not_exists => TRUE
     );
+
+ALTER TABLE drap_region SET (
+    timescaledb.compress,
+    timescaledb.compress_orderby = 'observed_at DESC',
+    timescaledb.compress_segmentby = ''   -- no segment column
+);
+
+SELECT set_chunk_time_interval('drap_region', INTERVAL '7 day', if_not_exists => true);
 """
 
 
@@ -187,6 +195,16 @@ SELECT create_hypertable(
     'observation_time', 
     chunk_time_interval => INTERVAL '1 day',
     if_not_exists => TRUE);
+
+
+ALTER TABLE aurora_forecast SET (
+    timescaledb.compress,
+    timescaledb.compress_orderby = 'observation_time DESC',
+    timescaledb.compress_segmentby = ''   -- no segment column
+);
+
+SELECT set_chunk_time_interval('aurora_forecast', INTERVAL '7 day', if_not_exists => true);
+    
 """
 
 GEOELECTRIC_CREATE_TABLE_SQL = """
@@ -210,6 +228,14 @@ SELECT create_hypertable(
     chunk_time_interval => INTERVAL '1 day', 
     if_not_exists => TRUE
     );
+
+ALTER TABLE geoelectric_field SET (
+    timescaledb.compress,
+    timescaledb.compress_orderby = 'observed_at DESC',
+    timescaledb.compress_segmentby = ''   -- no segment column
+);
+
+SELECT set_chunk_time_interval('geoelectric_field', INTERVAL '7 day', if_not_exists => true);
 """
 
 
