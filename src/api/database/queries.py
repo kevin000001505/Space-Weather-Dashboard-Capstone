@@ -77,25 +77,25 @@ ORDER BY time_tag DESC
 AURORA_QUERY = """
 WITH latest_aurora AS (
 	-- Your existing logic to grab the latest data goes here
-	SELECT observation_time, lat, long, aurora 
+	SELECT observed_at, lat, long, aurora 
 	FROM aurora_forecast
-	WHERE observation_time = (SELECT MAX(observation_time) FROM aurora_forecast)
+	WHERE observed_at = (SELECT MAX(observed_at) FROM aurora_forecast)
 )
 SELECT 
-	MAX(observation_time) AS timestamp,
+	MAX(observed_at) AS timestamp,
 	JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
 FROM latest_aurora;
 """
 
 LATEST_AURORA_QUERY_V2 = """
 WITH latest_aurora AS (
-    SELECT observation_time, lat, long, aurora
+    SELECT observed_at, lat, long, aurora
     FROM aurora_forecast
-    WHERE observation_time = (SELECT MAX(observation_time) FROM aurora_forecast)
+    WHERE observed_at = (SELECT MAX(observed_at) FROM aurora_forecast)
 )
 SELECT
     JSON_BUILD_OBJECT(
-        'timestamp', MAX(observation_time),
+        'timestamp', MAX(observed_at),
         'points', JSON_AGG(aurora)
     )::text AS values
 FROM latest_aurora;
@@ -310,14 +310,14 @@ WITH time_ticks AS (
 events AS (
     SELECT DISTINCT ON (t.requested_time)
         t.requested_time,
-        d.observation_time AS observed_at
+        d.observed_at,
     FROM time_ticks t
     LEFT JOIN LATERAL (
-        SELECT observation_time
+        SELECT observed_at
         FROM aurora_forecast
-        WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
-          AND observation_time <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY observation_time DESC
+        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+          AND observed_at <= t.requested_time + INTERVAL '5 minutes'
+        ORDER BY observed_at DESC
         LIMIT 1
     ) d ON true
     ORDER BY t.requested_time
@@ -330,7 +330,7 @@ event_points AS (
         f.long,
         COALESCE(f.aurora, 0) AS aurora
     FROM events e
-    LEFT JOIN aurora_forecast f ON f.observation_time = e.observed_at
+    LEFT JOIN aurora_forecast f ON f.observed_at = e.observed_at
 )
 SELECT
     requested_time,
@@ -472,14 +472,14 @@ WITH time_ticks AS (
 events AS (
     SELECT DISTINCT ON (t.requested_time)
         t.requested_time,
-        d.observation_time AS observed_at
+        d.observed_at,
     FROM time_ticks t
     LEFT JOIN LATERAL (
-        SELECT observation_time
+        SELECT observed_at
         FROM aurora_forecast
-        WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
-          AND observation_time <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY observation_time DESC
+        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+          AND observed_at <= t.requested_time + INTERVAL '5 minutes'
+        ORDER BY observed_at DESC
         LIMIT 1
     ) d ON true
     ORDER BY t.requested_time
@@ -492,7 +492,7 @@ event_points AS (
         f.long,
         COALESCE(f.aurora, 0) AS aurora
     FROM events e
-    LEFT JOIN aurora_forecast f ON f.observation_time = e.observed_at
+    LEFT JOIN aurora_forecast f ON f.observed_at = e.observed_at
 )
 SELECT
     requested_time,
@@ -541,4 +541,9 @@ LEFT JOIN geoelectric_field d
 ON d.observed_at = e.observed_at
 GROUP BY e.requested_time, e.observed_at
 ORDER BY e.requested_time;
+"""
+
+
+LOCATION_QUERY = """"
+
 """

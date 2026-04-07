@@ -18,7 +18,7 @@ DELETE FROM flight_states WHERE time < $1
 RETENTION_CONFIG = {
     "flight_states": ("time", "RETENTION_DAYS_FLIGHT_STATES"),
     "drap_region": ("observed_at", "RETENTION_DAYS_DRAP_REGION"),
-    "aurora_forecast": ("observation_time", "RETENTION_DAYS_AURORA_FORECAST"),
+    "aurora_forecast": ("observed_at", "RETENTION_DAYS_AURORA_FORECAST"),
     "geoelectric_field": ("observed_at", "RETENTION_DAYS_GEOELECTRIC_FIELD"),
     "goes_xray_6hour": ("time_tag", "RETENTION_DAYS_GOES_XRAY_6HOUR"),
     "goes_proton_flux": ("time_tag", "RETENTION_DAYS_GOES_PROTON_FLUX"),
@@ -622,7 +622,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 AURORA_STAGING_DDL = """
 CREATE TEMP TABLE aurora_forecast_staging (
-    observation_time TIMESTAMPTZ      NOT NULL,
+    observed_at      TIMESTAMPTZ      NOT NULL,
     forecast_time    TIMESTAMPTZ      NOT NULL,
     longitude        DOUBLE PRECISION NOT NULL,
     latitude         DOUBLE PRECISION NOT NULL,
@@ -631,7 +631,7 @@ CREATE TEMP TABLE aurora_forecast_staging (
 """
 
 AURORA_STAGING_COLUMNS = [
-    "observation_time",
+    "observed_at",
     "forecast_time",
     "longitude",
     "latitude",
@@ -639,16 +639,16 @@ AURORA_STAGING_COLUMNS = [
 ]
 
 AURORA_TRANSFORM_SQL = """
-INSERT INTO aurora_forecast (observation_time, forecast_time, lat, long, location, aurora)
+INSERT INTO aurora_forecast (observed_at, forecast_time, lat, long, location, aurora)
 SELECT
-    observation_time,
+    observed_at,
     forecast_time,
     latitude,
     longitude,
     ST_SetSRID(ST_MakePoint(longitude, latitude), 4326)::geography,
     aurora
 FROM aurora_forecast_staging
-ON CONFLICT (observation_time, lat, long) DO NOTHING
+ON CONFLICT (observed_at, lat, long) DO NOTHING
 """
 
 # --- goes_xray_6hour ---

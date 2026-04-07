@@ -181,25 +181,25 @@ CREATE TABLE IF NOT EXISTS alerts (
 
 AURORA_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS aurora_forecast (
-    observation_time TIMESTAMPTZ      NOT NULL,
+    observed_at TIMESTAMPTZ      NOT NULL,
     forecast_time    TIMESTAMPTZ      NOT NULL,
     lat              DOUBLE PRECISION NOT NULL,
     long             DOUBLE PRECISION NOT NULL,
     location         GEOGRAPHY(Point, 4326) NOT NULL,
     aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
-    PRIMARY KEY (observation_time, lat, long)
+    PRIMARY KEY (observed_at, lat, long)
 );
 
 SELECT create_hypertable(
     'aurora_forecast', 
-    'observation_time', 
+    'observed_at', 
     chunk_time_interval => INTERVAL '1 day',
     if_not_exists => TRUE);
 
 
 ALTER TABLE aurora_forecast SET (
     timescaledb.compress,
-    timescaledb.compress_orderby = 'observation_time DESC',
+    timescaledb.compress_orderby = 'observed_at DESC',
     timescaledb.compress_segmentby = ''   -- no segment column
 );
 
