@@ -8,7 +8,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src" / "api"))
 
-from config import AlertResponse, AuroraResponse, GeoelectricResponse, KpIndexResponse, ProtonFluxResponse, XRayResponse
+from config import (
+    AlertResponse,
+    AuroraResponse,
+    GeoelectricResponse,
+    KpIndexResponse,
+    ProtonFluxResponse,
+    XRayResponse,
+)
 from helpers import make_alert_row, make_kp_row, make_proton_flux_row, make_xray_row
 
 _PAST_START = "2026-01-01T00:00:00Z"
@@ -54,7 +61,9 @@ async def test_kp_index_end_before_start_422(client):
 
 async def test_kp_index_debug(client, mock_conn):
     mock_conn.fetch.return_value = [make_kp_row()]
-    r = await client.get(f"/api/v1/kp-index?start={_PAST_START}&end={_PAST_END}&debug=true")
+    r = await client.get(
+        f"/api/v1/kp-index?start={_PAST_START}&end={_PAST_END}&debug=true"
+    )
     assert r.status_code == 200
     assert "total_time_ms" in r.json()
 

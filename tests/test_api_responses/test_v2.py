@@ -132,13 +132,17 @@ async def test_kermit_v2_end_before_start_422(client):
 
 async def test_kermit_v2_event_aurora(client, mock_conn):
     mock_conn.fetch.return_value = [_make_v2_snapshot_row()]
-    r = await client.get(f"/api/v2/kermit?start={_PAST_START}&end={_PAST_END}&event=aurora")
+    r = await client.get(
+        f"/api/v2/kermit?start={_PAST_START}&end={_PAST_END}&event=aurora"
+    )
     assert r.status_code == 200
 
 
 async def test_kermit_v2_event_geoelectric(client, mock_conn):
     mock_conn.fetch.return_value = [_make_v2_snapshot_row()]
-    r = await client.get(f"/api/v2/kermit?start={_PAST_START}&end={_PAST_END}&event=geoelectric")
+    r = await client.get(
+        f"/api/v2/kermit?start={_PAST_START}&end={_PAST_END}&event=geoelectric"
+    )
     assert r.status_code == 200
 
 

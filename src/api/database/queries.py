@@ -140,7 +140,6 @@ FROM latest_grid;
 """
 
 
-
 AIRPORTS_LATEST_QUERY = """
     SELECT 
         ident, 
@@ -453,7 +452,11 @@ events AS (
 SELECT
 	e.requested_time,
 	e.observed_at,
-	JSON_AGG(COALESCE(d.absorption, 0)) AS points
+	JSON_AGG(
+        COALESCE(d.absorption, 0)
+    )
+    ORDER BY d.lat DESC, d.long ASC
+    AS points
 FROM events e
 LEFT JOIN drap_region d 
 ON d.observed_at = e.observed_at
@@ -499,7 +502,9 @@ SELECT
     observed_at,
     JSON_AGG(
         JSON_BUILD_ARRAY(aurora)
-    ) AS points
+    )
+    ORDER BY d.lat DESC, d.long ASC
+    AS points
 FROM event_points
 GROUP BY requested_time, observed_at
 ORDER BY requested_time;
@@ -533,8 +538,9 @@ SELECT
 	e.observed_at,
 	JSON_AGG(
 		JSON_BUILD_ARRAY(
-			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2),
+			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2)
 		)
+        ORDER BY d.lat DESC, d.long ASC
 	) AS points
 FROM events e
 LEFT JOIN geoelectric_field d 
@@ -545,5 +551,11 @@ ORDER BY e.requested_time;
 
 
 LOCATION_QUERY = """"
-
+SELECT 
+    JSON_AGG(
+        JSON_BUILD_ARRAY(lat, long)
+        ORDER BY lat DESC, long ASC
+    ) AS points
+FROM $1
+WHERE observed_at = (SELECT MAX(observed_at) FROM $1);
 """

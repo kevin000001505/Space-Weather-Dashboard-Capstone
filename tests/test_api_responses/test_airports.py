@@ -39,7 +39,12 @@ async def test_airports_list_required_fields(client, mock_conn, mock_redis):
 
 
 async def test_airports_list_limit(client, mock_conn, mock_redis):
-    mock_conn.fetch.return_value = [make_airport_row(ident=f"K{i:03d}", name=f"Airport {i}", lat=float(i), lon=float(-i)) for i in range(5)]
+    mock_conn.fetch.return_value = [
+        make_airport_row(
+            ident=f"K{i:03d}", name=f"Airport {i}", lat=float(i), lon=float(-i)
+        )
+        for i in range(5)
+    ]
     r = await client.get("/api/v1/airports?limit=2")
     assert r.status_code == 200
     assert len(r.json()) == 2
@@ -64,6 +69,7 @@ async def test_airports_from_cache(client, mock_conn, mock_redis):
     """When Redis has cached data, DB should not be queried."""
     cached = [make_airport_row()]
     from validator import airports_adapter
+
     mock_redis.get.return_value = airports_adapter.dump_json(
         airports_adapter.validate_python(cached)
     )

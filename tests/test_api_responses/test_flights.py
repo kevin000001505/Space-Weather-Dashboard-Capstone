@@ -17,7 +17,11 @@ from helpers import make_flight_state_row
 
 async def test_flight_path_200(client, mock_conn):
     mock_conn.fetch.return_value = [
-        {"icao24": "a1b2c3", "callsign": "AAL123", "path_points": [[38.85, -77.04], [38.90, -77.10]]}
+        {
+            "icao24": "a1b2c3",
+            "callsign": "AAL123",
+            "path_points": [[38.85, -77.04], [38.90, -77.10]],
+        }
     ]
     r = await client.get("/api/v1/flight-path/a1b2c3")
     assert r.status_code == 200
@@ -25,7 +29,11 @@ async def test_flight_path_200(client, mock_conn):
 
 async def test_flight_path_schema(client, mock_conn):
     mock_conn.fetch.return_value = [
-        {"icao24": "a1b2c3", "callsign": "AAL123", "path_points": [[38.85, -77.04], [38.90, -77.10]]}
+        {
+            "icao24": "a1b2c3",
+            "callsign": "AAL123",
+            "path_points": [[38.85, -77.04], [38.90, -77.10]],
+        }
     ]
     r = await client.get("/api/v1/flight-path/a1b2c3")
     data = r.json()
@@ -86,14 +94,19 @@ async def test_active_flights_required_fields(client, mock_conn):
 
 
 async def test_active_flights_count_matches(client, mock_conn):
-    mock_conn.fetch.return_value = [make_flight_state_row(), make_flight_state_row(icao24="x1y2z3")]
+    mock_conn.fetch.return_value = [
+        make_flight_state_row(),
+        make_flight_state_row(icao24="x1y2z3"),
+    ]
     r = await client.get("/api/v1/active-flight-states/latest")
     data = r.json()
     assert data["count"] == 2
 
 
 async def test_active_flights_limit(client, mock_conn):
-    mock_conn.fetch.return_value = [make_flight_state_row(icao24=f"a{i}b{i}c{i}") for i in range(5)]
+    mock_conn.fetch.return_value = [
+        make_flight_state_row(icao24=f"a{i}b{i}c{i}") for i in range(5)
+    ]
     r = await client.get("/api/v1/active-flight-states/latest?limit=2")
     data = r.json()
     assert data["count"] == 2

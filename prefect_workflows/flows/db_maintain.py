@@ -88,7 +88,6 @@ async def seed_empty_tables():
                 logger.info(f"{table_name} already has {count} rows, skipping seed.")
 
 
-
 if __name__ == "__main__":
     import asyncio
     import asyncpg

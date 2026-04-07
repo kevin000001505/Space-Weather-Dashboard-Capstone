@@ -1,6 +1,5 @@
 """Database initialization and maintenance tasks."""
 
-
 from shared.db_utils import ensure_table_exists
 from database.create import (
     ACTIVATE_FLIGHT_CREATE_TABLE_SQL,
@@ -198,6 +197,7 @@ async def initial_geoelectric_db(conn: Connection):
         logger.error(f"Failed to initialize geoelectric_field table: {e}")
         raise
 
+
 # Future usage if any function in Postgres
 # @task(cache_policy=NO_CACHE)
 # async def initial_partition_function(conn: Connection):
@@ -210,7 +210,6 @@ async def initial_geoelectric_db(conn: Connection):
 #     except Exception as e:
 #         logger.error(f"Failed to create partition function: {e}")
 #         raise
-
 
 
 # -----

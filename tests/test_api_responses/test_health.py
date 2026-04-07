@@ -1,7 +1,6 @@
 """Tests for root and health endpoints."""
 
 
-
 async def test_root_returns_200(client):
     r = await client.get("/")
     assert r.status_code == 200
