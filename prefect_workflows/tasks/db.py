@@ -20,7 +20,6 @@ from database.create import (
     GEOELECTRIC_CREATE_TABLE_SQL,
     READONLY_GRANTS_SQL,
 )
-from database.functions import CREATE_PARTITION_FUNCTION_SQL
 from prefect import task
 from shared.logger import get_logger
 from prefect.cache_policies import NO_CACHE

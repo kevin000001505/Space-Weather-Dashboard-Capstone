@@ -425,3 +425,120 @@ LEFT JOIN drap_region d
 GROUP BY e.requested_time, e.observed_at
 ORDER BY e.requested_time;
 """
+
+# --- V2 ---
+DRAP_RANGE_QUERY_V2 = """
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observed_at
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observed_at
+		FROM drap_region
+		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
+        ORDER BY observed_at DESC
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
+)
+SELECT
+	e.requested_time,
+	e.observed_at,
+	JSON_AGG(COALESCE(d.absorption, 0)) AS points
+FROM events e
+LEFT JOIN drap_region d 
+ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
+"""
+
+AURORA_RANGE_QUERY_V2 = """
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+    SELECT DISTINCT ON (t.requested_time)
+        t.requested_time,
+        d.observation_time AS observed_at
+    FROM time_ticks t
+    LEFT JOIN LATERAL (
+        SELECT observation_time
+        FROM aurora_forecast
+        WHERE observation_time >= t.requested_time - INTERVAL '15 minutes'
+          AND observation_time <= t.requested_time + INTERVAL '5 minutes'
+        ORDER BY observation_time DESC
+        LIMIT 1
+    ) d ON true
+    ORDER BY t.requested_time
+),
+event_points AS (
+    SELECT
+        e.requested_time,
+        e.observed_at,
+        f.lat,
+        f.long,
+        COALESCE(f.aurora, 0) AS aurora
+    FROM events e
+    LEFT JOIN aurora_forecast f ON f.observation_time = e.observed_at
+)
+SELECT
+    requested_time,
+    observed_at,
+    JSON_AGG(
+        JSON_BUILD_ARRAY(aurora)
+    ) AS points
+FROM event_points
+GROUP BY requested_time, observed_at
+ORDER BY requested_time;
+"""
+
+GEOELECTRIC_RANGE_QUERY_V2 = """
+WITH time_ticks AS (
+	SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+	) AS requested_time
+),
+events AS (
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observed_at
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observed_at
+		FROM geoelectric_field
+		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
+		ORDER BY observed_at DESC
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
+)
+SELECT
+	e.requested_time,
+	e.observed_at,
+	JSON_AGG(
+		JSON_BUILD_ARRAY(
+			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2),
+		)
+	) AS points
+FROM events e
+LEFT JOIN geoelectric_field d 
+ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
+"""

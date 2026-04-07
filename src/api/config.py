@@ -189,6 +189,12 @@ class SnapshotResponse(BaseModel):
     points: Optional[List[List[float]]] = None
 
 
+class SnapshotResponseV2(BaseModel):
+    requested_time: datetime
+    observed_at: Optional[datetime] = None
+    points: Optional[List[float]] = None
+
+
 class TimeTestingData(BaseModel):
     start: float
     query_start: float

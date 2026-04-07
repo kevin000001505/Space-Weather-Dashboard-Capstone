@@ -26,7 +26,10 @@ from database.queries import (
     GEOELECTRIC_RANGE_QUERY,
     LATEST_DRAP_QUERY_V2,
     LATEST_GEOELECTRIC_QUERY_V2,
-    LATEST_AURORA_QUERY_V2
+    LATEST_AURORA_QUERY_V2,
+    GEOELECTRIC_RANGE_QUERY_V2,
+    DRAP_RANGE_QUERY_V2,
+    AURORA_RANGE_QUERY_V2,
 )
 from config import (
     AuroraResponse,
@@ -43,6 +46,7 @@ from config import (
     GeoelectricResponse,
     TimeTestingData,
     SnapshotResponse,
+    SnapshotResponseV2,
     EventType,
 )
 from validator import points_adapter, airports_adapter
@@ -199,6 +203,12 @@ query_dict = {
     "geoelectric": GEOELECTRIC_RANGE_QUERY,
     "aurora": AURORA_RANGE_QUERY,
     "flight": FLIGHTS_RANGE_QUERY,
+}
+
+query_dict_v2 = {
+    "drap": DRAP_RANGE_QUERY_V2,
+    "geoelectric": GEOELECTRIC_RANGE_QUERY_V2,
+    "aurora": AURORA_RANGE_QUERY_V2,
 }
 
 events_dict = {
@@ -852,7 +862,7 @@ async def latest_geoelectric(
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
-@app.get("/api/v1/kermit/", response_model=List[SnapshotResponse])
+@app.get("/api/v1/kermit", response_model=List[SnapshotResponse])
 async def range_data_retrieve(
     response: Response,
     conn: asyncpg.Connection = Depends(get_db_connection),
@@ -892,6 +902,48 @@ async def range_data_retrieve(
             points_adapter.validate_json(raw_points) if raw_points is not None else None
         )
         result.append(SnapshotResponse.model_validate(row_dict))
+
+    add_timing_headers(response, t_start, t_query_start, t_query_end)
+    return result
+
+@app.get("/api/v2/kermit", response_model=List[SnapshotResponseV2])
+async def range_data_values_retrieve(
+    response: Response,
+    conn: asyncpg.Connection = Depends(get_db_connection),
+    start: Optional[datetime] = Query(
+        default=None,
+        description="The start time for event (ISO 8601 UTC). Defaults to 1 day before end.",
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="The end time for event (ISO 8601 UTC). Defaults to now.",
+    ),
+    event: Literal["drap", "geoelectric", "aurora"] = Query(
+        default="drap", description="Space weather event."
+    ),
+    interval: int = Query(default=5, description="The time range for each data gap."),
+):
+    t_start = time.perf_counter()
+    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
+    start_utc = start_utc.replace(second=0, microsecond=0)
+    end_utc = end_utc.replace(second=0, microsecond=0)
+    query = query_dict_v2[event]
+
+    t_query_start = time.perf_counter()
+    rows = await conn.fetch(query, start_utc, end_utc, interval)
+    t_query_end = time.perf_counter()
+
+    if not rows:
+        raise HTTPException(
+            status_code=404, detail=f"No {event} data available for the given range"
+        )
+
+    result = []
+    for row in rows:
+        row_dict = dict(row)
+        raw_points = row_dict.get("points")
+        row_dict["points"] = json.loads(raw_points) if raw_points is not None else None
+        result.append(SnapshotResponseV2.model_validate(row_dict))
 
     add_timing_headers(response, t_start, t_query_start, t_query_end)
     return result
