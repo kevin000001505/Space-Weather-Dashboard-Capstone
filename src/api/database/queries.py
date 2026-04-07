@@ -38,6 +38,20 @@ LATEST_DRAP_QUERY = """
     GROUP BY lt.max_ts;
 """
 
+LATEST_DRAP_QUERY_V2 = """
+WITH latest_grid AS (
+    SELECT observed_at, lat, long, absorption
+    FROM drap_region
+    WHERE observed_at = (SELECT MAX(observed_at) FROM drap_region)
+)
+SELECT
+    JSON_BUILD_OBJECT(
+        'timestamp', MAX(observed_at),
+        'points', JSON_AGG(absorption)
+    )::text AS values
+FROM latest_grid;
+"""
+
 KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count
 FROM kp_index
@@ -73,6 +87,20 @@ SELECT
 FROM latest_aurora;
 """
 
+LATEST_AURORA_QUERY_V2 = """
+WITH latest_aurora AS (
+    SELECT observation_time, lat, long, aurora
+    FROM aurora_forecast
+    WHERE observation_time = (SELECT MAX(observation_time) FROM aurora_forecast)
+)
+SELECT
+    JSON_BUILD_OBJECT(
+        'timestamp', MAX(observation_time),
+        'points', JSON_AGG(aurora)
+    )::text AS values
+FROM latest_aurora;
+"""
+
 
 ALERT_QUERY = """
 SELECT
@@ -95,6 +123,22 @@ LATEST_GEOELECTRIC_QUERY = """
         JSON_AGG(JSON_BUILD_ARRAY(lat, long, ROUND(e_magnitude::numeric, 2), quality_flag)) AS points
     FROM latest_grid;
 """
+
+
+LATEST_GEOELECTRIC_QUERY_V2 = """
+WITH latest_grid AS (
+    SELECT observed_at, lat, long, e_magnitude
+    FROM geoelectric_field
+    WHERE observed_at = (SELECT MAX(observed_at) FROM geoelectric_field)
+)
+SELECT
+    JSON_BUILD_OBJECT(
+        'timestamp', MAX(observed_at),
+        'points', JSON_AGG(ROUND(e_magnitude::numeric, 2))
+    )::text AS values
+FROM latest_grid;
+"""
+
 
 
 AIRPORTS_LATEST_QUERY = """

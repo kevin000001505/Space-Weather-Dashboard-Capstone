@@ -3,7 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Literal, Optional, List, AsyncGenerator
 import asyncpg
 
-from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends
+from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends, Path
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,9 +24,13 @@ from database.queries import (
     PROTON_FLUX_RANGE_QUERY,
     LATEST_GEOELECTRIC_QUERY,
     GEOELECTRIC_RANGE_QUERY,
+    LATEST_DRAP_QUERY_V2,
+    LATEST_GEOELECTRIC_QUERY_V2,
+    LATEST_AURORA_QUERY_V2
 )
 from config import (
     AuroraResponse,
+    EventsResponseV2,
     FlightStatesResponse,
     DRAPResponse,
     FlightPathResponse,
@@ -39,6 +43,7 @@ from config import (
     GeoelectricResponse,
     TimeTestingData,
     SnapshotResponse,
+    EventType,
 )
 from validator import points_adapter, airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
@@ -194,6 +199,12 @@ query_dict = {
     "geoelectric": GEOELECTRIC_RANGE_QUERY,
     "aurora": AURORA_RANGE_QUERY,
     "flight": FLIGHTS_RANGE_QUERY,
+}
+
+events_dict = {
+    "drap": LATEST_DRAP_QUERY_V2,
+    "geoelectric": LATEST_GEOELECTRIC_QUERY_V2,
+    "aurora": LATEST_AURORA_QUERY_V2,
 }
 
 
@@ -568,6 +579,57 @@ async def latest_drap(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
+@app.get("/api/v2/{events}/latest", response_model=EventsResponseV2)
+async def latest_events(
+    conn: asyncpg.Connection = Depends(get_db_connection), events: EventType = Path(..., description="Event type: drap, geoelectric, or aurora"), debug: bool = Query(False)
+):
+    t_start = time.perf_counter()
+    # redis_client = redis_config.get_redis_client()
+    try:
+        t_query_start = time.perf_counter()
+        # cached_event = await redis_client.get(redis_config.DRAP_CACHE_KEY)
+        t_query_end = time.perf_counter()
+
+        # if cached_event:
+        #     if debug:
+        #         return timing_debug_response(t_start, t_query_start, t_query_end)
+
+        #     response = Response(content=cached_event, media_type="application/json")
+        #     add_timing_headers(response, t_start, t_query_start, t_query_end)
+        #     return response
+
+        event_query = events_dict[events]
+
+        t_query_start = time.perf_counter()
+        row = await conn.fetchrow(event_query)
+        t_query_end = time.perf_counter()
+
+        if not row:
+            raise HTTPException(status_code=404, detail=f"No {events} data available")
+
+        raw_json_string = row["values"]
+        final_model = EventsResponseV2.model_validate_json(raw_json_string)
+
+        # 3. Dump back to JSON for Redis and the response
+        cache_payload_bytes = final_model.model_dump_json()
+
+        # await redis_client.set(
+        #     redis_config.DRAP_CACHE_KEY,
+        #     cache_payload_bytes,
+        #     ex=redis_config.VERY_LONG_TTL,  # Or whatever your DRAP TTL is
+        # )
+
+        if debug:
+            return timing_debug_response(t_start, t_query_start, t_query_end)
+
+        response = Response(content=cache_payload_bytes, media_type="application/json")
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 @app.get("/api/v1/kp-index", response_model=List[KpIndexResponse])
 async def kp_index(

@@ -1,12 +1,21 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
-
+from enum import Enum
 
 class DRAPResponse(BaseModel):
     timestamp: datetime
     points: List[List[float]]  # [lat, lon, intensity]
 
+
+class EventsResponseV2(BaseModel):
+    timestamp: datetime
+    points: List[float]  # [intensity]
+
+class EventType(str, Enum):
+    drap = "drap"
+    geoelectric = "geoelectric"
+    aurora = "aurora"
 
 class DRAPRangeResponse(BaseModel):
     snapshots: List[DRAPResponse]

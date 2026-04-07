@@ -11,7 +11,7 @@ from tasks.drap import broadcast_drap_to_redis, extract_data, transform_data, lo
     description="ETL flow for D-RAP data extraction, transformation, and loading.",
 )
 async def rap_extract_flow():
-    last_seen = await Variable.get("data_last_updated", default=None)
+    last_seen = Variable.get("data_last_updated", default=None)
     data_string = extract_data()
     metadata, df_wide, df_long = transform_data(data_string)
     current_updated = metadata.get("valid_at", "Unknown")
