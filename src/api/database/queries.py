@@ -69,7 +69,6 @@ WITH latest_aurora AS (
 )
 SELECT 
 	MAX(observation_time) AS timestamp,
-	COUNT(*) AS count,
 	JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
 FROM latest_aurora;
 """
@@ -93,7 +92,6 @@ LATEST_GEOELECTRIC_QUERY = """
     )
     SELECT 
         MAX(observed_at) AS timestamp,
-        COUNT(*) AS count,
         JSON_AGG(JSON_BUILD_ARRAY(lat, long, ROUND(e_magnitude::numeric, 2), quality_flag)) AS points
     FROM latest_grid;
 """
