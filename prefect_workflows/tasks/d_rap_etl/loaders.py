@@ -16,8 +16,8 @@ async def insert_drap_data(df_long: DataFrame, conn: Connection):
             absorption = float(row["Absorption"])
             record = DrapRecord(
                 observed_at=observed_at,
-                longitude=float(row["Longitude"]),
-                latitude=float(row["Latitude"]),
+                longitude=int(row["Longitude"]),
+                latitude=int(row["Latitude"]),
                 absorption=absorption,
             )
             records.append(record.to_tuple())

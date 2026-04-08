@@ -59,8 +59,8 @@ async def load_aurora_data(data: dict, conn: Connection) -> None:
             record = AuroraRecord(
                 observation_time=observation_time,
                 forecast_time=forecast_time,
-                longitude=coord[0],
-                latitude=coord[1],
+                longitude=int(coord[0]),
+                latitude=int(coord[1]),
                 aurora=coord[2],
             )
             records.append(record.to_tuple())

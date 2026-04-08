@@ -328,8 +328,8 @@ class DrapRecord(BaseModel):
     """DRAP (D-Region Absorption Prediction) record for database insertion."""
 
     observed_at: datetime = Field(description="Observation timestamp")
-    latitude: float = Field(ge=-90, le=90, description="Latitude")
-    longitude: float = Field(ge=-180, le=180, description="Longitude")
+    latitude: int = Field(ge=-90, le=90, description="Latitude")
+    longitude: int = Field(ge=-180, le=180, description="Longitude")
     absorption: Optional[float] = Field(
         default=None, ge=0, description="Absorption value in dB"
     )
@@ -383,13 +383,13 @@ class AuroraRecord(BaseModel):
 
     observation_time: datetime = Field(description="Observation timestamp (UTC)")
     forecast_time: datetime = Field(description="Forecast timestamp (UTC)")
-    longitude: float = Field(ge=-180, le=180, description="Longitude (-180 to 180)")
-    latitude: float = Field(ge=-90, le=90, description="Latitude")
+    longitude: int = Field(ge=-180, le=180, description="Longitude (-180 to 180)")
+    latitude: int = Field(ge=-90, le=90, description="Latitude")
     aurora: int = Field(ge=0, le=100, description="Aurora probability (0-100)")
 
     @field_validator("longitude", mode="before")
     @classmethod
-    def normalize_longitude(cls, v: float) -> float:
+    def normalize_longitude(cls, v: int) -> int:
         """Normalize 0-359 longitude from NOAA API to -180/180 range."""
         if v > 180:
             return v - 360
