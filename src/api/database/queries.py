@@ -550,6 +550,6 @@ ORDER BY e.requested_time;
 """
 
 
-LOCATION_QUERY = """"
+LOCATION_QUERY = """
 SELECT * FROM events_location;
 """
