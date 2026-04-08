@@ -211,12 +211,6 @@ query_dict_v2 = {
     "aurora": AURORA_RANGE_QUERY_V2,
 }
 
-events_dict = {
-    "drap": LATEST_DRAP_QUERY_V2,
-    "geoelectric": LATEST_GEOELECTRIC_QUERY_V2,
-    "aurora": LATEST_AURORA_QUERY_V2,
-}
-
 event_name_info = {
     "drap": {"table": "drap_region", "value": "absorption"},
     "aurora": {"table": "aurora_forecast", "value": "aurora"},
