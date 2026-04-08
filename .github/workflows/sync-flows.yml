@@ -7,9 +7,8 @@ on:
       - 'prefect_workflows/**'
 
 jobs:
-  git-pull:
+  sync:
     name: Pull latest code on VM
     runs-on: self-hosted
     steps:
-      - name: Git pull
-        run: git -C "${{ github.workspace }}" pull
+      - uses: actions/checkout@v6
