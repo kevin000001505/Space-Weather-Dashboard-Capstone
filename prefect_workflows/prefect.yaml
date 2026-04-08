@@ -11,6 +11,12 @@ deployments:
     description: "Initializes the database with necessary tables and indexes"
     work_pool:
       name: NOAA-pool
+  
+  - name: events_location_init
+    entrypoint: flows/db_maintain.py:location_snapshot_flow
+    description: "Initializes the tables with necessary tables."
+    work_pool:
+      name: NOAA-pool
 
   # --- Data Extraction Flows ---
 

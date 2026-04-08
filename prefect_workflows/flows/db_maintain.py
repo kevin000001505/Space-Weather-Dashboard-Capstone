@@ -17,6 +17,8 @@ from tasks.db import (
     initial_geoelectric_db,
     cleanup_table,
     initial_readonly_grants,
+    wait_for_tables_ready,
+    insert_events_location,
 )
 from database.queries import RETENTION_CONFIG
 from flows.kp_index import ingest_kp_index_flow
@@ -86,6 +88,13 @@ async def seed_empty_tables():
                 await seed_flow()
             else:
                 logger.info(f"{table_name} already has {count} rows, skipping seed.")
+
+
+@flow(log_prints=True)
+async def location_snapshot_flow():
+    async with get_connection() as conn:
+        await wait_for_tables_ready(conn)
+        await insert_events_location(conn)
 
 
 if __name__ == "__main__":

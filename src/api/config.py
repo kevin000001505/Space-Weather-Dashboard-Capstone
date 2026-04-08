@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
 
+
 class DRAPResponse(BaseModel):
     timestamp: datetime
     points: List[List[float]]  # [lat, lon, intensity]
@@ -12,10 +13,12 @@ class EventsResponseV2(BaseModel):
     timestamp: datetime
     points: List[float]  # [intensity]
 
+
 class EventType(str, Enum):
     drap = "drap"
     geoelectric = "geoelectric"
     aurora = "aurora"
+
 
 class DRAPRangeResponse(BaseModel):
     snapshots: List[DRAPResponse]
@@ -206,3 +209,9 @@ class TimeTestingData(BaseModel):
             "total_time_ms": round((self.finish - self.start) * 1000, 3),
             "query_time_ms": round((self.query_end - self.query_start) * 1000, 3),
         }
+
+
+class LocationData(BaseModel):
+    drap: List[List[float]]
+    aurora: List[List[float]]
+    geoelectric: List[List[float]]

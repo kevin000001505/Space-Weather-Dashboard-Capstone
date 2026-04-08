@@ -18,11 +18,13 @@ from database.create import (
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
     READONLY_GRANTS_SQL,
+    EVENTS_LOCATION_INGEST,
 )
 from prefect import task
 from shared.logger import get_logger
 from prefect.cache_policies import NO_CACHE
 from asyncpg import Connection
+import asyncio
 
 
 @task(cache_policy=NO_CACHE)
@@ -195,6 +197,42 @@ async def initial_geoelectric_db(conn: Connection):
         logger.info("geoelectric_field table is ready!")
     except Exception as e:
         logger.error(f"Failed to initialize geoelectric_field table: {e}")
+        raise
+
+
+@task
+async def wait_for_tables_ready(
+    conn: Connection, max_wait: int = 600, interval: int = 120
+):
+    CHECK_QUERY = """
+        SELECT 
+            (SELECT COUNT(*) FROM aurora_forecast WHERE observed_at >= NOW() - INTERVAL '1 hour') > 0 AND
+            (SELECT COUNT(*) FROM drap_region WHERE observed_at >= NOW() - INTERVAL '1 hour') > 0 AND
+            (SELECT COUNT(*) FROM geoelectric_field WHERE observed_at >= NOW() - INTERVAL '1 hour') > 0
+        AS all_ready
+    """
+    elapsed = 0
+    while elapsed < max_wait:
+        ready = await conn.fetchval(CHECK_QUERY)
+        if ready:
+            return True
+        await asyncio.sleep(interval)
+        elapsed += interval
+
+    raise RuntimeError("Tables not ready after 10 minutes")
+
+
+@task
+async def insert_events_location(conn: Connection):
+    logger = get_logger(__name__)
+    tables = ["drap_region", "aurora_forecast", "geoelectric_field"]
+    try:
+        for table in tables:
+            ingest_query = EVENTS_LOCATION_INGEST.format(table_name=table)
+            await conn.execute(ingest_query)
+            logger.info(f"Inserted locations for {table}")
+    except Exception as e:
+        logger.error(f"{table} insert failed — playback will crash: {e}")
         raise
 
 

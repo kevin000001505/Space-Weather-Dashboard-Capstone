@@ -239,6 +239,28 @@ SELECT set_chunk_time_interval('geoelectric_field', INTERVAL '7 day', if_not_exi
 """
 
 
+EVENTS_LOCATION_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS events_location (
+	events 		VARCHAR(30),
+	locations   FLOAT8[][],
+    PRIMARY KEY(events)
+);
+
+"""
+EVENTS_LOCATION_INGEST = """
+    INSERT INTO events_location (events, locations)
+    SELECT 
+        '{table_name}',
+        ARRAY(
+            SELECT ARRAY[lat, long]
+            FROM {table_name}
+            WHERE observed_at = (SELECT MAX(observed_at) FROM {table_name})
+            ORDER BY lat DESC, long ASC
+        )
+    ON CONFLICT (events) DO UPDATE
+        SET locations = EXCLUDED.locations
+"""
+
 # ------------------------------------------------------------------------------------------
 # --- Aiport data ---
 AIRPORT_CREATE_TABLE_SQL = """

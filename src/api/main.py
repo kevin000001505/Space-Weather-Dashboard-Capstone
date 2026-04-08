@@ -30,6 +30,7 @@ from database.queries import (
     GEOELECTRIC_RANGE_QUERY_V2,
     DRAP_RANGE_QUERY_V2,
     AURORA_RANGE_QUERY_V2,
+    LOCATION_QUERY,
 )
 from config import (
     AuroraResponse,
@@ -48,6 +49,7 @@ from config import (
     SnapshotResponse,
     SnapshotResponseV2,
     EventType,
+    LocationData,
 )
 from validator import points_adapter, airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
@@ -589,9 +591,14 @@ async def latest_drap(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
+
 @app.get("/api/v2/{events}/latest", response_model=EventsResponseV2)
 async def latest_events(
-    conn: asyncpg.Connection = Depends(get_db_connection), events: EventType = Path(..., description="Event type: drap, geoelectric, or aurora"), debug: bool = Query(False)
+    conn: asyncpg.Connection = Depends(get_db_connection),
+    events: EventType = Path(
+        ..., description="Event type: drap, geoelectric, or aurora"
+    ),
+    debug: bool = Query(False),
 ):
     t_start = time.perf_counter()
     # redis_client = redis_config.get_redis_client()
@@ -640,6 +647,7 @@ async def latest_events(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
 
 @app.get("/api/v1/kp-index", response_model=List[KpIndexResponse])
 async def kp_index(
@@ -784,9 +792,7 @@ async def aurora(
             raise HTTPException(status_code=404, detail="No aurora data available")
 
         aurora_data = dict(row)
-        aurora_data["points"] = points_adapter.validate_json(
-            aurora_data["points"]
-        )
+        aurora_data["points"] = points_adapter.validate_json(aurora_data["points"])
 
         if debug:
             return timing_debug_response(t_start, t_query_start, t_query_end)
@@ -906,6 +912,7 @@ async def range_data_retrieve(
     add_timing_headers(response, t_start, t_query_start, t_query_end)
     return result
 
+
 @app.get("/api/v2/kermit", response_model=List[SnapshotResponseV2])
 async def range_data_values_retrieve(
     response: Response,
@@ -947,6 +954,28 @@ async def range_data_values_retrieve(
 
     add_timing_headers(response, t_start, t_query_start, t_query_end)
     return result
+
+
+@app.get("/api/v2/location", response_model=LocationData)
+async def retrieve_events_locations(
+    response: Response, conn: asyncpg.Connection = Depends(get_db_connection)
+):
+    t_start = time.perf_counter()
+    t_query_start = time.perf_counter()
+    rows = await conn.fetch(LOCATION_QUERY)
+    t_query_end = time.perf_counter()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No location data available")
+
+    result = {}
+    for row in rows:
+        row_dict = dict(row)
+        result[row_dict["events"]] = row_dict["locations"]
+
+    add_timing_headers(response, t_start, t_query_start, t_query_end)
+
+    return LocationData(**result)
 
 
 @app.get("/api/kermit")

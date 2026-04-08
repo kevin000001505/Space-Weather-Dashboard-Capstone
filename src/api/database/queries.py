@@ -551,11 +551,5 @@ ORDER BY e.requested_time;
 
 
 LOCATION_QUERY = """"
-SELECT 
-    JSON_AGG(
-        JSON_BUILD_ARRAY(lat, long)
-        ORDER BY lat DESC, long ASC
-    ) AS points
-FROM $1
-WHERE observed_at = (SELECT MAX(observed_at) FROM $1);
+SELECT * FROM events_location;
 """
