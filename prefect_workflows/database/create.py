@@ -93,8 +93,8 @@ CREATE TABLE IF NOT EXISTS activate_flight (
 DRAP_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS drap_region (
     observed_at TIMESTAMPTZ NOT NULL,
-    lat DOUBLE PRECISION NOT NULL,
-    long DOUBLE PRECISION NOT NULL,
+    lat INTEGER NOT NULL,
+    long INTEGER NOT NULL,
     location GEOGRAPHY(Point, 4326) NOT NULL,
     absorption double precision NOT NULL,
     PRIMARY KEY (observed_at, lat, long)
@@ -191,8 +191,8 @@ AURORA_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS aurora_forecast (
     observed_at TIMESTAMPTZ      NOT NULL,
     forecast_time    TIMESTAMPTZ      NOT NULL,
-    lat              DOUBLE PRECISION NOT NULL,
-    long             DOUBLE PRECISION NOT NULL,
+    lat              INTEGER NOT NULL,
+    long             INTEGER NOT NULL,
     location         GEOGRAPHY(Point, 4326) NOT NULL,
     aurora           integer          NOT NULL CHECK (aurora >= 0 AND aurora <= 100),
     PRIMARY KEY (observed_at, lat, long)

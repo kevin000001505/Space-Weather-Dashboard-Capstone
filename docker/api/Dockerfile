@@ -25,7 +25,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # The worker counts is based on ((CPU*2)+1)
 CMD ["gunicorn", "main:app", \
     "--bind", "0.0.0.0:8000", \
-    "--workers", "10", \
+    "--workers", "15", \
     "--worker-class", "uvicorn.workers.UvicornWorker"]
 
 # Develop usage
