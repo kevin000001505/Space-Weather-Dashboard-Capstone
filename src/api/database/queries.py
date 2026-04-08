@@ -38,19 +38,6 @@ LATEST_DRAP_QUERY = """
     GROUP BY lt.max_ts;
 """
 
-LATEST_DRAP_QUERY_V2 = """
-WITH latest_grid AS (
-    SELECT observed_at, lat, long, absorption
-    FROM drap_region
-    WHERE observed_at = (SELECT MAX(observed_at) FROM drap_region)
-)
-SELECT
-    JSON_BUILD_OBJECT(
-        'timestamp', MAX(observed_at),
-        'points', JSON_AGG(absorption)
-    )::text AS values
-FROM latest_grid;
-"""
 
 KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count
@@ -87,19 +74,6 @@ SELECT
 FROM latest_aurora;
 """
 
-LATEST_AURORA_QUERY_V2 = """
-WITH latest_aurora AS (
-    SELECT observed_at, lat, long, aurora
-    FROM aurora_forecast
-    WHERE observed_at = (SELECT MAX(observed_at) FROM aurora_forecast)
-)
-SELECT
-    JSON_BUILD_OBJECT(
-        'timestamp', MAX(observed_at),
-        'points', JSON_AGG(aurora)
-    )::text AS values
-FROM latest_aurora;
-"""
 
 
 ALERT_QUERY = """
@@ -125,20 +99,6 @@ LATEST_GEOELECTRIC_QUERY = """
 """
 
 
-LATEST_GEOELECTRIC_QUERY_V2 = """
-WITH latest_grid AS (
-    SELECT observed_at, lat, long, e_magnitude
-    FROM geoelectric_field
-    WHERE observed_at = (SELECT MAX(observed_at) FROM geoelectric_field)
-)
-SELECT
-    JSON_BUILD_OBJECT(
-        'timestamp', MAX(observed_at),
-        'points', JSON_AGG(ROUND(e_magnitude::numeric, 2))
-    )::text AS values
-FROM latest_grid;
-"""
-
 LATEST_EVENT_QUERY_V2 = """
 WITH latest_grid AS (
     SELECT observed_at, lat, long, {column}
@@ -148,7 +108,11 @@ WITH latest_grid AS (
 SELECT
     JSON_BUILD_OBJECT(
         'timestamp', MAX(observed_at),
-        'points', JSON_AGG(ROUND({column}::numeric, 2))
+        'points', 
+            JSON_AGG(
+                ROUND({column}::numeric, 2)
+                ORDER BY lat DESC, long ASC
+                )
     )::text AS values
 FROM latest_grid;
 """
