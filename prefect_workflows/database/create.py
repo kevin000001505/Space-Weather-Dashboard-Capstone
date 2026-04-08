@@ -253,8 +253,9 @@ CREATE TABLE IF NOT EXISTS events_location (
 	locations   FLOAT8[][],
     PRIMARY KEY(events)
 );
-
 """
+
+# Need Fix
 EVENTS_LOCATION_INGEST = """
     INSERT INTO events_location (events, locations)
     SELECT 
