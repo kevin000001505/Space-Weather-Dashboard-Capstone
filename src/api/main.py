@@ -31,6 +31,7 @@ from database.queries import (
     DRAP_RANGE_QUERY_V2,
     AURORA_RANGE_QUERY_V2,
     LOCATION_QUERY,
+    LATEST_EVENT_QUERY_V2,
 )
 from config import (
     AuroraResponse,
@@ -217,6 +218,12 @@ events_dict = {
     "drap": LATEST_DRAP_QUERY_V2,
     "geoelectric": LATEST_GEOELECTRIC_QUERY_V2,
     "aurora": LATEST_AURORA_QUERY_V2,
+}
+
+event_name_info = {
+    "drap": {"table": "drap_region", "value": "absorption"},
+    "aurora": {"table": "aurora_forecast", "value": "aurora"},
+    "geoelectric": {"table": "geoelectric_field", "value": "e_magnitude"},
 }
 
 
@@ -615,10 +622,14 @@ async def latest_events(
         #     add_timing_headers(response, t_start, t_query_start, t_query_end)
         #     return response
 
-        event_query = events_dict[events]
+        table_info = event_name_info[events]
 
         t_query_start = time.perf_counter()
-        row = await conn.fetchrow(event_query)
+        row = await conn.fetchrow(
+            LATEST_EVENT_QUERY_V2.format(
+                table=table_info["table"], column=table_info["value"]
+            )
+        )
         t_query_end = time.perf_counter()
 
         if not row:
