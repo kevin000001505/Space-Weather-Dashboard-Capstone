@@ -17,7 +17,7 @@ async def aurora_extract_flow():
     data = fetch_aurora_data()
     current_observation = data.get("Observation Time")
 
-    last_seen = await Variable.get("aurora_last_observation_time", default=None)
+    last_seen = Variable.get("aurora_last_observation_time", default=None)
     logger.info(f"Last seen: '{last_seen}' | Current: '{current_observation}'")
 
     if last_seen == current_observation:
@@ -31,5 +31,6 @@ async def aurora_extract_flow():
     logger.info("Broadcasting new aurora data to redis...")
     await broadcast_aurora_to_redis(data)
 
-    await variable_upsert("aurora_last_observation_time", current_observation)
+    if current_observation is not None:
+        await variable_upsert("aurora_last_observation_time", current_observation)
     logger.info("Aurora forecast extraction flow completed successfully!")
