@@ -34,6 +34,14 @@ SELECT create_hypertable(
     chunk_time_interval => INTERVAL '1 day',
     if_not_exists => TRUE
     );
+
+ALTER TABLE flight_states SET (
+    timescaledb.compress,
+    timescaledb.compress_orderby = 'time DESC',
+    timescaledb.compress_segmentby = 'icao24'   
+);
+
+SELECT add_compression_policy('flight_states', INTERVAL '7 days', if_not_exists => true);
 """
 
 
