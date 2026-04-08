@@ -968,10 +968,16 @@ async def retrieve_events_locations(
     if not rows:
         raise HTTPException(status_code=404, detail="No location data available")
 
+    event_name_map = {
+        "drap_region": "drap",
+        "aurora_forecast": "aurora",
+        "geoelectric_field": "geoelectric",
+    }
     result = {}
     for row in rows:
         row_dict = dict(row)
-        result[row_dict["events"]] = row_dict["locations"]
+        key = event_name_map.get(row_dict["events"], row_dict["events"])
+        result[key] = row_dict["locations"]
 
     add_timing_headers(response, t_start, t_query_start, t_query_end)
 
