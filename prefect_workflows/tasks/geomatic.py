@@ -35,8 +35,10 @@ def extract_file() -> str:
         raw = pq(response.text)
         items = list(raw("body a").items())
         file_name = items[-1].attr("href")
+        if file_name is None:
+            raise ValueError("Could not extract filename from href attribute")
         logger.info(f"Latest geoelectric file: {file_name}")
-        return file_name
+        return str(file_name)
     except Exception as e:
         logger.error(f"Error fetching geoelectric date: {e}")
         return "None"
