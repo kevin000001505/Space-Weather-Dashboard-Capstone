@@ -14,14 +14,13 @@ async def insert_drap_data(df_long: DataFrame, conn: Connection):
     for _, row in df_long.iterrows():
         try:
             absorption = float(row["Absorption"])
-            if absorption > 0:
-                record = DrapRecord(
-                    observed_at=observed_at,
-                    longitude=float(row["Longitude"]),
-                    latitude=float(row["Latitude"]),
-                    absorption=absorption,
-                )
-                records.append(record.to_tuple())
+            record = DrapRecord(
+                observed_at=observed_at,
+                longitude=float(row["Longitude"]),
+                latitude=float(row["Latitude"]),
+                absorption=absorption,
+            )
+            records.append(record.to_tuple())
         except (ValueError, KeyError) as e:
             logger.warning(f"Skipping row due to error: {e}")
             continue
