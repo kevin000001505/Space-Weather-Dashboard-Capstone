@@ -101,11 +101,20 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     return Array.from(new Set(timestamps)).sort((left, right) => left - right);
   }, [drapPlayback, auroraPlayback, geoElectricPlayback]);
 
-  const stepMs = 300 * 1000; // 5 minute step
+  const baseStepMs = 300 * 1000; // 5 minute base step
   const [startTime, setStartTime] = React.useState(null);
   const [endTime, setEndTime] = React.useState(null);
   const [currentTime, setCurrentTime] = React.useState(null);
   const lastPlaybackRangeRef = React.useRef({ startTime: null, endTime: null });
+
+  // Get frame index from a timestamp using fixed 5-min resolution
+  const frameIndexOf = React.useCallback(
+    (time) => {
+      if (!playbackTimes.length || time === null) return -1;
+      return Math.round((time - playbackTimes[0]) / baseStepMs);
+    },
+    [playbackTimes, baseStepMs],
+  );
 
   const playbackRange = React.useMemo(() => {
     if (playbackDate) {
@@ -154,19 +163,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     return playbackRange.startTime + firstPlayableHour.hour * HOUR_MS;
   }, [normalizedHourStatuses, playbackRange.startTime]);
 
-  const lastPlayableTime = React.useMemo(() => {
-    const lastPlayableHour = [...normalizedHourStatuses]
-      .reverse()
-      .find((hourStatus) => hourStatus.hasData);
 
-    if (!lastPlayableHour) {
-      return null;
-    }
-
-    return (
-      playbackRange.startTime + lastPlayableHour.hour * HOUR_MS + 55 * 60 * 1000
-    );
-  }, [normalizedHourStatuses, playbackRange.startTime]);
 
   React.useEffect(() => {
     setStartTime(playbackRange.startTime);
@@ -189,6 +186,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isLooping, setIsLooping] = React.useState(false);
   const [speed, setSpeed] = React.useState(1);
+  const frameSkip = Math.max(Math.round(speed), 1); // frames to skip per tick at >1x
 
   const allowedSpeeds = [0.25, 0.5, 1, 2, 4, 8];
   const handleSpeedChange = () => {
@@ -197,112 +195,45 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     setSpeed(allowedSpeeds[nextIdx]);
   };
 
-  // Playback effect: step through time
-  React.useEffect(() => {
-    if (!isPlaying || startTime === null || endTime === null) return;
-    const interval = setInterval(() => {
-      setCurrentTime((prev) => {
-        if (prev === null) {
-          return firstPlayableTime ?? startTime;
-        }
-        let candidate = prev + stepMs;
-
-        while (candidate <= endTime) {
-          const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
-          const hourStatus = normalizedHourStatuses[hourIndex];
-
-          if (hourStatus?.hasData) {
-            return candidate;
-          }
-
-          candidate = startTime + (hourIndex + 1) * HOUR_MS;
-        }
-
-        if (isLooping) {
-          return firstPlayableTime ?? startTime;
-        }
-
+  // Advance by N frames from current time, clamped to available frames
+  const advanceFrames = React.useCallback(
+    (prev, count) => {
+      if (!playbackTimes.length) return prev;
+      const idx = frameIndexOf(prev);
+      const nextIdx = idx + count;
+      if (nextIdx >= playbackTimes.length) {
+        if (isLooping) return playbackTimes[0];
         setIsPlaying(false);
         return prev;
-      });
-    }, 1000 / speed);
+      }
+      if (nextIdx < 0) {
+        if (isLooping) return playbackTimes[playbackTimes.length - 1];
+        return playbackTimes[0];
+      }
+      return playbackTimes[nextIdx];
+    },
+    [playbackTimes, frameIndexOf, isLooping],
+  );
+
+  // Playback effect: advance by frameSkip frames per tick
+  React.useEffect(() => {
+    if (!isPlaying || !playbackTimes.length) return;
+    const interval = setInterval(() => {
+      setCurrentTime((prev) => advanceFrames(prev ?? playbackTimes[0], frameSkip));
+    }, speed < 1 ? 1000 / speed : 1000);
     return () => clearInterval(interval);
-  }, [
-    isPlaying,
-    speed,
-    startTime,
-    endTime,
-    isLooping,
-    firstPlayableTime,
-    normalizedHourStatuses,
-  ]);
+  }, [isPlaying, speed, frameSkip, playbackTimes, advanceFrames]);
 
   React.useEffect(() => {
     dispatch(setPlaybackTime(currentTime));
   }, [currentTime, dispatch]);
 
-  // Step backward/forward by stepMs
-  const findNextPlayableTime = React.useCallback(
-    (time) => {
-      if (startTime === null || endTime === null) return null;
-      let candidate = Number.isFinite(time)
-        ? time + stepMs
-        : (firstPlayableTime ?? startTime);
-
-      while (candidate <= endTime) {
-        const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
-        if (normalizedHourStatuses[hourIndex]?.hasData) {
-          return candidate;
-        }
-        candidate = startTime + (hourIndex + 1) * HOUR_MS;
-      }
-
-      return isLooping ? (firstPlayableTime ?? startTime) : endTime;
-    },
-    [
-      startTime,
-      endTime,
-      stepMs,
-      normalizedHourStatuses,
-      firstPlayableTime,
-      isLooping,
-    ],
-  );
-
-  const findPreviousPlayableTime = React.useCallback(
-    (time) => {
-      if (startTime === null || endTime === null) return null;
-      let candidate = Number.isFinite(time)
-        ? time - stepMs
-        : (lastPlayableTime ?? startTime);
-
-      while (candidate >= startTime) {
-        const hourIndex = Math.floor((candidate - startTime) / HOUR_MS);
-        if (normalizedHourStatuses[hourIndex]?.hasData) {
-          return candidate;
-        }
-        candidate = startTime + hourIndex * HOUR_MS - stepMs;
-      }
-
-      return isLooping ? (lastPlayableTime ?? startTime) : startTime;
-    },
-    [
-      startTime,
-      endTime,
-      stepMs,
-      normalizedHourStatuses,
-      lastPlayableTime,
-      isLooping,
-    ],
-  );
-
+  // Step buttons always advance exactly 1 frame
   const handleStepBackward = () => {
-    if (startTime === null) return;
-    setCurrentTime((prev) => findPreviousPlayableTime(prev));
+    setCurrentTime((prev) => advanceFrames(prev, -1));
   };
   const handleStepForward = () => {
-    if (endTime === null) return;
-    setCurrentTime((prev) => findNextPlayableTime(prev));
+    setCurrentTime((prev) => advanceFrames(prev, 1));
   };
 
   // Format time for display
@@ -506,7 +437,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
             value={currentTime ?? 0}
             min={startTime ?? 0}
             max={endTime ?? 0}
-            step={stepMs}
+            step={baseStepMs}
             onChange={(_, value) => {
               if (typeof value === "number") {
                 setCurrentTime(value);
