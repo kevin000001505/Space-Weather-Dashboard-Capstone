@@ -3,7 +3,7 @@
 
 export const createDRAPFilledCellsLayers = null; // Not used with MapLibre approach
 
-export const getDRAPFilledCellsGeoJSON = (drapPoints) => {
+export const getDRAPFilledCellsGeoJSON = (drapPoints, drapRegionRange = [0, 35]) => {
   const getMedianStep = (values) => {
     if (values.length < 2) return 0;
     const sorted = [...values].sort((a, b) => a - b);
@@ -17,9 +17,11 @@ export const getDRAPFilledCellsGeoJSON = (drapPoints) => {
     return deltas[Math.floor(deltas.length / 2)];
   };
 
-  const validPoints = drapPoints
-    .map(([lat, lon, amp]) => ({ lat: Number(lat), lon: Number(lon), amp: Number(amp) }))
-    .filter(({ lat, lon, amp }) => Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(amp) && amp > 0);
+  const sourcePoints = Array.isArray(drapPoints) ? drapPoints : [];
+  const [minFilterAmp, maxFilterAmp] = drapRegionRange || [0, 35];
+  const validPoints = sourcePoints
+        .map(([lat, lon, amp]) => ({ lat: Number(lat), lon: Number(lon), amp: Number(amp) }))
+        .filter(({ lat, lon, amp }) => Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(amp) && amp >= minFilterAmp && amp <= maxFilterAmp);
 
   if (validPoints.length === 0) {
     return {

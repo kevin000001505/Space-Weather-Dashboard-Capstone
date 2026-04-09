@@ -5,50 +5,68 @@
  * Converts geoelectric API data to a GeoJSON FeatureCollection of filled grid cells.
  * Only includes points with quality_flag === 1.
  * Each cell is a 1x1 degree square polygon centered at [lat, lon].
- * @param {Object} geoElectricData - API response object with .points array
+ * @param {Object|Array} geoElectricData - API response object or values array
+ * @param {Array} geoElectricCoordinates - Coordinate mapping from uiSlice
  * @returns {Object} GeoJSON FeatureCollection
  */
-export const getGeoElectricGeoJSON = (geoElectricData) => {
-  if (!geoElectricData || !geoElectricData.points) {
-    return { type: 'FeatureCollection', features: [] };
+export const getGeoElectricGeoJSON = (
+  sourcePoints,
+  geoElectricLogRange = [0, 100],
+) => {
+  if (
+    sourcePoints.length === 0 || !Array.isArray(sourcePoints[0])
+  ) {
+    return { type: "FeatureCollection", features: [] };
   }
 
-  // 1. Filter and normalize points
-  const validPoints = geoElectricData.points.filter(
-    ([lat, lon, magnitude]) => magnitude > 0
-  );
+  const [minLog, maxLog] =
+    Array.isArray(geoElectricLogRange) && geoElectricLogRange.length === 2
+      ? geoElectricLogRange
+      : [0, 4];
+
+  const minMag = Math.pow(10, minLog);
+  const maxMag = Math.pow(10, maxLog);
+  const validPoints = sourcePoints.filter(
+        ([lat, lon, magnitude]) =>
+          magnitude >= minMag && magnitude <= maxMag,
+      )
 
   // 2. Each cell is 1x1 degree (like aurora)
   const halfLat = 0.5;
   const halfLon = 0.5;
 
   // 3. Map to GeoJSON Polygons
-  const features = validPoints.map(([lat, lon, magnitude]) => {
+  const features = validPoints.map((point) => {
+    const lat = Array.isArray(point) ? point[0] : point.lat;
+    const lon = Array.isArray(point) ? point[1] : point.lon;
+    const magnitude = Array.isArray(point) ? point[2] : point.magnitude;
     const west = lon - halfLon;
     const east = lon + halfLon;
     const south = lat - halfLat;
     const north = lat + halfLat;
 
     return {
-      type: 'Feature',
+      type: "Feature",
       properties: {
-        magnitude, // Electric field magnitude
+        magnitude,
       },
       geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [west, south],
-          [east, south],
-          [east, north],
-          [west, north],
-          [west, south],
-        ]],
+        type: "Polygon",
+        coordinates: [
+          [
+            [west, south],
+            [east, south],
+            [east, north],
+            [west, north],
+            [west, south],
+          ],
+        ],
       },
     };
   });
 
   return {
-    type: 'FeatureCollection',
+    type: "FeatureCollection",
     features,
   };
 };
@@ -66,21 +84,25 @@ export const getGeoElectricGeoJSON = (geoElectricData) => {
 export const getGeoElectricMapLayers = (isZooming) => {
   return [
     {
-      id: 'geoelectric-filled-cells',
-      type: 'fill',
-      source: 'geoelectric-cells',
+      id: "geoelectric-filled-cells",
+      type: "fill",
+      source: "geoelectric-cells",
       paint: {
-        'fill-antialias': false,
-        'fill-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'magnitude'],
-          1,   '#0074D9',   // Blue
-          10, '#7FDBFF',   // Skyblue
-          101, '#2E0854',   // Dark purple (overlap at 100 for sharp transition)
-          10000, '#E040FB', // Bright purple
+        "fill-antialias": false,
+        "fill-color": [
+          "interpolate",
+          ["linear"],
+          ["get", "magnitude"],
+          1,
+          "#0074D9", // Blue
+          10,
+          "#7FDBFF", // Skyblue
+          101,
+          "#2E0854", // Dark purple (overlap at 100 for sharp transition)
+          10000,
+          "#E040FB", // Bright purple
         ],
-        'fill-opacity': isZooming ? 0.1 : 0.2,
+        "fill-opacity": isZooming ? 0.1 : 0.2,
       },
     },
   ];

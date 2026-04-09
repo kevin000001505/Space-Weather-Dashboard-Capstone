@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { useSelector } from "react-redux";
+import { batch, useSelector } from "react-redux";
 import { useDispatch } from "react-redux";
 import "./styles/DateTimeViewer.css";
 import { setSelectedTimezone } from "../../store/slices/chartsSlice";
@@ -52,7 +52,15 @@ const normalizePlaybackItem = (event, item) => {
     return {
       ...item,
       playbackTime,
-      coordinates: Array.isArray(item.coordinates) ? item.coordinates : Array.isArray(item.points) ? item.points : [],
+      points: Array.isArray(item.points)
+        ? item.points
+        : Array.isArray(item.values)
+          ? item.values
+          : Array.isArray(item.data)
+            ? item.data
+            : Array.isArray(item.coordinates)
+              ? item.coordinates
+              : [],
     };
   }
 
@@ -60,7 +68,29 @@ const normalizePlaybackItem = (event, item) => {
     return {
       ...item,
       playbackTime,
-      points: Array.isArray(item.points) ? item.points : [],
+      points: Array.isArray(item.points)
+        ? item.points
+        : Array.isArray(item.values)
+          ? item.values
+          : Array.isArray(item.data)
+            ? item.data
+            : [],
+    };
+  }
+
+  if (event === "drap") {
+    return {
+      ...item,
+      playbackTime,
+      points: Array.isArray(item.points)
+        ? item.points
+        : Array.isArray(item.values)
+          ? item.values
+          : Array.isArray(item.drap)
+            ? item.drap
+            : Array.isArray(item.data)
+              ? item.data
+              : [],
     };
   }
 
@@ -282,29 +312,32 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
     };
 
     const loadHourlyPlayback = async () => {
-      dispatch(resetPlaybackHourStatuses());
-      dispatch(setDRAPPlayback([]));
-      dispatch(setAuroraPlayback([]));
-      dispatch(setGeoElectricPlayback([]));
-      dispatch(setDRAPPoints([]));
-      dispatch(injectLiveDRAP({ drap: [] }));
-      dispatch(injectLiveAurora(null));
-      dispatch(injectLiveGeoElectric(null));
-      dispatch(injectLivePlanes({ flights: [] }));
+      batch(() => {
+        dispatch(resetPlaybackHourStatuses());
+        dispatch(setDRAPPlayback([]));
+        dispatch(setAuroraPlayback([]));
+        dispatch(setGeoElectricPlayback([]));
+        dispatch(setDRAPPoints([]));
+        dispatch(injectLiveAurora(null));
+        dispatch(injectLiveGeoElectric(null));
+        dispatch(injectLivePlanes({ flights: [] }));
+      });
 
       for (let hour = 0; hour < 24; hour += 1) {
         if (isCancelled) return;
 
-        ["drap", "geoelectric", "aurora"].forEach((event) => {
-          dispatch(
-            setPlaybackHourStatus({
-              hour,
-              event,
-              status: "fetching",
-              hasData: false,
-              count: 0,
-            }),
-          );
+        batch(() => {
+          ["drap", "geoelectric", "aurora"].forEach((event) => {
+            dispatch(
+              setPlaybackHourStatus({
+                hour,
+                event,
+                status: "fetching",
+                hasData: false,
+                count: 0,
+              }),
+            );
+          });
         });
 
         const start = new Date(year, month - 1, day, hour, 0, 0, 0);
@@ -326,27 +359,31 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
             ).unwrap();
 
             const eventChunk = normalizePlaybackChunk(event, result?.data || result);
-            updatePlaybackBuffer(event, eventChunk);
-            dispatch(
-              setPlaybackHourStatus({
-                hour,
-                event,
-                status: "ready",
-                hasData: eventChunk.length > 0,
-                count: eventChunk.length,
-              }),
-            );
+            batch(() => {
+              updatePlaybackBuffer(event, eventChunk);
+              dispatch(
+                setPlaybackHourStatus({
+                  hour,
+                  event,
+                  status: "ready",
+                  hasData: eventChunk.length > 0,
+                  count: eventChunk.length,
+                }),
+              );
+            });
             return { event, status: "fulfilled" };
           } catch (err) {
-            dispatch(
-              setPlaybackHourStatus({
-                hour,
-                event,
-                status: "error",
-                hasData: false,
-                count: 0,
-              }),
-            );
+            batch(() => {
+              dispatch(
+                setPlaybackHourStatus({
+                  hour,
+                  event,
+                  status: "error",
+                  hasData: false,
+                  count: 0,
+                }),
+              );
+            });
             return { event, status: "rejected", error: err };
           }
         });
@@ -388,7 +425,6 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(props, ref) {
       dispatch(setDRAPPlayback([]));
       dispatch(setAuroraPlayback([]));
       dispatch(setGeoElectricPlayback([]));
-      dispatch(injectLiveDRAP({ drap: [] }));
       dispatch(injectLiveAurora(null));
       dispatch(injectLiveGeoElectric(null));
       dispatch(injectLivePlanes({ flights: [] }));

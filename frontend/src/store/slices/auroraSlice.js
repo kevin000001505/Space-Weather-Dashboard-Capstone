@@ -4,6 +4,8 @@ import { fetchAurora } from '../../api/api';
 const auroraSlice = createSlice({
   name: 'aurora',
   initialState: {
+    showAurora: false,
+    auroraRegionRange: [0, 100],
     data: null, 
     playback: [],
     loading: false,
@@ -15,6 +17,12 @@ const auroraSlice = createSlice({
     },
     setAuroraPlayback: (state, action) => {
       state.playback = action.payload;
+    },
+    setShowAurora: (state, action) => {
+      state.showAurora = action.payload;
+    },
+    setAuroraRegionRange: (state, action) => {
+      state.auroraRegionRange = action.payload;
     }
 
   },
@@ -35,5 +43,10 @@ const auroraSlice = createSlice({
   }
 });
 
-export const { injectLiveAurora, setAuroraPlayback } = auroraSlice.actions;
+export const {
+  injectLiveAurora,
+  setAuroraPlayback,
+  setShowAurora,
+  setAuroraRegionRange,
+} = auroraSlice.actions;
 export default auroraSlice.reducer;

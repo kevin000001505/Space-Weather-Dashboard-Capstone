@@ -17,11 +17,6 @@ const initialState = {
   darkMode: true,
   showPlanes: true,
   showAirports: true,
-  showDRAP: true,
-  showAurora: false,
-  auroraRegionRange: [0, 100],
-  showGeoelectric: false,
-  geoelectricRegionRange: [0, 100],
   isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,
@@ -37,7 +32,6 @@ const initialState = {
   settingsTabIndex: 0,
   altitudeRange: [0, 50000],
   airportAltitudeRange: [0, 18000],
-  drapRegionRange: [0, 35], // Match AltitudeLegend drapStops
   isolateMode: false, // Isolate mode: only show selected planes and paths
   airportIconSize: 22,
   flightIconSize: 46,
@@ -141,15 +135,6 @@ const uiSlice = createSlice({
     setIsZooming: (state, action) => {
       state.isZooming = action.payload;
     },
-    setShowDRAP: (state, action) => {
-      state.showDRAP = action.payload;
-    },
-    setShowAurora: (state, action) => {
-      state.showAurora = action.payload;
-    },
-    setAuroraRegionRange: (state, action) => {
-      state.auroraRegionRange = action.payload;
-    },
     setIsAirportDropdownOpen: (state, action) => {
       state.isAirportDropdownOpen = action.payload;
     },
@@ -161,9 +146,6 @@ const uiSlice = createSlice({
     },
     setAirportAltitudeRange: (state, action) => {
       state.airportAltitudeRange = action.payload;
-    },
-    setDrapRegionRange: (state, action) => {
-      state.drapRegionRange = action.payload;
     },
     setShowDate: (state, action) => {
       state.showDate = action.payload;
@@ -216,14 +198,10 @@ export const {
   setSearchOpen,
   clearSelections,
   setIsZooming,
-  setShowDRAP,
-  setShowAurora,
-  setAuroraRegionRange,
   setIsAirportDropdownOpen,
   setSettingsTabIndex,
   setAltitudeRange,
   setAirportAltitudeRange,
-  setDrapRegionRange,
   addFlightPanel,
   removeFlightPanel,
   addAirportPanel,

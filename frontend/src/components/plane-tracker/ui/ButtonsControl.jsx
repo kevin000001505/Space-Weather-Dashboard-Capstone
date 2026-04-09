@@ -6,14 +6,14 @@ import {
   setDarkMode,
   setShowAirports,
   setShowAltitudeLegend,
-  setShowAurora,
-  setShowDRAP,
   setShowIconLegend,
   setShowPlanes,
   setShowSettings,
   setUseImperial,
   toggleIsolateMode,
 } from "../../../store/slices/uiSlice";
+import { setShowDRAP } from "../../../store/slices/drapSlice";
+import { setShowAurora } from "../../../store/slices/auroraSlice";
 import { setShowGeoElectric } from "../../../store/slices/geoElectricSlice";
 import AirplanemodeActiveIcon from "@mui/icons-material/AirplanemodeActive";
 // import squareA from './A-icon.svg';
@@ -42,13 +42,13 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     darkMode,
     showAirports,
     showPlanes,
-    showAurora,
-    showDRAP,
     isolateMode,
     useImperial,
     showAltitudeLegend,
     showIconLegend,
   } = useSelector((state) => state.ui);
+  const { showAurora } = useSelector((state) => state.aurora);
+  const { showDRAP } = useSelector((state) => state.drap);
   const { showElectricTransmissionLines } = useSelector((state) => state.electricTransmissionLines);
   const { showGeoElectric } = useSelector((state) => state.geoelectric);
   const btnStyle = {

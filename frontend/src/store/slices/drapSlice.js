@@ -4,6 +4,8 @@ import { fetchDRAP } from "../../api/api";
 const drapSlice = createSlice({
   name: "drap",
   initialState: {
+    showDRAP: true,
+    drapRegionRange: [0, 35],
     points: [],
     playback: [],
     timestamp: null,
@@ -13,13 +15,19 @@ const drapSlice = createSlice({
   },
   reducers: {
     injectLiveDRAP: (state, action) => {
-      state.data = action.payload.drap;
+      state.points = action.payload.drap || [];
     },
     setDRAPPoints: (state, action) => {
       state.points = action.payload;
     },
     setDRAPPlayback: (state, action) => {
       state.playback = action.payload;
+    },
+    setShowDRAP: (state, action) => {
+      state.showDRAP = action.payload;
+    },
+    setDrapRegionRange: (state, action) => {
+      state.drapRegionRange = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -41,5 +49,11 @@ const drapSlice = createSlice({
   },
 });
 
-export const { setDRAPPoints, injectLiveDRAP, setDRAPPlayback } = drapSlice.actions;
+export const {
+  setDRAPPoints,
+  injectLiveDRAP,
+  setDRAPPlayback,
+  setShowDRAP,
+  setDrapRegionRange,
+} = drapSlice.actions;
 export default drapSlice.reducer;

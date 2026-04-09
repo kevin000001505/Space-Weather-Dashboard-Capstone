@@ -5,8 +5,6 @@ import {
   setAltitudeRange,
   setAirportAltitudeRange,
   setAirportFilter,
-  setDrapRegionRange,
-  setAuroraRegionRange,
   setFlightIconSize,
   setAirportIconSize,
   setFontSizePercent,
@@ -47,6 +45,8 @@ import {
   setShowUndergroundLines,
 } from "../../store/slices/electricTransmissionLinesSlice";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
+import { setDrapRegionRange } from "../../store/slices/drapSlice";
+import { setAuroraRegionRange } from "../../store/slices/auroraSlice";
 const PANEL_WIDTH = 550;
 const SettingsPanel = () => {
   const dispatch = useDispatch();
@@ -58,12 +58,12 @@ const SettingsPanel = () => {
     altitudeRange,
     airportAltitudeRange,
     airportFilter,
-    drapRegionRange,
-    auroraRegionRange,
     airportIconSize,
     flightIconSize,
     fontSizePercent,
   } = useSelector((state) => state.ui);
+  const { drapRegionRange } = useSelector((state) => state.drap);
+  const { auroraRegionRange } = useSelector((state) => state.aurora);
   const planes = useSelector((state) => state.planes.data);
   const { geoElectricLogRange } = useSelector((state) => state.geoelectric);
   const airports = useSelector((state) => state.airports.data);
@@ -84,9 +84,7 @@ const SettingsPanel = () => {
   // Count filtered DRAP cells
   const filteredDRAPCount = useMemo(() => {
     if (!drapPoints || drapPoints.length === 0) return 0;
-    const [min, max] = Array.isArray(drapRegionRange)
-      ? drapRegionRange
-      : [drapRegionRange, drapRegionRange];
+    const [min, max] = [drapRegionRange, drapRegionRange];
     return drapPoints.filter(([lat, lon, amp]) => amp >= min && amp <= max)
       .length;
   }, [drapPoints, drapRegionRange]);
@@ -109,7 +107,7 @@ const SettingsPanel = () => {
     const minMag = Math.pow(10, minLog);
     const maxMag = Math.pow(10, maxLog);
     return geoelectricData.points.filter(
-      ([lat, lon, magnitude, quality]) =>
+      ([lat, lon, magnitude]) =>
         magnitude >= minMag && magnitude <= maxMag,
     ).length;
   }, [geoelectricData, geoElectricLogRange]);

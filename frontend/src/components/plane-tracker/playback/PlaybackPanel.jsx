@@ -24,6 +24,7 @@ import SpeedRoundedIcon from "@mui/icons-material/SpeedRounded";
 import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
+import { getPlaybackTimestamp } from "../helpers/eventPlayback";
 
 const HOUR_MS = 60 * 60 * 1000;
 const PLAYBACK_EVENTS = ["drap", "aurora", "geoelectric"];
@@ -71,6 +72,107 @@ const formatHourLabel = (timestamp) =>
     minute: "2-digit",
   });
 
+const HourStatusStrip = React.memo(function HourStatusStrip({
+  normalizedHourStatuses,
+  playbackRangeStartTime,
+  darkMode,
+  onSelectHour,
+  formatSegmentTooltip,
+}) {
+  const segmentColors = React.useMemo(
+    () => ({
+      idle: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.1),
+      fetching: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.4),
+      buffering: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.66),
+      ready: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.92),
+      error: alpha("#ef4444", 0.72),
+      empty: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.06),
+    }),
+    [darkMode],
+  );
+
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: "repeat(24, minmax(0, 1fr))",
+        gap: "2px",
+        height: 8,
+        mt: 0.2,
+        borderRadius: 999,
+        overflow: "hidden",
+        backgroundColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.06),
+        border: "1px solid",
+        borderColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.12),
+      }}
+    >
+      {normalizedHourStatuses.map((hourStatus, hour) => {
+        const segmentStart = playbackRangeStartTime + hour * HOUR_MS;
+        const fillWidth =
+          hourStatus.aggregate === "empty"
+            ? 0
+            : Math.max(hourStatus.progress, 6);
+        const fillColor = segmentColors[hourStatus.aggregate] || segmentColors.idle;
+
+        return (
+          <Tooltip
+            key={hour}
+            arrow
+            placement="top"
+            title={formatSegmentTooltip(hourStatus, segmentStart)}
+          >
+            <Box
+              onClick={() => {
+                if (hourStatus.hasData) {
+                  onSelectHour(segmentStart);
+                }
+              }}
+              sx={{
+                position: "relative",
+                height: "100%",
+                minWidth: 0,
+                overflow: "hidden",
+                bgcolor: segmentColors[hourStatus.aggregate] || segmentColors.idle,
+                cursor: hourStatus.hasData ? "pointer" : "default",
+                boxShadow:
+                  hourStatus.aggregate === "fetching" ||
+                  hourStatus.aggregate === "buffering"
+                    ? `inset 0 0 0 1px ${alpha("#fff", 0.18)}`
+                    : "none",
+                transition:
+                  "background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
+              }}
+            >
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  width: `${fillWidth}%`,
+                  borderRadius: 999,
+                  background: `linear-gradient(90deg, ${alpha(fillColor, 0.55)} 0%, ${fillColor} 100%)`,
+                  transition: "width 350ms ease, background-color 180ms ease",
+                }}
+              />
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    hourStatus.aggregate === "empty"
+                      ? `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.04)} 100%)`
+                      : `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.08)} 100%)`,
+                  mixBlendMode: "screen",
+                  pointerEvents: "none",
+                }}
+              />
+            </Box>
+          </Tooltip>
+        );
+      })}
+    </Box>
+  );
+});
+
 const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.ui);
@@ -95,7 +197,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const playbackTimes = React.useMemo(() => {
     const timestamps = [drapPlayback, auroraPlayback, geoElectricPlayback]
       .flat()
-      .map((entry) => Date.parse(entry.requested_time))
+      .map((entry) => getPlaybackTimestamp(entry))
       .filter((timestamp) => Number.isFinite(timestamp));
 
     return Array.from(new Set(timestamps)).sort((left, right) => left - right);
@@ -106,15 +208,6 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const [endTime, setEndTime] = React.useState(null);
   const [currentTime, setCurrentTime] = React.useState(null);
   const lastPlaybackRangeRef = React.useRef({ startTime: null, endTime: null });
-
-  // Get frame index from a timestamp using fixed 5-min resolution
-  const frameIndexOf = React.useCallback(
-    (time) => {
-      if (!playbackTimes.length || time === null) return -1;
-      return Math.round((time - playbackTimes[0]) / baseStepMs);
-    },
-    [playbackTimes, baseStepMs],
-  );
 
   const playbackRange = React.useMemo(() => {
     if (playbackDate) {
@@ -151,19 +244,10 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     };
   }, [playbackDate, playbackTimes]);
 
-  const firstPlayableTime = React.useMemo(() => {
-    const firstPlayableHour = normalizedHourStatuses.find(
-      (hourStatus) => hourStatus.hasData,
-    );
-
-    if (!firstPlayableHour) {
-      return null;
-    }
-
-    return playbackRange.startTime + firstPlayableHour.hour * HOUR_MS;
-  }, [normalizedHourStatuses, playbackRange.startTime]);
-
-
+  const initialPlaybackTime = React.useMemo(
+    () => playbackRange.startTime,
+    [playbackRange.startTime],
+  );
 
   React.useEffect(() => {
     setStartTime(playbackRange.startTime);
@@ -173,16 +257,12 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       lastPlaybackRangeRef.current.endTime !== playbackRange.endTime;
     lastPlaybackRangeRef.current = playbackRange;
 
-    if (firstPlayableTime !== null && (rangeChanged || currentTime === null)) {
-      setCurrentTime(firstPlayableTime);
-      dispatch(setPlaybackTime(firstPlayableTime));
-      setIsPlaying(false);
-    } else if (firstPlayableTime === null) {
-      setCurrentTime(null);
-      dispatch(setPlaybackTime(null));
+    if (rangeChanged || currentTime === null) {
+      setCurrentTime(initialPlaybackTime);
+      dispatch(setPlaybackTime(initialPlaybackTime));
       setIsPlaying(false);
     }
-  }, [playbackRange, firstPlayableTime, currentTime, dispatch]);
+  }, [playbackRange, initialPlaybackTime, currentTime, dispatch]);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [isLooping, setIsLooping] = React.useState(false);
   const [speed, setSpeed] = React.useState(1);
@@ -195,34 +275,50 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     setSpeed(allowedSpeeds[nextIdx]);
   };
 
-  // Advance by N frames from current time, clamped to available frames
+  const handleSelectHour = React.useCallback((segmentStart) => {
+    setCurrentTime(segmentStart);
+  }, []);
+
+  // Advance by N frames on the selected time axis, independent of load state.
   const advanceFrames = React.useCallback(
     (prev, count) => {
-      if (!playbackTimes.length) return prev;
-      const idx = frameIndexOf(prev);
-      const nextIdx = idx + count;
-      if (nextIdx >= playbackTimes.length) {
-        if (isLooping) return playbackTimes[0];
+      const current = prev ?? playbackRange.startTime;
+      const stepTime = current + count * baseStepMs;
+
+      if (stepTime >= playbackRange.endTime) {
+        if (isLooping) return playbackRange.startTime;
         setIsPlaying(false);
-        return prev;
+        return playbackRange.endTime - baseStepMs;
       }
-      if (nextIdx < 0) {
-        if (isLooping) return playbackTimes[playbackTimes.length - 1];
-        return playbackTimes[0];
+
+      if (stepTime < playbackRange.startTime) {
+        if (isLooping) return playbackRange.endTime - baseStepMs;
+        return playbackRange.startTime;
       }
-      return playbackTimes[nextIdx];
+
+      return stepTime;
     },
-    [playbackTimes, frameIndexOf, isLooping],
+    [
+      isLooping,
+      playbackRange.startTime,
+      playbackRange.endTime,
+      baseStepMs,
+    ],
   );
 
   // Playback effect: advance by frameSkip frames per tick
   React.useEffect(() => {
-    if (!isPlaying || !playbackTimes.length) return;
-    const interval = setInterval(() => {
-      setCurrentTime((prev) => advanceFrames(prev ?? playbackTimes[0], frameSkip));
-    }, speed < 1 ? 1000 / speed : 1000);
+    if (!isPlaying) return;
+    const interval = setInterval(
+      () => {
+        setCurrentTime((prev) =>
+          advanceFrames(prev ?? playbackRange.startTime, frameSkip),
+        );
+      },
+      speed < 1 ? 1000 / speed : 1000,
+    );
     return () => clearInterval(interval);
-  }, [isPlaying, speed, frameSkip, playbackTimes, advanceFrames]);
+  }, [isPlaying, speed, frameSkip, advanceFrames, playbackRange.startTime]);
 
   React.useEffect(() => {
     dispatch(setPlaybackTime(currentTime));
@@ -314,15 +410,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       border: `2px solid #fff`,
     },
   };
-  const disabled = firstPlayableTime === null;
-  const segmentColors = {
-    idle: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.1),
-    fetching: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.4),
-    buffering: alpha(darkMode ? "#fbbf24" : "#f59e0b", 0.66),
-    ready: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.92),
-    error: alpha("#ef4444", 0.72),
-    empty: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.06),
-  };
+  const disabled = startTime === null || endTime === null;
   return (
     <Paper
       elevation={0}
@@ -349,89 +437,13 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     >
       <Stack spacing={1}>
         <Stack spacing={0.5}>
-          
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(24, minmax(0, 1fr))",
-              gap: "2px",
-              height: 8,
-              mt: 0.2,
-              borderRadius: 999,
-              overflow: "hidden",
-              backgroundColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.06),
-              border: "1px solid",
-              borderColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.12),
-            }}
-          >
-            {normalizedHourStatuses.map((hourStatus, hour) => {
-              const segmentStart = playbackRange.startTime + hour * HOUR_MS;
-              const fillWidth =
-                hourStatus.aggregate === "empty"
-                  ? 0
-                  : Math.max(hourStatus.progress, 6);
-              const fillColor =
-                segmentColors[hourStatus.aggregate] || segmentColors.idle;
-
-              return (
-                <Tooltip
-                  key={hour}
-                  arrow
-                  placement="top"
-                  title={formatSegmentTooltip(hourStatus, segmentStart)}
-                >
-                  <Box
-                    onClick={() => {
-                      if (hourStatus.hasData) {
-                        setCurrentTime(segmentStart);
-                      }
-                    }}
-                    sx={{
-                      position: "relative",
-                      height: "100%",
-                      minWidth: 0,
-                      overflow: "hidden",
-                      bgcolor:
-                        segmentColors[hourStatus.aggregate] ||
-                        segmentColors.idle,
-                      cursor: hourStatus.hasData ? "pointer" : "default",
-                      boxShadow:
-                        hourStatus.aggregate === "fetching" ||
-                        hourStatus.aggregate === "buffering"
-                          ? `inset 0 0 0 1px ${alpha("#fff", 0.18)}`
-                          : "none",
-                      transition:
-                        "background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 0,
-                        width: `${fillWidth}%`,
-                        borderRadius: 999,
-                        background: `linear-gradient(90deg, ${alpha(fillColor, 0.55)} 0%, ${fillColor} 100%)`,
-                        transition:
-                          "width 350ms ease, background-color 180ms ease",
-                      }}
-                    />
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        inset: 0,
-                        background:
-                          hourStatus.aggregate === "empty"
-                            ? `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.04)} 100%)`
-                            : `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.08)} 100%)`,
-                        mixBlendMode: "screen",
-                        pointerEvents: "none",
-                      }}
-                    />
-                  </Box>
-                </Tooltip>
-              );
-            })}
-          </Box>
+          <HourStatusStrip
+            normalizedHourStatuses={normalizedHourStatuses}
+            playbackRangeStartTime={playbackRange.startTime}
+            darkMode={darkMode}
+            onSelectHour={handleSelectHour}
+            formatSegmentTooltip={formatSegmentTooltip}
+          />
 
           <Slider
             value={currentTime ?? 0}

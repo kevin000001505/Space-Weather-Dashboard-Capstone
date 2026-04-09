@@ -393,30 +393,7 @@ export const buildDeckLayers = ({
         });
       })
       .filter(Boolean),
-
-    // Plane Highlight Outline (hovered + clicked panels)
-    showPlanes &&
-      highlightedPlanes.length > 0 &&
-      new IconLayer({
-        id: "selected-plane-outline",
-        data: highlightedPlanes,
-        iconAtlas: PLANE_OUTLINE_ATLAS,
-        iconMapping: {
-          plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
-        },
-        getIcon: (d) => "plane",
-        getPosition: (d) => [d.lon, d.lat],
-        getSize: 2.1 * scaledFlightIconSize,
-        getAngle: (d) => -(d.heading || 0),
-        getColor: (d) => {
-          return isZooming ? [outlineColor[0], outlineColor[1], outlineColor[2], 25] : outlineColor;
-        },
-        updateTriggers: {
-          getColor: [darkMode],
-          getSize: [scaledFlightIconSize],
-        },
-      }),
-
+   
     // Planes Icon Layer
     showPlanes &&
       new IconLayer({
@@ -444,6 +421,31 @@ export const buildDeckLayers = ({
         updateTriggers: {
           getSize: [scaledFlightIconSize, highlightedPlaneIdents],
           getColor: [useImperial, isZooming],
+        },
+      }),
+
+    // Plane Highlight Outline (hovered + clicked panels)
+    showPlanes &&
+      highlightedPlanes.length > 0 &&
+      new IconLayer({
+        id: "selected-plane-outline",
+        data: highlightedPlanes,
+        iconAtlas: PLANE_OUTLINE_ATLAS,
+        iconMapping: {
+          plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
+        },
+        getIcon: (d) => "plane",
+        getPosition: (d) => [d.lon, d.lat],
+        wrapLongitude: true,
+        getSize: 2.15 * scaledFlightIconSize,
+        getAngle: (d) => -(d.heading || 0),
+        getColor: () =>
+          isZooming
+            ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
+            : outlineColor,
+        updateTriggers: {
+          getColor: [darkMode, isZooming],
+          getSize: [scaledFlightIconSize],
         },
       }),
 
