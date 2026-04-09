@@ -430,14 +430,16 @@ events AS (
 SELECT
 	e.requested_time,
 	e.observed_at,
-	JSON_AGG(
-        COALESCE(d.absorption, 0)
-        ORDER BY d.lat DESC, d.long ASC
-    ) AS points
+	agg.points
 FROM events e
-LEFT JOIN drap_region d 
-ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
+LEFT JOIN LATERAL (
+	SELECT JSON_AGG(
+		COALESCE(absorption, 0)
+		ORDER BY lat DESC, long ASC
+	) AS points
+	FROM drap_region
+	WHERE observed_at = e.observed_at
+) agg ON true
 ORDER BY e.requested_time;
 """
 
@@ -467,14 +469,16 @@ events AS (
 SELECT
 	e.requested_time,
 	e.observed_at,
-	JSON_AGG(
-		COALESCE(d.aurora, 0)
-		ORDER BY d.lat DESC, d.long ASC
-	) AS points
+	agg.points
 FROM events e
-LEFT JOIN aurora_forecast d
-ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
+LEFT JOIN LATERAL (
+	SELECT JSON_AGG(
+		COALESCE(aurora, 0)
+		ORDER BY lat DESC, long ASC
+	) AS points
+	FROM aurora_forecast
+	WHERE observed_at = e.observed_at
+) agg ON true
 ORDER BY e.requested_time;
 """
 
@@ -504,14 +508,16 @@ events AS (
 SELECT
 	e.requested_time,
 	e.observed_at,
-	JSON_AGG(
-		ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2)
-		ORDER BY d.lat DESC, d.long ASC
-	) AS points
+	agg.points
 FROM events e
-LEFT JOIN geoelectric_field d
-ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
+LEFT JOIN LATERAL (
+	SELECT JSON_AGG(
+		ROUND(COALESCE(e_magnitude, 0)::numeric, 2)
+		ORDER BY lat DESC, long ASC
+	) AS points
+	FROM geoelectric_field
+	WHERE observed_at = e.observed_at
+) agg ON true
 ORDER BY e.requested_time;
 """
 
