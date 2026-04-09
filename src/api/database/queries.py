@@ -287,7 +287,7 @@ WITH time_ticks AS (
 events AS (
     SELECT DISTINCT ON (t.requested_time)
         t.requested_time,
-        d.observed_at,
+        d.observed_at
     FROM time_ticks t
     LEFT JOIN LATERAL (
         SELECT observed_at
@@ -450,42 +450,32 @@ WITH time_ticks AS (
 	) AS requested_time
 ),
 events AS (
-    SELECT DISTINCT ON (t.requested_time)
-        t.requested_time,
-        d.observed_at,
-    FROM time_ticks t
-    LEFT JOIN LATERAL (
-        SELECT observed_at
-        FROM aurora_forecast
-        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
-          AND observed_at <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY observed_at DESC
-        LIMIT 1
-    ) d ON true
-    ORDER BY t.requested_time
-),
-event_points AS (
-    SELECT
-        e.requested_time,
-        e.observed_at,
-        f.lat,
-        f.long,
-        COALESCE(f.aurora, 0) AS aurora
-    FROM events e
-    LEFT JOIN aurora_forecast f ON f.observed_at = e.observed_at
+	SELECT DISTINCT ON (t.requested_time)
+		t.requested_time,
+		d.observed_at
+	FROM time_ticks t
+	LEFT JOIN LATERAL (
+		SELECT observed_at
+		FROM aurora_forecast
+		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
+		  AND observed_at <= t.requested_time + INTERVAL '5 minutes'
+		ORDER BY observed_at DESC
+		LIMIT 1
+	) d ON true
+	ORDER BY t.requested_time
 )
 SELECT
-    requested_time,
-    observed_at,
-    JSON_AGG(
-        JSON_BUILD_ARRAY(aurora)
-        ORDER BY d.lat DESC, d.long ASC
-    )
-    
-    AS points
-FROM event_points
-GROUP BY requested_time, observed_at
-ORDER BY requested_time;
+	e.requested_time,
+	e.observed_at,
+	JSON_AGG(
+		COALESCE(d.aurora, 0)
+		ORDER BY d.lat DESC, d.long ASC
+	) AS points
+FROM events e
+LEFT JOIN aurora_forecast d
+ON d.observed_at = e.observed_at
+GROUP BY e.requested_time, e.observed_at
+ORDER BY e.requested_time;
 """
 
 GEOELECTRIC_RANGE_QUERY_V2 = """
@@ -515,13 +505,11 @@ SELECT
 	e.requested_time,
 	e.observed_at,
 	JSON_AGG(
-		JSON_BUILD_ARRAY(
-			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2)
-            ORDER BY d.lat DESC, d.long ASC
-		)
+		ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2)
+		ORDER BY d.lat DESC, d.long ASC
 	) AS points
 FROM events e
-LEFT JOIN geoelectric_field d 
+LEFT JOIN geoelectric_field d
 ON d.observed_at = e.observed_at
 GROUP BY e.requested_time, e.observed_at
 ORDER BY e.requested_time;

@@ -7,10 +7,11 @@ export const getAuroraGeoJSON = (noaaJsonData) => {
   }
 
   // 1. Filter and normalize coordinates
+  // Data arrives as [lat, lon, prob] from the DB / compressed pipeline
   const validPoints = noaaJsonData.coordinates
-    .filter(([lon, lat, prob]) => prob > 0) // Only process cells with an actual chance of aurora
-    .map(([lon, lat, prob]) => {
-      // NOAA outputs Longitude from 0 to 360. 
+    .filter(([lat, lon, prob]) => prob > 0) // Only process cells with an actual chance of aurora
+    .map(([lat, lon, prob]) => {
+      // Longitude may still be 0-360 from legacy NOAA data.
       // MapLibre/deck.gl expects -180 to 180, so we must wrap it.
       const normalizedLon = lon > 180 ? lon - 360 : lon;
       return { lat, lon: normalizedLon, prob };

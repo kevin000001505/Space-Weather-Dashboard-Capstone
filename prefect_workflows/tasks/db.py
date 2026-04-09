@@ -19,6 +19,7 @@ from database.create import (
     GEOELECTRIC_CREATE_TABLE_SQL,
     READONLY_GRANTS_SQL,
     EVENTS_LOCATION_INGEST,
+    EVENTS_LOCATION_CREATE_TABLE_SQL,
 )
 from prefect import task
 from shared.logger import get_logger
@@ -227,6 +228,7 @@ async def insert_events_location(conn: Connection):
     logger = get_logger(__name__)
     tables = ["drap_region", "aurora_forecast", "geoelectric_field"]
     try:
+        await conn.execute(EVENTS_LOCATION_CREATE_TABLE_SQL)
         for table in tables:
             ingest_query = EVENTS_LOCATION_INGEST.format(table_name=table)
             await conn.execute(ingest_query)

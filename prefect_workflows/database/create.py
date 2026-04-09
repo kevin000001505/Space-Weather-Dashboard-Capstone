@@ -113,7 +113,7 @@ ALTER TABLE drap_region SET (
     timescaledb.compress_segmentby = ''   -- no segment column
 );
 
-SELECT set_chunk_time_interval('drap_region', INTERVAL '7 day', if_not_exists => true);
+SELECT set_chunk_time_interval('drap_region', INTERVAL '7 day');
 """
 
 
@@ -211,7 +211,7 @@ ALTER TABLE aurora_forecast SET (
     timescaledb.compress_segmentby = ''   -- no segment column
 );
 
-SELECT set_chunk_time_interval('aurora_forecast', INTERVAL '7 day', if_not_exists => true);
+SELECT set_chunk_time_interval('aurora_forecast', INTERVAL '7 day');
     
 """
 
@@ -243,7 +243,7 @@ ALTER TABLE geoelectric_field SET (
     timescaledb.compress_segmentby = ''   -- no segment column
 );
 
-SELECT set_chunk_time_interval('geoelectric_field', INTERVAL '7 day', if_not_exists => true);
+SELECT set_chunk_time_interval('geoelectric_field', INTERVAL '7 day');
 """
 
 

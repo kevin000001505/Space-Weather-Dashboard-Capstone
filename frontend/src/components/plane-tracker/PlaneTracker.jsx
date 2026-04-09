@@ -336,7 +336,7 @@ const PlaneTracker = () => {
     // Filter Aurora points by amplitude range
     const [minAmp, maxAmp] = auroraRegionRange || [0, 100];
     const filteredAuroraPoints = sourceCoordinates.filter(
-      ([lon, lat, pct]) => pct >= minAmp && pct <= maxAmp,
+      ([lat, lon, pct]) => pct >= minAmp && pct <= maxAmp,
     );
 
     return {
@@ -365,7 +365,7 @@ const PlaneTracker = () => {
     const minMag = Math.pow(10, minLog);
     const maxMag = Math.pow(10, maxLog);
     const filteredGeoElectricPoints = sourceData.points.filter(
-      ([lat, lon, magnitude, quality]) =>
+      ([lat, lon, magnitude]) =>
         magnitude >= minMag && magnitude <= maxMag,
     );
     return {

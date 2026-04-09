@@ -1,47 +1,52 @@
+"""
+Benchmark compression methods for space weather grid data.
+
+Fetches live data from the V2 API (uncompressed flat values) and tests
+various compression strategies to measure size reduction and encode time.
+
+Usage:
+    python benchmark_compression.py [--api-url http://localhost:8000]
+"""
+
 import json
 import time
-import sys
-import os
 import math
 import base64
+import argparse
+import urllib.request
+
+
+# ---------------------------------------------------------------------------
+# Compression methods
+# ---------------------------------------------------------------------------
 
 def rle_compress(data):
     if not data:
         return []
-    
     compressed = []
     current_val = data[0]
     count = 1
-    
     for i in range(1, len(data)):
         if data[i] == current_val:
             count += 1
         else:
-            if count > 1:
-                compressed.append([current_val, count])
-            else:
-                compressed.append(current_val)
+            compressed.append([current_val, count] if count > 1 else current_val)
             current_val = data[i]
             count = 1
-            
-    if count > 1:
-        compressed.append([current_val, count])
-    else:
-        compressed.append(current_val)
-        
+    compressed.append([current_val, count] if count > 1 else current_val)
     return compressed
+
 
 def sparse_compress(data):
     compressed = []
     for idx, val in enumerate(data):
         if val != 0:
-            compressed.append(idx)
-            compressed.append(val)
+            compressed.extend([idx, val])
     return compressed
 
+
 def delta_compress(data, precision=2):
-    """Store first value + deltas. Deltas are computed from the reconstructed value
-    so rounding errors don't accumulate."""
+    """Deltas computed from reconstructed value to prevent error accumulation."""
     if not data:
         return []
     compressed = [data[0]]
@@ -52,179 +57,140 @@ def delta_compress(data, precision=2):
         prev = round(prev + delta, precision)
     return compressed
 
+
 def delta_rle_compress(data, precision=2):
-    """Delta encode first, then RLE the deltas."""
-    deltas = delta_compress(data, precision)
-    return rle_compress(deltas)
+    return rle_compress(delta_compress(data, precision))
+
 
 def quantized_delta_rle_compress(data, precision=1):
-    """Delta encode with aggressive rounding, then RLE."""
-    deltas = delta_compress(data, precision)
-    return rle_compress(deltas)
+    return rle_compress(delta_compress(data, precision))
+
 
 def dictionary_compress(data):
-    """Map unique values to short integer keys. Returns {keys: [...], values: [...]}."""
     unique_vals = sorted(set(data))
     val_to_key = {v: i for i, v in enumerate(unique_vals)}
-    encoded = [val_to_key[v] for v in data]
-    return {"values": unique_vals, "keys": encoded}
+    return {"values": unique_vals, "keys": [val_to_key[v] for v in data]}
+
 
 def dictionary_rle_compress(data):
-    """Dictionary encode, then RLE the keys array."""
     unique_vals = sorted(set(data))
     val_to_key = {v: i for i, v in enumerate(unique_vals)}
-    encoded = [val_to_key[v] for v in data]
-    return {"values": unique_vals, "keys": rle_compress(encoded)}
+    return {"values": unique_vals, "keys": rle_compress([val_to_key[v] for v in data])}
+
 
 def bitpack_compress(data):
-    """Dictionary-encode values, then bitpack the key indices into a base64 string.
-    Each key uses the minimum number of bits needed to represent all unique values.
-    Result: {values: [...], bits: N, data: "base64string"}"""
     unique_vals = sorted(set(data))
     val_to_key = {v: i for i, v in enumerate(unique_vals)}
     n_unique = len(unique_vals)
     bits_per_key = max(1, math.ceil(math.log2(n_unique))) if n_unique > 1 else 1
 
-    # Pack keys into a byte array
     buf = bytearray()
     current_byte = 0
     bits_filled = 0
     for v in data:
         key = val_to_key[v]
-        # Write bits_per_key bits of key into the buffer, MSB first
         for bit_pos in range(bits_per_key - 1, -1, -1):
-            bit = (key >> bit_pos) & 1
-            current_byte = (current_byte << 1) | bit
+            current_byte = (current_byte << 1) | ((key >> bit_pos) & 1)
             bits_filled += 1
             if bits_filled == 8:
                 buf.append(current_byte)
                 current_byte = 0
                 bits_filled = 0
-    # Flush remaining bits
     if bits_filled > 0:
-        current_byte <<= (8 - bits_filled)
+        current_byte <<= 8 - bits_filled
         buf.append(current_byte)
 
-    encoded = base64.b64encode(bytes(buf)).decode('ascii')
-    return {"values": unique_vals, "bits": bits_per_key, "count": len(data), "data": encoded}
+    return {
+        "values": unique_vals,
+        "bits": bits_per_key,
+        "count": len(data),
+        "data": base64.b64encode(bytes(buf)).decode("ascii"),
+    }
 
 
 def delta_bitpack_compress(data, precision=2):
-    """Delta encode, then bitpack the deltas."""
-    deltas = delta_compress(data, precision)
-    return bitpack_compress(deltas)
+    return bitpack_compress(delta_compress(data, precision))
 
 
-def benchmark_file(filename):
-    if not os.path.exists(filename):
-        print(f"File {filename} not found. Skipping.")
-        return
+# ---------------------------------------------------------------------------
+# Benchmark helpers
+# ---------------------------------------------------------------------------
 
-    print(f"\n--- Benchmarking {filename} ---")
-    with open(filename, 'r') as f:
-        data = json.load(f)
-    
-    points = data.get("points", [])
-    if not points:
-        print(f"No 'points' field found in {filename}. Skipping.")
-        return
+def json_size(obj):
+    return len(json.dumps(obj).encode("utf-8"))
 
-    print(f"Total points: {len(points)}")
-    
-    original_json = json.dumps(points)
-    original_size = len(original_json.encode('utf-8'))
-    print(f"Original JSON size: {original_size / 1024:.2f} KB")
 
-    # RLE
-    start_time = time.perf_counter()
-    rle_data = rle_compress(points)
-    rle_time = time.perf_counter() - start_time
-    rle_json = json.dumps(rle_data)
-    rle_size = len(rle_json.encode('utf-8'))
+def fetch_points(api_url, event):
+    """Fetch uncompressed flat values from the V2 latest endpoint."""
+    url = f"{api_url}/api/v2/{event}/latest"
+    with urllib.request.urlopen(url) as r:
+        data = json.loads(r.read())
+    return data["points"]
 
-    # Sparse
-    start_time = time.perf_counter()
-    sparse_data = sparse_compress(points)
-    sparse_time = time.perf_counter() - start_time
-    sparse_json = json.dumps(sparse_data)
-    sparse_size = len(sparse_json.encode('utf-8'))
 
-    # Delta
-    start_time = time.perf_counter()
-    delta_data = delta_compress(points)
-    delta_time = time.perf_counter() - start_time
-    delta_json = json.dumps(delta_data)
-    delta_size = len(delta_json.encode('utf-8'))
+def benchmark_event(api_url, event):
+    print(f"\n{'=' * 70}")
+    print(f"  {event.upper()}")
+    print(f"{'=' * 70}")
 
-    # Delta + RLE
-    start_time = time.perf_counter()
-    delta_rle_data = delta_rle_compress(points)
-    delta_rle_time = time.perf_counter() - start_time
-    delta_rle_json = json.dumps(delta_rle_data)
-    delta_rle_size = len(delta_rle_json.encode('utf-8'))
+    points = fetch_points(api_url, event)
+    print(f"Points: {len(points):,}")
 
-    # Quantized Delta + RLE (1 decimal precision)
-    start_time = time.perf_counter()
-    qdelta_rle_data = quantized_delta_rle_compress(points, precision=1)
-    qdelta_rle_time = time.perf_counter() - start_time
-    qdelta_rle_json = json.dumps(qdelta_rle_data)
-    qdelta_rle_size = len(qdelta_rle_json.encode('utf-8'))
+    original_size = json_size(points)
+    print(f"Original JSON: {original_size / 1024:.1f} KB")
 
-    # Quantized Delta + RLE max error
+    n_unique = len(set(points))
+    bits_direct = max(1, math.ceil(math.log2(n_unique))) if n_unique > 1 else 1
+    deltas = delta_compress(points)
+    n_unique_deltas = len(set(deltas))
+    bits_delta = max(1, math.ceil(math.log2(n_unique_deltas))) if n_unique_deltas > 1 else 1
+    print(f"Unique values: {n_unique} ({bits_direct}b)  |  Unique deltas: {n_unique_deltas} ({bits_delta}b)")
+
+    methods = [
+        ("RLE",              lambda p: rle_compress(p)),
+        ("Sparse",           lambda p: sparse_compress(p)),
+        ("Delta",            lambda p: delta_compress(p)),
+        ("Delta+RLE",        lambda p: delta_rle_compress(p)),
+        ("QDelta+RLE (1dp)", lambda p: quantized_delta_rle_compress(p, precision=1)),
+        ("Dict",             lambda p: dictionary_compress(p)),
+        ("Dict+RLE",         lambda p: dictionary_rle_compress(p)),
+        ("Bitpack",          lambda p: bitpack_compress(p)),
+        ("Delta+Bitpack",    lambda p: delta_bitpack_compress(p)),
+    ]
+
+    print(f"\n{'Method':<20} {'Size':>9} {'Ratio':>7} {'Encode':>10}")
+    print("-" * 50)
+    for name, fn in methods:
+        t0 = time.perf_counter()
+        result = fn(points)
+        elapsed = time.perf_counter() - t0
+        size = json_size(result)
+        ratio = size / original_size
+        print(f"{name:<20} {size/1024:>8.1f}K {ratio:>6.1%} {elapsed:>9.4f}s")
+
+    # QDelta max error
     reconstructed = [points[0]]
     deltas_q = delta_compress(points, precision=1)
     for i in range(1, len(deltas_q)):
         reconstructed.append(round(reconstructed[-1] + deltas_q[i], 2))
     max_err = max(abs(a - b) for a, b in zip(points, reconstructed))
+    print(f"\nQDelta(1dp) max reconstruction error: {max_err:.4f}")
 
-    # Dictionary
-    start_time = time.perf_counter()
-    dict_data = dictionary_compress(points)
-    dict_time = time.perf_counter() - start_time
-    dict_json = json.dumps(dict_data)
-    dict_size = len(dict_json.encode('utf-8'))
 
-    # Dictionary + RLE
-    start_time = time.perf_counter()
-    dict_rle_data = dictionary_rle_compress(points)
-    dict_rle_time = time.perf_counter() - start_time
-    dict_rle_json = json.dumps(dict_rle_data)
-    dict_rle_size = len(dict_rle_json.encode('utf-8'))
-
-    # Bitpack
-    start_time = time.perf_counter()
-    bitpack_data = bitpack_compress(points)
-    bitpack_time = time.perf_counter() - start_time
-    bitpack_json = json.dumps(bitpack_data)
-    bitpack_size = len(bitpack_json.encode('utf-8'))
-
-    # Delta + Bitpack
-    start_time = time.perf_counter()
-    delta_bitpack_data = delta_bitpack_compress(points)
-    delta_bitpack_time = time.perf_counter() - start_time
-    delta_bitpack_json = json.dumps(delta_bitpack_data)
-    delta_bitpack_size = len(delta_bitpack_json.encode('utf-8'))
-
-    n_unique = len(set(points))
-    bits_per_key = max(1, math.ceil(math.log2(n_unique))) if n_unique > 1 else 1
-    n_unique_deltas = len(set(delta_compress(points)))
-    bits_per_delta = max(1, math.ceil(math.log2(n_unique_deltas))) if n_unique_deltas > 1 else 1
-
-    print(f"Unique values: {n_unique} ({bits_per_key} bits), Unique deltas: {n_unique_deltas} ({bits_per_delta} bits)")
-    print(f"RLE:              Size = {rle_size / 1024:7.2f} KB, Time = {rle_time:.6f}s, Ratio = {rle_size/original_size:.2%}")
-    print(f"Sparse:           Size = {sparse_size / 1024:7.2f} KB, Time = {sparse_time:.6f}s, Ratio = {sparse_size/original_size:.2%}")
-    print(f"Delta:            Size = {delta_size / 1024:7.2f} KB, Time = {delta_time:.6f}s, Ratio = {delta_size/original_size:.2%}")
-    print(f"Delta+RLE:        Size = {delta_rle_size / 1024:7.2f} KB, Time = {delta_rle_time:.6f}s, Ratio = {delta_rle_size/original_size:.2%}")
-    print(f"QDelta+RLE(1dp):  Size = {qdelta_rle_size / 1024:7.2f} KB, Time = {qdelta_rle_time:.6f}s, Ratio = {qdelta_rle_size/original_size:.2%}, MaxErr = {max_err:.4f}")
-    print(f"Dict:             Size = {dict_size / 1024:7.2f} KB, Time = {dict_time:.6f}s, Ratio = {dict_size/original_size:.2%}")
-    print(f"Dict+RLE:         Size = {dict_rle_size / 1024:7.2f} KB, Time = {dict_rle_time:.6f}s, Ratio = {dict_rle_size/original_size:.2%}")
-    print(f"Bitpack:          Size = {bitpack_size / 1024:7.2f} KB, Time = {bitpack_time:.6f}s, Ratio = {bitpack_size/original_size:.2%}")
-    print(f"Delta+Bitpack:    Size = {delta_bitpack_size / 1024:7.2f} KB, Time = {delta_bitpack_time:.6f}s, Ratio = {delta_bitpack_size/original_size:.2%}")
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
 def main():
-    files = ["aurora.json", "drap.json", "geoelectric.json"]
-    for f in files:
-        benchmark_file(f)
+    parser = argparse.ArgumentParser(description="Benchmark compression methods for space weather data")
+    parser.add_argument("--api-url", default="http://localhost:8000", help="Base API URL")
+    args = parser.parse_args()
+
+    print(f"Fetching data from {args.api_url}")
+    for event in ["drap", "aurora", "geoelectric"]:
+        benchmark_event(args.api_url, event)
+    print()
+
 
 if __name__ == "__main__":
     main()

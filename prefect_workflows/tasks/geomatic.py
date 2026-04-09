@@ -134,10 +134,15 @@ async def broadcast_geoelectric_to_redis(
             else str(observed_at)
         )
 
+        # Sort features to match events_location order (lat DESC, long ASC)
+        sorted_features = sorted(
+            features,
+            key=lambda f: (-f["geometry"]["coordinates"][1], f["geometry"]["coordinates"][0]),
+        )
         # Extract e_magnitude values and compress
         values = [
             float(np.sqrt(f["properties"]["Ex"] ** 2 + f["properties"]["Ey"] ** 2))
-            for f in features
+            for f in sorted_features
         ]
         compressed_points = delta_bitpack_compress(values)
 

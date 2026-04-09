@@ -15,7 +15,7 @@ export const getGeoElectricGeoJSON = (geoElectricData) => {
 
   // 1. Filter and normalize points
   const validPoints = geoElectricData.points.filter(
-    ([lat, lon, magnitude, quality]) => quality > 0 && magnitude > 0
+    ([lat, lon, magnitude]) => magnitude > 0
   );
 
   // 2. Each cell is 1x1 degree (like aurora)
@@ -23,7 +23,7 @@ export const getGeoElectricGeoJSON = (geoElectricData) => {
   const halfLon = 0.5;
 
   // 3. Map to GeoJSON Polygons
-  const features = validPoints.map(([lat, lon, magnitude, quality]) => {
+  const features = validPoints.map(([lat, lon, magnitude]) => {
     const west = lon - halfLon;
     const east = lon + halfLon;
     const south = lat - halfLat;
@@ -33,7 +33,6 @@ export const getGeoElectricGeoJSON = (geoElectricData) => {
       type: 'Feature',
       properties: {
         magnitude, // Electric field magnitude
-        quality,
       },
       geometry: {
         type: 'Polygon',

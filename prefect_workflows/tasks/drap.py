@@ -58,9 +58,9 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
         # Fallback if it's already a string from the metadata
         formatted_time = str(timestamp)
 
-    # Extract values and compress with delta-bitpack
-    logger.info(df_long)
-    values = df_long["Absorption"].astype(float).tolist()
+    # Sort to match events_location order (lat DESC, long ASC), then compress
+    df_sorted = df_long.sort_values(["Latitude", "Longitude"], ascending=[False, True])
+    values = df_sorted["Absorption"].astype(float).tolist()
     compressed_points = delta_bitpack_compress(values)
 
     payload = {
@@ -77,7 +77,7 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
 
         await client.aclose()
         logger.info(
-            f"Broadcasted DRAP grid ({len(points)} points) directly from memory to Redis."
+            f"Broadcasted DRAP grid ({len(values)} points) directly from memory to Redis."
         )
 
     except Exception as e:

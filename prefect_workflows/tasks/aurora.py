@@ -121,7 +121,17 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
         )
 
         coords = data.get("coordinates", [])
-        values = [c[2] for c in coords]
+        # Normalize longitude (0-359 → -180/180) and sort to match
+        # the events_location table order (lat DESC, long ASC)
+        normalized = []
+        for c in coords:
+            lon = int(c[0])
+            lat = int(c[1])
+            if lon > 180:
+                lon -= 360
+            normalized.append((lat, lon, c[2]))
+        normalized.sort(key=lambda x: (-x[0], x[1]))
+        values = [c[2] for c in normalized]
         compressed_points = delta_bitpack_compress(values)
 
         payload = {

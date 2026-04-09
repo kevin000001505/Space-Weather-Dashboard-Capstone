@@ -77,16 +77,23 @@ export const fetchDRAP = createAsyncThunk(
   },
 );
 export const fetchHistoricalData = createAsyncThunk(
-  "drap/fetchHistoricalData",
+  "historicalData/fetchHistoricalData",
   async (time_range, { rejectWithValue }) => {
     try {
       const { start, end, event, interval } = time_range;
-      const response = await fetch(`${API_V1_URL}/kermit?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&event=${event}&interval=${interval}`);
+      const [response, locations] = await Promise.all([
+        fetch(`${API_BASE_URL}/kermit?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&event=${event}&interval=${interval}`),
+        getLocations(),
+      ]);
       if (!response.ok) {
-        throw new Error("Failed to fetch DRAP data");
+        throw new Error("Failed to fetch historical data");
       }
-      const data = await response.json();
-      return data;
+      const snapshots = await response.json();
+      const coords = locations[event];
+      return snapshots.map((snap) => ({
+        ...snap,
+        points: mergeCoordinatesAndValues(coords, snap.points),
+      }));
     } catch (error) {
       return rejectWithValue(error.message);
     }
