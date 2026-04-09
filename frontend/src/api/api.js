@@ -2,15 +2,34 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-hot-toast";
 import { toIso, getTimeRange } from "./helper";
 import { setLoading } from "../store/slices/chartsSlice";
+import { decodeDeltaBitpack, mergeCoordinatesAndValues } from "../utils/compression";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_V1_URL = API_BASE_URL.replace("/v2", "/v1");
+
+// Module-level cache for grid coordinates (fetched once, reused forever)
+let _locationsCache = null;
+let _locationsFetching = null;
+
+export async function getLocations() {
+  if (_locationsCache) return _locationsCache;
+  if (_locationsFetching) return _locationsFetching;
+  _locationsFetching = fetch(`${API_BASE_URL}/location`)
+    .then((r) => r.json())
+    .then((data) => {
+      _locationsCache = data;
+      _locationsFetching = null;
+      return data;
+    });
+  return _locationsFetching;
+}
 
 export const fetchPlanes = createAsyncThunk(
   "planes/fetchPlanes",
   async (_, { rejectWithValue }) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/active-flight-states/latest`,
+        `${API_V1_URL}/active-flight-states/latest`,
       );
       if (!response.ok) {
         throw new Error("Failed to fetch flight data");
@@ -23,15 +42,34 @@ export const fetchPlanes = createAsyncThunk(
   },
 );
 
+export const fetchLocations = createAsyncThunk(
+  "locations/fetchLocations",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getLocations();
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const fetchDRAP = createAsyncThunk(
   "drap/fetchDRAP",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/drap/latest`);
+      const [response, locations] = await Promise.all([
+        fetch(`${API_BASE_URL}/drap/latest?encoding=delta-bitpack`),
+        getLocations(),
+      ]);
       if (!response.ok) {
         throw new Error("Failed to fetch DRAP data");
       }
       const data = await response.json();
+      if (data.encoding === "delta-bitpack") {
+        const values = decodeDeltaBitpack(data.points);
+        const points = mergeCoordinatesAndValues(locations.drap, values);
+        return { timestamp: data.timestamp, points };
+      }
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -43,7 +81,7 @@ export const fetchHistoricalData = createAsyncThunk(
   async (time_range, { rejectWithValue }) => {
     try {
       const { start, end, event, interval } = time_range;
-      const response = await fetch(`${API_BASE_URL}/kermit?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&event=${event}&interval=${interval}`);
+      const response = await fetch(`${API_V1_URL}/kermit?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&event=${event}&interval=${interval}`);
       if (!response.ok) {
         throw new Error("Failed to fetch DRAP data");
       }
@@ -59,15 +97,20 @@ export const fetchAurora = createAsyncThunk(
   "aurora/fetchAurora",
   async (utc_time = null, { rejectWithValue }) => {
     try {
-      const url = utc_time
-        ? `${API_BASE_URL}/aurora?utc_time=${utc_time}`
-        : `${API_BASE_URL}/aurora`;
-      const response = await fetch(url);
+      const [response, locations] = await Promise.all([
+        fetch(`${API_BASE_URL}/aurora/latest?encoding=delta-bitpack`),
+        getLocations(),
+      ]);
 
       if (!response.ok) {
         throw new Error("Failed to fetch Aurora data");
       }
       const data = await response.json();
+      if (data.encoding === "delta-bitpack") {
+        const values = decodeDeltaBitpack(data.points);
+        const points = mergeCoordinatesAndValues(locations.aurora, values);
+        return { timestamp: data.timestamp, points };
+      }
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -79,15 +122,20 @@ export const fetchGeoelectric = createAsyncThunk(
   "geoelectric/fetchGeoelectric",
   async (utc_time = null, { rejectWithValue }) => {
     try {
-      const url = utc_time
-        ? `${API_BASE_URL}/geoelectric?utc_time=${utc_time}`
-        : `${API_BASE_URL}/geoelectric/latest`;
-      const response = await fetch(url);
+      const [response, locations] = await Promise.all([
+        fetch(`${API_BASE_URL}/geoelectric/latest?encoding=delta-bitpack`),
+        getLocations(),
+      ]);
 
       if (!response.ok) {
         throw new Error("Failed to fetch Geoelectric data");
       }
       const data = await response.json();
+      if (data.encoding === "delta-bitpack") {
+        const values = decodeDeltaBitpack(data.points);
+        const points = mergeCoordinatesAndValues(locations.geoelectric, values);
+        return { timestamp: data.timestamp, points };
+      }
       return data;
     } catch (error) {
       return rejectWithValue(error.message);
@@ -99,7 +147,7 @@ export const fetchAirports = createAsyncThunk(
   "airports/fetchAirports",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/airports`);
+      const response = await fetch(`${API_V1_URL}/airports`);
       if (!response.ok) {
         throw new Error("Failed to fetch airport data");
       }
@@ -115,7 +163,7 @@ export const fetchAirportDetails = createAsyncThunk(
   "airports/fetchAirportDetails",
   async (airportIdent, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/airport/${airportIdent}`);
+      const response = await fetch(`${API_V1_URL}/airport/${airportIdent}`);
       if (!response.ok) throw new Error("Failed to fetch airport details");
       const data = await response.json();
       return data;
@@ -129,7 +177,7 @@ export const fetchFlightPath = createAsyncThunk(
   "flightPath/fetchFlightPath",
   async (flightId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/flight-path/${flightId}`);
+      const response = await fetch(`${API_V1_URL}/flight-path/${flightId}`);
       if (!response.ok) throw new Error("Failed to fetch flight path");
       const data = await response.json();
       if (data && data.path_points.length <= 1) {
@@ -163,7 +211,7 @@ export const fetchKpIndex = createAsyncThunk(
       if (!polling) {
         dispatch(setLoading(true));
       }
-      const url = `${API_BASE_URL}/kp-index?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
+      const url = `${API_V1_URL}/kp-index?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch Kp index");
       const data = await response.json();
@@ -189,7 +237,7 @@ export const fetchXrayFlux = createAsyncThunk(
       if (!polling) {
         dispatch(setLoading(true));
       }
-      const url = `${API_BASE_URL}/xray?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
+      const url = `${API_V1_URL}/xray?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch X-ray flux");
       const data = await response.json();
@@ -212,7 +260,7 @@ export const fetchProtonFlux = createAsyncThunk(
       if (!polling) {
         dispatch(setLoading(true));
       }
-      const url = `${API_BASE_URL}/proton-flux?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
+      const url = `${API_V1_URL}/proton-flux?start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch proton flux");
       const data = await response.json();

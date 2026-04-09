@@ -14,6 +14,19 @@ class EventsResponseV2(BaseModel):
     points: List[float]  # [intensity]
 
 
+class CompressedPointsPayload(BaseModel):
+    values: List[float]
+    bits: int
+    count: int
+    data: str
+
+
+class CompressedEventsResponse(BaseModel):
+    timestamp: datetime
+    encoding: str = "delta-bitpack"
+    points: CompressedPointsPayload
+
+
 class EventType(str, Enum):
     drap = "drap"
     geoelectric = "geoelectric"

@@ -4,9 +4,24 @@ import { injectLivePlanes } from '../store/slices/planesSlice';
 import { injectLiveDRAP } from '../store/slices/drapSlice';
 import { injectLiveAurora } from '../store/slices/auroraSlice';
 import { injectLiveGeoElectric } from '../store/slices/geoElectricSlice';
-// Import your chart inject actions when ready
+import { decodeDeltaBitpack, mergeCoordinatesAndValues } from '../utils/compression';
+import { getLocations } from '../api/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_V1_URL = import.meta.env.VITE_API_BASE_URL.replace("/v2", "/v1");
+
+/**
+ * If the incoming SSE payload is delta-bitpack compressed, decode it and
+ * merge with cached grid coordinates to produce {timestamp, points: [[lat,lon,val],...]}.
+ */
+async function decodeSSEPayload(data, eventType) {
+  if (data.encoding !== "delta-bitpack") return data;
+
+  const locations = await getLocations();
+  const coords = locations[eventType];
+  const values = decodeDeltaBitpack(data.points);
+  const points = mergeCoordinatesAndValues(coords, values);
+  return { timestamp: data.timestamp, points };
+}
 
 export const useLiveStream = (isLiveMode = true) => {
   const dispatch = useDispatch();
@@ -15,22 +30,31 @@ export const useLiveStream = (isLiveMode = true) => {
     // If user is watching historical playback, don't connect to live stream
     if (!isLiveMode) return;
 
-    const sse = new EventSource(`${API_BASE_URL}/stream/live`);
+    const sse = new EventSource(`${API_V1_URL}/stream/live`);
 
     sse.addEventListener('planes', (event) => {
       dispatch(injectLivePlanes(JSON.parse(event.data)));
     });
 
     sse.addEventListener('drap', (event) => {
-      dispatch(injectLiveDRAP(JSON.parse(event.data)));
+      const raw = JSON.parse(event.data);
+      decodeSSEPayload(raw, 'drap').then((decoded) => {
+        dispatch(injectLiveDRAP(decoded));
+      });
     });
 
     sse.addEventListener('aurora', (event) => {
-      dispatch(injectLiveAurora(JSON.parse(event.data)));
+      const raw = JSON.parse(event.data);
+      decodeSSEPayload(raw, 'aurora').then((decoded) => {
+        dispatch(injectLiveAurora(decoded));
+      });
     });
 
     sse.addEventListener('geoelectric', (event) => {
-      dispatch(injectLiveGeoElectric(JSON.parse(event.data)));
+      const raw = JSON.parse(event.data);
+      decodeSSEPayload(raw, 'geoelectric').then((decoded) => {
+        dispatch(injectLiveGeoElectric(decoded));
+      });
     });
 
     // Handle connection drops
@@ -42,5 +66,5 @@ export const useLiveStream = (isLiveMode = true) => {
     return () => {
       sse.close();
     };
-  }, [dispatch, isLiveMode]); 
+  }, [dispatch, isLiveMode]);
 };

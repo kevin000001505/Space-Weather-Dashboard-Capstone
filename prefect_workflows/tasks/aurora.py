@@ -11,6 +11,7 @@ from database.queries import (
     AURORA_TRANSFORM_SQL,
 )
 from shared.redis import get_redis_client, AURORA_CACHE_KEY, AURORA_CHANNEL, MEDIUM_TTL
+from shared.compression import delta_bitpack_compress
 
 AURORA_URL = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 
@@ -119,13 +120,14 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
             else ""
         )
 
+        coords = data.get("coordinates", [])
+        values = [c[2] for c in coords]
+        compressed_points = delta_bitpack_compress(values)
+
         payload = {
-            "observation_time": formatted_observation_time,
-            "forecast_time": formatted_forecast_time,
-            "coordinates": [
-                [c[0] - 360 if c[0] > 180 else c[0], c[1], c[2]]
-                for c in data.get("coordinates", [])
-            ],
+            "timestamp": formatted_observation_time,
+            "encoding": "delta-bitpack",
+            "points": compressed_points,
         }
         await client.set(AURORA_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)
         await client.publish(AURORA_CHANNEL, "new_data")

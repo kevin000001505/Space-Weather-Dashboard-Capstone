@@ -49,6 +49,7 @@ from config import (
     EventType,
     LocationData,
 )
+from shared.compression import delta_bitpack_compress
 from validator import points_adapter, airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
 import logging
@@ -590,29 +591,20 @@ async def latest_drap(
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
-@app.get("/api/v2/{events}/latest", response_model=EventsResponseV2)
+@app.get("/api/v2/{events}/latest")
 async def latest_events(
     conn: asyncpg.Connection = Depends(get_db_connection),
     events: EventType = Path(
         ..., description="Event type: drap, geoelectric, or aurora"
     ),
+    encoding: Optional[str] = Query(
+        default=None,
+        description="Response encoding: 'delta-bitpack' for compressed, omit for raw JSON.",
+    ),
     debug: bool = Query(False),
 ):
     t_start = time.perf_counter()
-    # redis_client = redis_config.get_redis_client()
     try:
-        t_query_start = time.perf_counter()
-        # cached_event = await redis_client.get(redis_config.DRAP_CACHE_KEY)
-        t_query_end = time.perf_counter()
-
-        # if cached_event:
-        #     if debug:
-        #         return timing_debug_response(t_start, t_query_start, t_query_end)
-
-        #     response = Response(content=cached_event, media_type="application/json")
-        #     add_timing_headers(response, t_start, t_query_start, t_query_end)
-        #     return response
-
         table_info = event_name_info[events]
 
         t_query_start = time.perf_counter()
@@ -627,21 +619,28 @@ async def latest_events(
             raise HTTPException(status_code=404, detail=f"No {events} data available")
 
         raw_json_string = row["values"]
-        final_model = EventsResponseV2.model_validate_json(raw_json_string)
-
-        # 3. Dump back to JSON for Redis and the response
-        cache_payload_bytes = final_model.model_dump_json()
-
-        # await redis_client.set(
-        #     redis_config.DRAP_CACHE_KEY,
-        #     cache_payload_bytes,
-        #     ex=redis_config.VERY_LONG_TTL,  # Or whatever your DRAP TTL is
-        # )
+        parsed = EventsResponseV2.model_validate_json(raw_json_string)
 
         if debug:
             return timing_debug_response(t_start, t_query_start, t_query_end)
 
-        response = Response(content=cache_payload_bytes, media_type="application/json")
+        if encoding == "delta-bitpack":
+            compressed = delta_bitpack_compress(parsed.points)
+            payload = {
+                "timestamp": parsed.timestamp.isoformat(),
+                "encoding": "delta-bitpack",
+                "points": compressed,
+            }
+            response = Response(
+                content=json.dumps(payload),
+                media_type="application/json",
+            )
+        else:
+            response = Response(
+                content=parsed.model_dump_json(),
+                media_type="application/json",
+            )
+
         add_timing_headers(response, t_start, t_query_start, t_query_end)
         return response
 

@@ -12,6 +12,7 @@ from shared.redis import (
     DRAP_CHANNEL,
     MEDIUM_TTL,
 )
+from shared.compression import delta_bitpack_compress
 
 d_rap_url = "https://services.swpc.noaa.gov/text/drap_global_frequencies.txt"
 
@@ -57,14 +58,16 @@ async def broadcast_drap_to_redis(df_long: DataFrame, timestamp) -> None:
         # Fallback if it's already a string from the metadata
         formatted_time = str(timestamp)
 
-    # Extract just the columns we need and convert to a native Python list of lists
-    # .astype(float) ensures we don't pass weird numpy datatypes to the JSON serializer
+    # Extract values and compress with delta-bitpack
     logger.info(df_long)
-    points = (
-        df_long[["Latitude", "Longitude", "Absorption"]].astype(float).values.tolist()
-    )
+    values = df_long["Absorption"].astype(float).tolist()
+    compressed_points = delta_bitpack_compress(values)
 
-    payload = {"timestamp": formatted_time, "points": points}
+    payload = {
+        "timestamp": formatted_time,
+        "encoding": "delta-bitpack",
+        "points": compressed_points,
+    }
 
     try:
         client = get_redis_client()

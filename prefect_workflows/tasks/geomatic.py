@@ -15,6 +15,7 @@ from shared.redis import (
     GEOELECTRIC_CHANNEL,
     MEDIUM_TTL,
 )
+from shared.compression import delta_bitpack_compress
 from tasks.models import GeoelectricRecord
 from database.queries import (
     GEOELECTRIC_STAGING_DDL,
@@ -133,32 +134,18 @@ async def broadcast_geoelectric_to_redis(
             else str(observed_at)
         )
 
-        # Enrich features with e_magnitude before caching
-        enriched = []
-        for feature in features:
-            props = feature["properties"]
-            enriched.append(
-                {
-                    **feature,
-                    "properties": {
-                        **props,
-                        "e_magnitude": np.sqrt(props["Ex"] ** 2 + props["Ey"] ** 2),
-                    },
-                }
-            )
-        points = [
-            [
-                f["geometry"]["coordinates"][1],
-                f["geometry"]["coordinates"][0],
-                f["properties"]["e_magnitude"].astype(float),
-                f["properties"]["quality_flag"],
-            ]
-            for f in enriched
+        # Extract e_magnitude values and compress
+        values = [
+            float(np.sqrt(f["properties"]["Ex"] ** 2 + f["properties"]["Ey"] ** 2))
+            for f in features
         ]
+        compressed_points = delta_bitpack_compress(values)
+
         payload = json.dumps(
             {
                 "timestamp": formatted_time,
-                "points": points,
+                "encoding": "delta-bitpack",
+                "points": compressed_points,
             }
         )
         await client.set(GEOELECTRIC_CACHE_KEY, payload, ex=MEDIUM_TTL)
