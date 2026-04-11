@@ -76,7 +76,6 @@ const normalizePathCoordinates = (coordinates) => {
 
   const normalized = [...coordinates];
   let prevLon = normalized[0][0];
-
   for (let i = 1; i < normalized.length; i++) {
     // Clone the coordinate array to avoid mutating Redux state
     let coord = [...normalized[i]];
@@ -93,6 +92,7 @@ const normalizePathCoordinates = (coordinates) => {
     normalized[i] = coord;
     prevLon = lon; // Track the adjusted longitude for the next point
   }
+  console.log(normalized);
 
   return normalized;
 };
@@ -120,6 +120,7 @@ export const buildDeckLayers = ({
   setHoveredRunwayId,
   airportIconSize,
   flightIconSize,
+  globeView,
 }) => {
   // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
@@ -226,13 +227,18 @@ export const buildDeckLayers = ({
     ? [
         ...(activePlaneIds.has(selectedPlane.icao24) ? [selectedPlane] : []),
         ...selectedFlightsPanels.filter(
-          (p) => p.icao24 !== selectedPlane.icao24 && activePlaneIds.has(p.icao24),
+          (p) =>
+            p.icao24 !== selectedPlane.icao24 && activePlaneIds.has(p.icao24),
         ),
       ]
     : selectedFlightsPanels.filter((p) => activePlaneIds.has(p.icao24));
 
-  const highlightedPlaneIdents = highlightedPlanes.map((p) => p.icao24).join(",");
-  const highlightedAirportIdents = highlightedAirports.map((a) => a.ident).join(",");
+  const highlightedPlaneIdents = highlightedPlanes
+    .map((p) => p.icao24)
+    .join(",");
+  const highlightedAirportIdents = highlightedAirports
+    .map((a) => a.ident)
+    .join(",");
   const outlineColor = darkMode ? [255, 255, 255] : [0, 0, 0];
 
   return [
@@ -333,7 +339,9 @@ export const buildDeckLayers = ({
         getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
         getSize: 3 * scaledAirportIconSize,
         getColor: (d) => {
-          return isZooming ? [outlineColor[0], outlineColor[1], outlineColor[2], 25] : outlineColor;
+          return isZooming
+            ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
+            : outlineColor;
         },
         pickable: false,
         wrapLongitude: true,
@@ -348,7 +356,14 @@ export const buildDeckLayers = ({
       new IconLayer({
         id: "airports-base",
         data: filteredAirports,
-        getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
+        getPosition: (d) =>
+          globeView
+            ? [
+                parseFloat(d.lon),
+                parseFloat(d.lat),
+                parseFloat(d.elevation_ft) * 100 || 0,
+              ]
+            : [parseFloat(d.lon), parseFloat(d.lat)],
         getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
         getSize: (d) =>
           highlightedAirports.some((a) => a.ident === d.ident)
@@ -360,6 +375,10 @@ export const buildDeckLayers = ({
         },
         pickable: true,
         wrapLongitude: true,
+        getPolygonOffset: ({ layerIndex }) => [0, -layerIndex * 100],
+        parameters: {
+          cullMode: "none",
+        },
         onClick: handleAirportClick,
         onHover: handleAirportHover,
         updateTriggers: {
@@ -378,7 +397,11 @@ export const buildDeckLayers = ({
         )
           return null;
         // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
-        const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
+        const deckCoords = pathData.path_points.map(([lon, lat, alt]) => [
+          lon,
+          lat,
+          Math.round(alt * 3.28084),
+        ]);
         return new PathLayer({
           id: `flight-path-pathlayer-${icao24}`,
           data: [{ coordinates: normalizePathCoordinates(deckCoords) }],
@@ -393,7 +416,7 @@ export const buildDeckLayers = ({
         });
       })
       .filter(Boolean),
-   
+
     // Planes Icon Layer
     showPlanes &&
       new IconLayer({
@@ -406,15 +429,23 @@ export const buildDeckLayers = ({
           plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
         },
         getIcon: (d) => "plane",
-        getPosition: (d) => [d.lon, d.lat],
-        getSize: (d) => highlightedPlanes.some((p) => p.icao24 === d.icao24)
-          ? 2 * scaledFlightIconSize
-          : scaledFlightIconSize,
+        getPosition: (d) => [
+          d.lon,
+          d.lat,
+          globeView ? d.geo_altitude * 100 || 0 : 0,
+        ],
+        getSize: (d) =>
+          highlightedPlanes.some((p) => p.icao24 === d.icao24)
+            ? 2 * scaledFlightIconSize
+            : scaledFlightIconSize,
         getAngle: (d) => -(d.heading || 0),
         getColor: (d) => {
           const color = getAltitudeColor(d.geo_altitude, false, useImperial);
           // Reduce opacity to 0.1 when zooming
           return isZooming ? [color[0], color[1], color[2], 25] : color;
+        },
+        parameters: {
+          cullMode: "none",
         },
         onClick: handlePlaneClick,
         onHover: handlePlaneHover,

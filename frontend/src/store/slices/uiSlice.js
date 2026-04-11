@@ -17,6 +17,7 @@ const initialState = {
   darkMode: true,
   showPlanes: true,
   showAirports: true,
+  globeView: true,
   isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,
@@ -116,6 +117,9 @@ const uiSlice = createSlice({
     setShowAirports: (state, action) => {
       state.showAirports = action.payload;
     },
+    setGlobeView: (state, action) => {
+      state.globeView = action.payload;
+    },
     setViewState: (state, action) => {
       state.viewState = action.payload;
     },
@@ -192,6 +196,7 @@ export const {
   setDarkMode,
   setShowAirports,
   setShowPlanes,
+  setGlobeView,
   setViewState,
   setSearchQuery,
   setSearchResults,

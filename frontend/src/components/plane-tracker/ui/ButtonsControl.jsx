@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { IconButton, SpeedDial, SpeedDialAction, Tooltip } from "@mui/material";
 import {
   setDarkMode,
+  setGlobeView,
   setShowAirports,
   setShowAltitudeLegend,
   setShowIconLegend,
@@ -28,6 +29,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import SsidChartIcon from '@mui/icons-material/SsidChart';
+import PublicIcon from "@mui/icons-material/Public";
 
 import "./styles/ButtonsControl.css";
 import { LetterIcon } from "../../ui/LetterIcon";
@@ -44,6 +46,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     showPlanes,
     isolateMode,
     useImperial,
+    globeView,
     showAltitudeLegend,
     showIconLegend,
   } = useSelector((state) => state.ui);
@@ -142,6 +145,22 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
             sx={btnStyle}
           >
             <LetterIcon letter={useImperial ? "F" : "M"} />
+          </IconButton>
+        </Tooltip>
+        <Tooltip
+          title={globeView ? "Switch to Mercator View" : "Switch to Globe View"}
+          placement="bottom"
+        >
+          <IconButton
+            onClick={() => dispatch(setGlobeView(!globeView))}
+            sx={{
+              ...btnStyle,
+              background: globeView
+                ? "rgba(46,204,64,0.25)"
+                : "rgba(34, 40, 60, 0.35)",
+            }}
+          >
+            <PublicIcon sx={{ fontSize: 28 }} />
           </IconButton>
         </Tooltip>
         <SpeedDial

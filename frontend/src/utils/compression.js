@@ -59,9 +59,10 @@ export function decodeDeltaBitpack(payload) {
  */
 export function mergeCoordinatesAndValues(coordinates, values) {
   const len = Math.min(coordinates.length, values.length);
-  const result = new Array(len);
+  const result = [];
   for (let i = 0; i < len; i++) {
-    result[i] = [...coordinates[i], values[i]];
+    if(values[i] === 0) continue; 
+    result.push([...coordinates[i], values[i]]);
   }
   return result;
 }

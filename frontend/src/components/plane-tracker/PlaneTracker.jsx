@@ -81,6 +81,7 @@ const PlaneTracker = () => {
     darkMode,
     showAirports,
     showPlanes,
+    globeView,
     viewState,
     isZooming,
     altitudeRange,
@@ -178,6 +179,7 @@ const PlaneTracker = () => {
       setHoveredRunwayId: (id) => dispatch(setHoveredRunwayId(id)),
       airportIconSize,
       flightIconSize,
+      globeView
     });
   }, [
     dispatch,
@@ -197,6 +199,7 @@ const PlaneTracker = () => {
     hoveredRunwayId,
     airportIconSize,
     flightIconSize,
+    globeView
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -233,6 +236,7 @@ const PlaneTracker = () => {
             ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
             : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         }
+        projection={globeView ? "globe" : "mercator"}
         onClick={() => dispatch(clearSelections())}
         onMouseMove={(e) => {
           if (!showElectricTransmissionLines) {
