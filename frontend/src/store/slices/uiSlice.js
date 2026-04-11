@@ -17,7 +17,7 @@ const initialState = {
   darkMode: true,
   showPlanes: true,
   showAirports: true,
-  globeView: true,
+  globeView: false,
   isAirportDropdownOpen: false,
   viewState: {
     longitude: 0,

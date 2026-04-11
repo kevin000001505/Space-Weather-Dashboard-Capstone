@@ -429,11 +429,11 @@ export const buildDeckLayers = ({
           plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
         },
         getIcon: (d) => "plane",
-        getPosition: (d) => [
+        getPosition: (d) => globeView ?[
           d.lon,
           d.lat,
           globeView ? d.geo_altitude * 100 || 0 : 0,
-        ],
+        ] : [d.lon, d.lat],
         getSize: (d) =>
           highlightedPlanes.some((p) => p.icao24 === d.icao24)
             ? 2 * scaledFlightIconSize
