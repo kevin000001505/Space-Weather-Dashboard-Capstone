@@ -31,6 +31,7 @@ import {
 import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 import { R_LEVELS } from "../helpers/constants";
+import { getHelpTopicPath } from "../../help/helpers/constants";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 // Register zoom plugin
@@ -266,11 +267,9 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
                 />
               </IconButton>
             </MuiTooltip>
-            <MuiTooltip title="Click to Learn More About X-ray Flux">
+            <MuiTooltip title="Open the X-Ray Flux help article in a new tab.">
               <IconButton
-                onClick={() =>
-                  window.open("/help", "_blank", "noopener,noreferrer")
-                }
+                onClick={() => window.open(getHelpTopicPath("X-Ray Flux"), "_blank", "noopener,noreferrer")}
                 aria-label="Help"
               >
                 <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />

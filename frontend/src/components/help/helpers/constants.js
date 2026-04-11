@@ -1,3 +1,5 @@
+import { slugify } from "./helper";
+
 export const TOPBAR_HEIGHT = 68;
 export const LEFT_SIDEBAR_WIDTH = 320;
 export const RIGHT_SIDEBAR_WIDTH = 320;
@@ -60,9 +62,9 @@ export const helpNav = [
     items: [
       "Solar flares",
       "Coronal mass ejections",
-      "X-ray flux",
-      "Proton flux",
-      "KP index",
+      "X-Ray Flux (Glossary)",
+      "Proton Flux (Glossary)",
+      "Kp Index (Glossary)",
       "Geomagnetic storms",
       "Aurora activity",
       "DRAP absorption",
@@ -1233,7 +1235,7 @@ const topicContent = {
     ],
   },
 
-  "X-ray flux": {
+  "X-Ray Flux (Glossary)": {
     title: "X-Ray Flux",
     intro:
       "X-ray flux is the intensity of X-ray radiation from the Sun, measured in watts per square meter by the GOES satellite series.",
@@ -1270,7 +1272,7 @@ const topicContent = {
     ],
   },
 
-  "Proton flux": {
+  "Proton Flux (Glossary)": {
     title: "Proton Flux",
     intro:
       "Proton flux measures the intensity of high-energy protons from the Sun reaching Earth, measured in particle flux units (pfu) by the GOES satellites.",
@@ -1307,7 +1309,7 @@ const topicContent = {
     ],
   },
 
-  "KP index": {
+  "Kp Index (Glossary)": {
     title: "Kp Index",
     intro:
       "The Kp index is a global measure of geomagnetic disturbance, ranging from 0 (quiet) to 9 (extreme storm).",
@@ -1524,6 +1526,36 @@ export const pageContent = Object.fromEntries(
   ),
 );
 
+export const defaultHelpTopic = helpNav[0]?.items[0] || "";
+
+export const helpGroupLabels = helpNav.map((group) => group.label);
+
+export const getHelpGroupForTopic = (topic) =>
+  helpNav.find((group) => group.items.includes(topic))?.label || null;
+
+export const getHelpGroupSlug = (groupLabel) => slugify(groupLabel);
+
+export const getHelpTopicSlug = (topic) =>
+  slugify(topic);
+
+export const getHelpTopicPath = (topic) => {
+  const groupLabel = getHelpGroupForTopic(topic);
+  if (!groupLabel) {
+    return "/help";
+  }
+
+  return `/help/${getHelpGroupSlug(groupLabel)}/${getHelpTopicSlug(topic)}`;
+};
+
+export const getHelpTopicFromSlug = (slug) =>
+  helpNav
+    .flatMap((group) => group.items)
+    .find((topic) => getHelpTopicSlug(topic) === slug);
+
+const defaultHelpGroupLabel = helpNav.find((group) =>
+  group.items.includes(defaultHelpTopic),
+)?.label;
+
 export const openGroupsInitialState = Object.fromEntries(
-  helpNav.map((group) => [group.label, true]),
+  helpNav.map((group) => [group.label, group.label === defaultHelpGroupLabel]),
 );

@@ -17,6 +17,7 @@ import {
 import persistentLabelBoxPluginFactory from "../plugins/persistentLabelBoxPlugin";
 import chartBackgroundBandsPlugin from "../plugins/chartBackgroundBandsPlugin";
 import { S_LEVELS } from "../helpers/constants";
+import { getHelpTopicPath } from "../../help/helpers/constants";
 import { debounce } from "lodash";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -264,11 +265,9 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                 />
               </IconButton>
             </MuiTooltip>
-            <MuiTooltip title="Click to Learn More About Proton Flux">
+            <MuiTooltip title="Open the Proton Flux help article in a new tab.">
               <IconButton
-                onClick={() =>
-                  window.open("/help", "_blank", "noopener,noreferrer")
-                }
+                onClick={() => window.open(getHelpTopicPath("Proton Flux"), "_blank", "noopener,noreferrer")}
                 aria-label="Help"
               >
                 <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />

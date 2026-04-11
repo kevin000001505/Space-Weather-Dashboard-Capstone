@@ -1,10 +1,19 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Box } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import TopBar from "../charts/TopBar";
 import { useDispatch, useSelector } from "react-redux";
 import RightContentsNav from "./sections/RightNav";
-import { pageContent, TOPBAR_HEIGHT } from "./helpers/constants";
+import {
+  defaultHelpTopic,
+  getHelpGroupForTopic,
+  getHelpGroupSlug,
+  getHelpTopicFromSlug,
+  getHelpTopicPath,
+  helpGroupLabels,
+  pageContent,
+  TOPBAR_HEIGHT,
+} from "./helpers/constants";
 import LeftTopicsNav from "./sections/LeftNav";
 import MainContent from "./sections/MainContent";
 import {
@@ -12,14 +21,18 @@ import {
   paletteLightMode,
   typographyTheme,
 } from "./helpers/themes";
-import { setActiveAnchor } from "../../store/slices/helpSlice";
+import { Navigate, useParams } from "react-router-dom";
+import {
+  setActiveAnchor,
+  setActiveTopic,
+  setOpenGroups,
+} from "../../store/slices/helpSlice";
 
 export default function Help() {
   const dispatch = useDispatch();
+  const { groupSlug, topicSlug } = useParams();
   const darkMode = useSelector((state) => state.ui.darkMode);
-  const { openGroups, activeTopic, activeAnchor } = useSelector(
-    (state) => state.help,
-  );
+  const { activeTopic } = useSelector((state) => state.help);
   const observerRef = useRef(null);
   const theme = useMemo(
     () =>
@@ -33,7 +46,21 @@ export default function Help() {
     [darkMode],
   );
 
-  const article = pageContent[activeTopic];
+  const selectedTopic = topicSlug ? getHelpTopicFromSlug(topicSlug) : defaultHelpTopic;
+  const selectedGroup = selectedTopic
+    ? getHelpGroupForTopic(selectedTopic)
+    : null;
+  const canonicalPath = selectedTopic ? getHelpTopicPath(selectedTopic) : "/help";
+
+  if (!topicSlug || !selectedTopic || !selectedGroup) {
+    return <Navigate replace to={canonicalPath} />;
+  }
+
+  if (getHelpGroupSlug(selectedGroup) !== groupSlug) {
+    return <Navigate replace to={canonicalPath} />;
+  }
+
+  const article = pageContent[selectedTopic];
   const flatContents = useMemo(
     () =>
       article.sections.flatMap((section) => [
@@ -46,6 +73,24 @@ export default function Help() {
       ]),
     [article],
   );
+
+  useLayoutEffect(() => {
+    if (activeTopic !== selectedTopic) {
+      dispatch(setActiveTopic(selectedTopic));
+    }
+    const selectedGroup = getHelpGroupForTopic(selectedTopic);
+    if (!selectedGroup) {
+      return;
+    }
+
+    dispatch(
+      setOpenGroups(
+        Object.fromEntries(
+          helpGroupLabels.map((group) => [group, group === selectedGroup]),
+        ),
+      ),
+    );
+  }, [activeTopic, dispatch, selectedTopic]);
 
   useEffect(() => {
     dispatch(setActiveAnchor(article.sections[0]?.id || "Overview"));

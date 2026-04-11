@@ -22,6 +22,7 @@ import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 Chart.register(annotationPlugin, zoomPlugin);
 
 import { G_LEVELS, KP_COLORS } from "../helpers/constants";
+import { getHelpTopicPath } from "../../help/helpers/constants";
 import { useAllTimezones } from "../../../hooks/useAllTimezones";
 const KpIndexChart = ({ chartRef }) => {
   const backgroundBandsOpacity = useSelector(
@@ -189,11 +190,9 @@ const KpIndexChart = ({ chartRef }) => {
                 />
               </IconButton>
             </Tooltip>
-            <Tooltip title="Click to Learn More About Kp Index">
+            <Tooltip title="Open the Kp Index help article in a new tab.">
               <IconButton
-                onClick={() =>
-                  window.open("/help", "_blank", "noopener,noreferrer")
-                }
+                onClick={() => window.open(getHelpTopicPath("KP Index"), "_blank", "noopener,noreferrer")}
                 aria-label="Help"
               >
                 <InfoOutlineIcon fontSize="small" sx={{ color: "#fff" }} />

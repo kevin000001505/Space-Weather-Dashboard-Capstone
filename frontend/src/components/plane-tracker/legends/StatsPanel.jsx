@@ -117,7 +117,7 @@ const StatsPanel = React.forwardRef(function StatsPanel(props, ref) {
       style={{
         position: "absolute",
         left: "20px",
-        bottom: "10px",
+        bottom: "45px",
         zIndex: 1000,
         padding: "10px",
         borderRadius: "4px",

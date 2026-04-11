@@ -1,5 +1,4 @@
-import { slugify } from "../helpers/helper";
-import { TOPBAR_HEIGHT } from "../helpers/constants";
+import { TOPBAR_HEIGHT, getHelpGroupForTopic } from "../helpers/constants";
 import FlightIcon from "@mui/icons-material/Flight";
 import { Box, Divider, Paper, Stack, Typography } from "@mui/material";
 import { alpha } from "@mui/material/styles";
@@ -211,7 +210,7 @@ const MainContent = ({ article }) => {
             letterSpacing: "0.08em",
           }}
         >
-          Help / {slugify(activeTopic).replace(/-/g, " ")}
+          Help / {getHelpGroupForTopic(activeTopic)} / {article.title}
         </Typography>
         <Typography variant="h1" sx={{ mt: 1.25, mb: 2.5 }}>
           {article.title}

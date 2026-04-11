@@ -30,6 +30,8 @@ function App() {
             <Route path="/" element={<PlaneTracker />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/help/:topicSlug" element={<Help />} />
+            <Route path="/help/:groupSlug/:topicSlug" element={<Help />} />
             <Route path="/about" element={<About />} />
           </Routes>
         </div>

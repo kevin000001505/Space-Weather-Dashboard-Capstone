@@ -5,6 +5,7 @@ import ArrowLeftIcon from "@mui/icons-material/ArrowLeft";
 import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import { IconButton, Tooltip } from "@mui/material";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
+import { getHelpTopicPath } from "../help/helpers/constants";
 // Helper to get color by scale
 const getBoxColor = (scale, type) => {
   if (scale === null || scale === undefined || scale === "0" || scale === 0)
@@ -67,11 +68,9 @@ export const NOAAScales = () => {
       <div className="noaa-scales-title">
         CURRENT SPACE WEATHER CONDITIONS{" "}
         <>
-          <Tooltip title="Click to Learn More About Kp Index">
+          <Tooltip title="Open the Kp Index help article in a new tab.">
             <IconButton
-              onClick={() =>
-                window.open("/help", "_blank", "noopener,noreferrer")
-              }
+              onClick={() => window.open(getHelpTopicPath("KP Index"), "_blank", "noopener,noreferrer")}
               aria-label="Help"
             >
               <InfoOutlineIcon fontSize="small" sx={{ color: darkMode ? "#a78bfa" : "#232526" }} />

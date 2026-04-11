@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 // MapLibre imports
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import Map, { useControl } from "react-map-gl/maplibre";
+import Map, { ScaleControl, useControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 // API imports
@@ -28,7 +28,7 @@ import PlaybackPanel from "./playback/PlaybackPanel";
 import ColorLegend from "./legends/ColorLegend";
 import EventGridOverlay from "./EventGridOverlay";
 import SelectedEntityPopups from "./map/SelectedEntityPopups";
-import { Slide } from "@mui/material";
+import { alpha, Slide } from "@mui/material";
 
 // Redux action imports
 import {
@@ -55,8 +55,10 @@ const DeckGLOverlay = (props) => {
 };
 
 const PlaneTracker = () => {
-  const [hoveredElectricTransmissionLines, setHoveredElectricTransmissionLines] =
-    useState(null);
+  const [
+    hoveredElectricTransmissionLines,
+    setHoveredElectricTransmissionLines,
+  ] = useState(null);
   const dispatch = useDispatch();
 
   const { data: planes } = useSelector((state) => state.planes);
@@ -104,7 +106,7 @@ const PlaneTracker = () => {
   }, [showElectricTransmissionLines]);
 
   useEffect(() => {
-    if(!liveStreamMode)return; 
+    if (!liveStreamMode) return;
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
@@ -179,7 +181,7 @@ const PlaneTracker = () => {
       setHoveredRunwayId: (id) => dispatch(setHoveredRunwayId(id)),
       airportIconSize,
       flightIconSize,
-      globeView
+      globeView,
     });
   }, [
     dispatch,
@@ -199,7 +201,7 @@ const PlaneTracker = () => {
     hoveredRunwayId,
     airportIconSize,
     flightIconSize,
-    globeView
+    globeView,
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -224,7 +226,13 @@ const PlaneTracker = () => {
         display: "flex",
       }}
     >
-      <Slide direction="down" in={true} timeout={500} mountOnEnter unmountOnExit>
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
         <DateTimeViewer />
       </Slide>
 
@@ -265,7 +273,6 @@ const PlaneTracker = () => {
         }}
         onMouseLeave={() => setHoveredElectricTransmissionLines(null)}
       >
-
         <EventGridOverlay
           hoveredElectricTransmissionLines={hoveredElectricTransmissionLines}
         />
@@ -280,6 +287,22 @@ const PlaneTracker = () => {
 
         <SelectedEntityPopups />
 
+        <ScaleControl
+          position="bottom-left"
+          style={{
+            border: `2px solid ${darkMode ? "#7f5cff" : "#1565c0"} `,
+            padding: "2px 6px",
+            background: "rgba(34, 40, 60, 0.35)",
+            backdropFilter: "blur(10px)",
+            boxShadow: darkMode
+              ? `0 16px 36px ${alpha("#000", 0.34)}`
+              : `0 14px 30px ${alpha("#0F172A", 0.1)}`,
+            color: "#fff",
+            marginLeft: "20px",
+            fontSize: "1rem",
+            fontWeight: "600",
+          }}
+        />
       </Map>
 
       <style>{`
@@ -321,21 +344,45 @@ const PlaneTracker = () => {
         />
       ))}
 
-      <Slide direction="up" in={showIconLegend} timeout={500} mountOnEnter unmountOnExit>
+      <Slide
+        direction="up"
+        in={showIconLegend}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
         <StatsPanel />
       </Slide>
 
-      <Slide direction="up" in={!liveStreamMode} timeout={500} mountOnEnter unmountOnExit>
+      <Slide
+        direction="up"
+        in={!liveStreamMode}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
         <PlaybackPanel />
       </Slide>
 
-      <Slide direction="up" in={showAltitudeLegend} timeout={500} mountOnEnter unmountOnExit>
+      <Slide
+        direction="up"
+        in={showAltitudeLegend}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
         <ColorLegend />
       </Slide>
 
       <SettingsPanel />
 
-      <Slide direction="down" in={true} timeout={500} mountOnEnter unmountOnExit>
+      <Slide
+        direction="down"
+        in={true}
+        timeout={500}
+        mountOnEnter
+        unmountOnExit
+      >
         <SearchBar />
       </Slide>
     </div>

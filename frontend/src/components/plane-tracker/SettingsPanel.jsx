@@ -45,6 +45,7 @@ import {
   setShowUndergroundLines,
 } from "../../store/slices/electricTransmissionLinesSlice";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
+import { getHelpTopicPath } from "../help/helpers/constants";
 import { setDrapRegionRange } from "../../store/slices/drapSlice";
 import { setAuroraRegionRange } from "../../store/slices/auroraSlice";
 const PANEL_WIDTH = 550;
@@ -378,17 +379,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Dashboard Settings"
+                          title="Open the help article for using search, filters, and toggles."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Using search, filters, and toggles"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -614,17 +609,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Airplane Filtering"
+                          title="Open the help article for filtering visible flights."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -741,17 +730,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Airport Filtering"
+                          title="Open the help article for filtering visible airports."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -1025,17 +1008,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Electric Transmission Lines"
+                          title="Open the help article for filtering visible data layers."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -1365,17 +1342,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About DRAP Region Filtering"
+                          title="Open the help article for filtering visible data layers."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -1496,17 +1467,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Aurora Probability Region"
+                          title="Open the help article for filtering visible data layers."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon
@@ -1633,17 +1598,11 @@ const SettingsPanel = () => {
                       }}
                       action={
                         <Tooltip
-                          title="Click to Learn About Geoelectric Field"
+                          title="Open the help article for filtering visible data layers."
                           placement="top"
                         >
                           <IconButton
-                            onClick={() =>
-                              window.open(
-                                "/help",
-                                "_blank",
-                                "noopener,noreferrer",
-                              )
-                            }
+                            onClick={() => window.open(getHelpTopicPath("Filtering visible data"), "_blank", "noopener,noreferrer")}
                             aria-label="Help"
                           >
                             <InfoOutlineIcon

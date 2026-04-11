@@ -5,15 +5,18 @@ import { alpha } from "@mui/material/styles";
 import { Collapse } from "@mui/material";
 import {
   helpNav,
+  getHelpTopicPath,
   LEFT_SIDEBAR_WIDTH,
   TOPBAR_HEIGHT,
 } from "../helpers/constants";
 import { setActiveTopic, setOpenGroups } from "../../../store/slices/helpSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 export default function LeftTopicsNav({
 }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { openGroups, activeTopic } = useSelector((state) => state.help);
   const toggleGroup = (label) => {
     dispatch(setOpenGroups({ ...openGroups, [label]: !openGroups[label] }));
@@ -21,6 +24,7 @@ export default function LeftTopicsNav({
 
   const handleTopicSelect = (topic) => {
     dispatch(setActiveTopic(topic));
+    navigate(getHelpTopicPath(topic));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

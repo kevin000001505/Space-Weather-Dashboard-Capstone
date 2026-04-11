@@ -361,7 +361,7 @@ export const buildDeckLayers = ({
             ? [
                 parseFloat(d.lon),
                 parseFloat(d.lat),
-                parseFloat(d.elevation_ft) * 100 || 0,
+                parseFloat(d.elevation_ft) * 100,
               ]
             : [parseFloat(d.lon), parseFloat(d.lat)],
         getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
@@ -384,6 +384,7 @@ export const buildDeckLayers = ({
         updateTriggers: {
           getColor: [darkMode, useImperial, isZooming],
           getSize: [scaledAirportIconSize, highlightedAirportIdents],
+          getPosition: [globeView],
         },
       }),
 
@@ -429,11 +430,8 @@ export const buildDeckLayers = ({
           plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
         },
         getIcon: (d) => "plane",
-        getPosition: (d) => globeView ?[
-          d.lon,
-          d.lat,
-          globeView ? d.geo_altitude * 100 || 0 : 0,
-        ] : [d.lon, d.lat],
+        getPosition: (d) =>
+          globeView ? [d.lon, d.lat, d.geo_altitude * 100] : [d.lon, d.lat],
         getSize: (d) =>
           highlightedPlanes.some((p) => p.icao24 === d.icao24)
             ? 2 * scaledFlightIconSize
@@ -452,6 +450,7 @@ export const buildDeckLayers = ({
         updateTriggers: {
           getSize: [scaledFlightIconSize, highlightedPlaneIdents],
           getColor: [useImperial, isZooming],
+          getPosition: [globeView],
         },
       }),
 
