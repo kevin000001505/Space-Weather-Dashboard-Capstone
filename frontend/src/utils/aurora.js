@@ -1,5 +1,4 @@
 // Aurora Implementation: Filled Polygon Cells
-// Ingests data directly from NOAA's OVATION Prime JSON
 
 export const getAuroraGeoJSON = (sourcePoints, auroraRegionRange = [0, 100]) => {
   if (!sourcePoints || sourcePoints.length === 0) {
@@ -10,14 +9,10 @@ export const getAuroraGeoJSON = (sourcePoints, auroraRegionRange = [0, 100]) => 
  // 1. Filter and normalize coordinates
   // Data arrives as [lat, lon, prob] from the DB / compressed pipeline
   const validPoints = sourcePoints
-        .filter(([lat, lon, prob]) => prob >= minAmp && prob <= maxAmp)
+        .filter(([lat, lon, prob]) => prob > 0 && prob >= minAmp && prob <= maxAmp)
         .map(([lat, lon, prob]) => {
-          // Longitude may still be 0-360 from legacy NOAA data.
-          // MapLibre/deck.gl expects -180 to 180, so we must wrap it.
-          const normalizedLon = lon > 180 ? lon - 360 : lon;
-          return { lat, lon: normalizedLon, prob };
+          return { lat, lon, prob };
         }) ?? [];
-
   // 2. NOAA's grid is uniformly 1x1 degree
   const halfLat = 0.5;
   const halfLon = 0.5;

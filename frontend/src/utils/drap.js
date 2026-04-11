@@ -21,7 +21,7 @@ export const getDRAPFilledCellsGeoJSON = (drapPoints, drapRegionRange = [0, 35])
   const [minFilterAmp, maxFilterAmp] = drapRegionRange || [0, 35];
   const validPoints = sourcePoints
         .map(([lat, lon, amp]) => ({ lat: Number(lat), lon: Number(lon), amp: Number(amp) }))
-        .filter(({ lat, lon, amp }) => Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(amp) && amp >= minFilterAmp && amp <= maxFilterAmp);
+        .filter(({ lat, lon, amp }) => Number.isFinite(amp) && amp > 0 && Number.isFinite(lat) && Number.isFinite(lon) && amp >= minFilterAmp && amp <= maxFilterAmp);
 
   if (validPoints.length === 0) {
     return {
