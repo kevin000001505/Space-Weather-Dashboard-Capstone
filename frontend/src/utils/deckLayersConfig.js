@@ -26,25 +26,29 @@ const SHAPE_SVGS = {
     '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><circle cx="64" cy="64" r="60" fill="white"/></svg>',
 };
 
-const AIRPORT_ICONS = Object.fromEntries(
-  Object.entries({
-    large_airport: "star6",
-    medium_airport: "star5",
-    small_airport: "star4",
-    heliport: "square",
-    seaplane_base: "triangle",
-    balloonport: "circle",
-  }).map(([type, shape]) => [
-    type,
-    {
-      id: shape,
-      url: svgToDataUrl(SHAPE_SVGS[shape]),
-      width: 128,
-      height: 128,
-      mask: true,
-    },
+// Single atlas for all airport shapes — avoids per-icon texture churn in WebGL
+const SHAPE_NAMES = ["star6", "star5", "star4", "square", "triangle", "circle"];
+const AIRPORT_ATLAS = svgToDataUrl(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${SHAPE_NAMES.length * 128}" height="128">${SHAPE_NAMES.map((name, i) => {
+    const inner = SHAPE_SVGS[name].replace(/<svg[^>]*>/, "").replace(/<\/svg>/, "");
+    return `<g transform="translate(${i * 128},0)">${inner}</g>`;
+  }).join("")}</svg>`,
+);
+const AIRPORT_ICON_MAPPING = Object.fromEntries(
+  SHAPE_NAMES.map((name, i) => [
+    name,
+    { x: i * 128, y: 0, width: 128, height: 128, mask: true },
   ]),
 );
+const AIRPORT_TYPE_TO_SHAPE = {
+  large_airport: "star6",
+  medium_airport: "star5",
+  small_airport: "star4",
+  heliport: "square",
+  seaplane_base: "triangle",
+  balloonport: "circle",
+};
+const DEFAULT_AIRPORT_SHAPE = "circle";
 
 // Vibrant, distinct colors for overlapping runways. Red is reserved.
 const RUNWAY_PALETTE = [
@@ -57,7 +61,7 @@ const RUNWAY_PALETTE = [
   [255, 105, 180], // Pink
 ];
 
-const DEFAULT_AIRPORT_ICON = AIRPORT_ICONS.small_airport;
+// Removed: individual AIRPORT_ICONS / DEFAULT_AIRPORT_ICON — now uses atlas
 
 function getZoomScale(
   zoom,
@@ -330,7 +334,9 @@ export const buildDeckLayers = ({
         id: "airports-outline",
         data: highlightedAirports,
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-        getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+        iconAtlas: AIRPORT_ATLAS,
+        iconMapping: AIRPORT_ICON_MAPPING,
+        getIcon: (d) => AIRPORT_TYPE_TO_SHAPE[d.type] || DEFAULT_AIRPORT_SHAPE,
         getSize: 3 * scaledAirportIconSize,
         getColor: (d) => {
           return isZooming ? [outlineColor[0], outlineColor[1], outlineColor[2], 25] : outlineColor;
@@ -349,7 +355,9 @@ export const buildDeckLayers = ({
         id: "airports-base",
         data: filteredAirports,
         getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-        getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+        iconAtlas: AIRPORT_ATLAS,
+        iconMapping: AIRPORT_ICON_MAPPING,
+        getIcon: (d) => AIRPORT_TYPE_TO_SHAPE[d.type] || DEFAULT_AIRPORT_SHAPE,
         getSize: (d) =>
           highlightedAirports.some((a) => a.ident === d.ident)
             ? 2 * scaledAirportIconSize

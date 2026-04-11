@@ -222,7 +222,7 @@ const PlaneTracker = () => {
       }}
     >
       <Slide direction="down" in={true} timeout={500} mountOnEnter unmountOnExit>
-        <DateTimeViewer />
+        <DateTimeViewer playbackMode />
       </Slide>
 
       <Map

@@ -191,6 +191,8 @@ const CustomDateTime = ({
             label="Start Date & Time"
             value={customdt.start ? new Date(customdt.start) : null}
             maxDateTime={customdt.end ? new Date(customdt.end) : undefined}
+            disableFuture
+            ampm={false}
             disableHighlightToday
             onChange={(date) =>
               dispatch(
@@ -215,6 +217,8 @@ const CustomDateTime = ({
             label="End Date & Time"
             value={customdt.end ? new Date(customdt.end) : null}
             minDateTime={customdt.start ? new Date(customdt.start) : undefined}
+            disableFuture
+            ampm={false}
             disableHighlightToday
             onChange={(date) =>
               dispatch(

@@ -3,6 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   setPlaybackTime,
   setLiveStreamMode,
+  calculateOptimalInterval,
+  getSegmentDurationMs,
 } from "../../../store/slices/playbackSlice";
 import {
   Box,
@@ -20,17 +22,13 @@ import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import FastRewindRoundedIcon from "@mui/icons-material/FastRewindRounded";
 import FastForwardRoundedIcon from "@mui/icons-material/FastForwardRounded";
 import RepeatRoundedIcon from "@mui/icons-material/RepeatRounded";
-import SpeedRoundedIcon from "@mui/icons-material/SpeedRounded";
-import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
-import TimelineRoundedIcon from "@mui/icons-material/TimelineRounded";
 import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
 import { getPlaybackTimestamp } from "../helpers/eventPlayback";
 
-const HOUR_MS = 60 * 60 * 1000;
 const PLAYBACK_EVENTS = ["drap", "aurora", "geoelectric"];
 
-const createDefaultHourStatus = (hour) => ({
-  hour,
+const createDefaultSegmentStatus = (index) => ({
+  index,
   aggregate: "idle",
   progress: 0,
   hasData: false,
@@ -40,45 +38,41 @@ const createDefaultHourStatus = (hour) => ({
   }, {}),
 });
 
-const normalizeHourStatus = (status, hour) => {
-  const fallback = createDefaultHourStatus(hour);
+const normalizeSegmentStatus = (status, index) => {
+  const fallback = createDefaultSegmentStatus(index);
+  if (!status || typeof status !== "object") return fallback;
 
-  if (!status || typeof status !== "object") {
-    return fallback;
-  }
-
-  const normalized = {
-    ...fallback,
-    ...status,
-    events: { ...fallback.events },
-  };
-
+  const normalized = { ...fallback, ...status, events: { ...fallback.events } };
   PLAYBACK_EVENTS.forEach((event) => {
     normalized.events[event] = {
       ...fallback.events[event],
       ...(status.events?.[event] || {}),
     };
   });
-
   return normalized;
 };
 
-const formatHourLabel = (timestamp) =>
-  new Date(timestamp).toLocaleString(undefined, {
+const formatSegmentLabel = (timestamp, timezone) => {
+  const tz = !timezone || timezone === "local" ? undefined : timezone;
+  return new Date(timestamp).toLocaleString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: tz,
   });
+};
 
-const HourStatusStrip = React.memo(function HourStatusStrip({
-  normalizedHourStatuses,
+const SegmentStatusStrip = React.memo(function SegmentStatusStrip({
+  normalizedSegmentStatuses,
   playbackRangeStartTime,
+  segmentDurationMs,
   darkMode,
-  onSelectHour,
+  onSelectSegment,
   formatSegmentTooltip,
 }) {
+  const segmentCount = normalizedSegmentStatuses.length;
   const segmentColors = React.useMemo(
     () => ({
       idle: alpha(darkMode ? "#7c8aa0" : "#c2d0ea", 0.1),
@@ -95,7 +89,7 @@ const HourStatusStrip = React.memo(function HourStatusStrip({
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: "repeat(24, minmax(0, 1fr))",
+        gridTemplateColumns: `repeat(${segmentCount}, minmax(0, 1fr))`,
         gap: "2px",
         height: 8,
         mt: 0.2,
@@ -106,37 +100,35 @@ const HourStatusStrip = React.memo(function HourStatusStrip({
         borderColor: alpha(darkMode ? "#a78bfa" : "#1976d2", 0.12),
       }}
     >
-      {normalizedHourStatuses.map((hourStatus, hour) => {
-        const segmentStart = playbackRangeStartTime + hour * HOUR_MS;
+      {normalizedSegmentStatuses.map((segStatus, idx) => {
+        const segStart = playbackRangeStartTime + idx * segmentDurationMs;
         const fillWidth =
-          hourStatus.aggregate === "empty"
+          segStatus.aggregate === "empty"
             ? 0
-            : Math.max(hourStatus.progress, 6);
-        const fillColor = segmentColors[hourStatus.aggregate] || segmentColors.idle;
+            : Math.max(segStatus.progress, 6);
+        const fillColor = segmentColors[segStatus.aggregate] || segmentColors.idle;
 
         return (
           <Tooltip
-            key={hour}
+            key={idx}
             arrow
             placement="top"
-            title={formatSegmentTooltip(hourStatus, segmentStart)}
+            title={formatSegmentTooltip(segStatus, segStart)}
           >
             <Box
               onClick={() => {
-                if (hourStatus.hasData) {
-                  onSelectHour(segmentStart);
-                }
+                if (segStatus.hasData) onSelectSegment(segStart);
               }}
               sx={{
                 position: "relative",
                 height: "100%",
                 minWidth: 0,
                 overflow: "hidden",
-                bgcolor: segmentColors[hourStatus.aggregate] || segmentColors.idle,
-                cursor: hourStatus.hasData ? "pointer" : "default",
+                bgcolor: segmentColors[segStatus.aggregate] || segmentColors.idle,
+                cursor: segStatus.hasData ? "pointer" : "default",
                 boxShadow:
-                  hourStatus.aggregate === "fetching" ||
-                  hourStatus.aggregate === "buffering"
+                  segStatus.aggregate === "fetching" ||
+                  segStatus.aggregate === "buffering"
                     ? `inset 0 0 0 1px ${alpha("#fff", 0.18)}`
                     : "none",
                 transition:
@@ -158,7 +150,7 @@ const HourStatusStrip = React.memo(function HourStatusStrip({
                   position: "absolute",
                   inset: 0,
                   background:
-                    hourStatus.aggregate === "empty"
+                    segStatus.aggregate === "empty"
                       ? `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.04)} 100%)`
                       : `linear-gradient(90deg, transparent 0%, ${alpha("#fff", 0.08)} 100%)`,
                   mixBlendMode: "screen",
@@ -176,24 +168,26 @@ const HourStatusStrip = React.memo(function HourStatusStrip({
 const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
   const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.ui);
-  const playbackDate = useSelector((state) => state.playback.date);
+  const selectedTimezone = useSelector((state) => state.charts.selectedTimezone);
+  const startDateTime = useSelector((state) => state.playback.startDateTime);
+  const endDateTime = useSelector((state) => state.playback.endDateTime);
   const drapPlayback = useSelector((state) => state.drap.playback);
   const auroraPlayback = useSelector((state) => state.aurora.playback);
   const geoElectricPlayback = useSelector(
     (state) => state.geoelectric.playback,
   );
-  const playbackHourStatuses = useSelector(
-    (state) =>
-      state.playback.playbackHourStatuses ||
-      Array.from({ length: 24 }, (_, hour) => createDefaultHourStatus(hour)),
+  const playbackSegmentStatuses = useSelector(
+    (state) => state.playback.playbackSegmentStatuses || [],
   );
-  const normalizedHourStatuses = React.useMemo(
+
+  const normalizedSegmentStatuses = React.useMemo(
     () =>
-      playbackHourStatuses.map((status, hour) =>
-        normalizeHourStatus(status, hour),
+      playbackSegmentStatuses.map((status, idx) =>
+        normalizeSegmentStatus(status, idx),
       ),
-    [playbackHourStatuses],
+    [playbackSegmentStatuses],
   );
+
   const playbackTimes = React.useMemo(() => {
     const timestamps = [drapPlayback, auroraPlayback, geoElectricPlayback]
       .flat()
@@ -203,21 +197,30 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     return Array.from(new Set(timestamps)).sort((left, right) => left - right);
   }, [drapPlayback, auroraPlayback, geoElectricPlayback]);
 
-  const baseStepMs = 300 * 1000; // 5 minute base step
+  // Dynamic step based on the interval for the selected range
+  const baseStepMs = React.useMemo(() => {
+    const interval = calculateOptimalInterval(startDateTime, endDateTime);
+    return interval * 60 * 1000;
+  }, [startDateTime, endDateTime]);
+
+  const segmentDurationMs = React.useMemo(
+    () => getSegmentDurationMs(startDateTime, endDateTime),
+    [startDateTime, endDateTime],
+  );
+
   const [startTime, setStartTime] = React.useState(null);
   const [endTime, setEndTime] = React.useState(null);
   const [currentTime, setCurrentTime] = React.useState(null);
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const [isLooping, setIsLooping] = React.useState(false);
+  const [speed, setSpeed] = React.useState(1);
   const lastPlaybackRangeRef = React.useRef({ startTime: null, endTime: null });
 
   const playbackRange = React.useMemo(() => {
-    if (playbackDate) {
-      const [year, month, day] = playbackDate.split("-").map(Number);
-      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 1);
+    if (startDateTime && endDateTime) {
       return {
-        startTime: start.getTime(),
-        endTime: end.getTime(),
+        startTime: new Date(startDateTime).getTime(),
+        endTime: new Date(endDateTime).getTime(),
       };
     }
 
@@ -242,7 +245,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       startTime: start.getTime(),
       endTime: end.getTime(),
     };
-  }, [playbackDate, playbackTimes]);
+  }, [startDateTime, endDateTime, playbackTimes]);
 
   const initialPlaybackTime = React.useMemo(
     () => playbackRange.startTime,
@@ -263,10 +266,8 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       setIsPlaying(false);
     }
   }, [playbackRange, initialPlaybackTime, currentTime, dispatch]);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [isLooping, setIsLooping] = React.useState(false);
-  const [speed, setSpeed] = React.useState(1);
-  const frameSkip = Math.max(Math.round(speed), 1); // frames to skip per tick at >1x
+
+  const frameSkip = Math.max(Math.round(speed), 1);
 
   const allowedSpeeds = [0.25, 0.5, 1, 2, 4, 8];
   const handleSpeedChange = () => {
@@ -275,11 +276,10 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     setSpeed(allowedSpeeds[nextIdx]);
   };
 
-  const handleSelectHour = React.useCallback((segmentStart) => {
+  const handleSelectSegment = React.useCallback((segmentStart) => {
     setCurrentTime(segmentStart);
   }, []);
 
-  // Advance by N frames on the selected time axis, independent of load state.
   const advanceFrames = React.useCallback(
     (prev, count) => {
       const current = prev ?? playbackRange.startTime;
@@ -298,15 +298,9 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
 
       return stepTime;
     },
-    [
-      isLooping,
-      playbackRange.startTime,
-      playbackRange.endTime,
-      baseStepMs,
-    ],
+    [isLooping, playbackRange.startTime, playbackRange.endTime, baseStepMs],
   );
 
-  // Playback effect: advance by frameSkip frames per tick
   React.useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(
@@ -324,7 +318,6 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     dispatch(setPlaybackTime(currentTime));
   }, [currentTime, dispatch]);
 
-  // Step buttons always advance exactly 1 frame
   const handleStepBackward = () => {
     setCurrentTime((prev) => advanceFrames(prev, -1));
   };
@@ -332,23 +325,23 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     setCurrentTime((prev) => advanceFrames(prev, 1));
   };
 
-  // Format time for display
   const formatTime = (ms) => {
     if (ms === null || ms === undefined) return "--/--/----, --:--:-- --";
-    return new Date(ms).toLocaleString();
+    const tz = !selectedTimezone || selectedTimezone === "local" ? undefined : selectedTimezone;
+    return new Date(ms).toLocaleString(undefined, { timeZone: tz });
   };
 
   const formatSegmentTooltip = React.useCallback(
-    (hourStatus, hourStart) => (
+    (segStatus, segStart) => (
       <Stack spacing={0.5} sx={{ py: 0.25 }}>
-        <Box sx={{ fontWeight: 700 }}>{formatHourLabel(hourStart)}</Box>
+        <Box sx={{ fontWeight: 700 }}>{formatSegmentLabel(segStart, selectedTimezone)}</Box>
         <Box sx={{ fontSize: "0.8rem", opacity: 0.8 }}>
-          {hourStatus.aggregate === "empty"
-            ? "No data for this hour"
-            : `${hourStatus.aggregate.toUpperCase()} • ${hourStatus.progress}% complete`}
+          {segStatus.aggregate === "empty"
+            ? "No data for this segment"
+            : `${segStatus.aggregate.toUpperCase()} • ${segStatus.progress}% complete`}
         </Box>
         {PLAYBACK_EVENTS.map((event) => {
-          const eventStatus = hourStatus.events?.[event] || {};
+          const eventStatus = segStatus.events?.[event] || {};
           const label =
             eventStatus.status === "ready"
               ? eventStatus.hasData
@@ -376,8 +369,17 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
         })}
       </Stack>
     ),
-    [],
+    [selectedTimezone],
   );
+
+  // Resolution display
+  const intervalMinutes = React.useMemo(
+    () => calculateOptimalInterval(startDateTime, endDateTime),
+    [startDateTime, endDateTime],
+  );
+  const resolutionLabel = intervalMinutes >= 60
+    ? `${Math.round(intervalMinutes / 60)}h`
+    : `${intervalMinutes}m`;
 
   const transportButtonSx = {
     width: 42,
@@ -410,7 +412,9 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
       border: `2px solid #fff`,
     },
   };
+
   const disabled = startTime === null || endTime === null;
+
   return (
     <Paper
       elevation={0}
@@ -437,11 +441,12 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
     >
       <Stack spacing={1}>
         <Stack spacing={0.5}>
-          <HourStatusStrip
-            normalizedHourStatuses={normalizedHourStatuses}
+          <SegmentStatusStrip
+            normalizedSegmentStatuses={normalizedSegmentStatuses}
             playbackRangeStartTime={playbackRange.startTime}
+            segmentDurationMs={segmentDurationMs}
             darkMode={darkMode}
-            onSelectHour={handleSelectHour}
+            onSelectSegment={handleSelectSegment}
             formatSegmentTooltip={formatSegmentTooltip}
           />
 
@@ -456,7 +461,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
               }
             }}
             aria-label="Playback time"
-            disabled={startTime === null || endTime === null}
+            disabled={disabled}
             sx={{
               ...sliderSx,
               "& .MuiSlider-track": {
@@ -479,6 +484,17 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
             }}
           >
             <span>{formatTime(currentTime)}</span>
+            <Tooltip title={`Resolution: 1 frame = ${resolutionLabel}`} placement="top">
+              <span
+                style={{
+                  fontSize: "0.75rem",
+                  opacity: 0.6,
+                  alignSelf: "center",
+                }}
+              >
+                {resolutionLabel} step
+              </span>
+            </Tooltip>
             <span>{formatTime(endTime)}</span>
           </Stack>
         </Stack>
@@ -600,7 +616,7 @@ const PlaybackPanel = React.forwardRef(function PlaybackPanel(props, ref) {
               {speed}x
             </Button>
 
-            <Tooltip title={"Return to Live Stream Mode"} placement="top">
+            <Tooltip title="Return to Live Stream Mode" placement="top">
               <span>
                 <IconButton
                   onClick={() => dispatch(setLiveStreamMode(true))}
