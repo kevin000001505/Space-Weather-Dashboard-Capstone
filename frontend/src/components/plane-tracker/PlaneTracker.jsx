@@ -104,12 +104,6 @@ const PlaneTracker = () => {
   const zoomTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!showElectricTransmissionLines) {
-      setHoveredElectricTransmissionLines(null);
-    }
-  }, [showElectricTransmissionLines]);
-
-  useEffect(() => {
     dispatch(fetchLocations());
   }, [dispatch]);
 
