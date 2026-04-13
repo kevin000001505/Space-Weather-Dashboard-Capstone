@@ -61,6 +61,44 @@
   cursor: pointer;
 }
 
+.dtv-range {
+  min-width: 140px;
+  border-left: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 2px 12px;
+  cursor: pointer;
+}
+.dtv-range:first-child {
+  border-left: 1.5px solid #7f5cff;
+}
+.dtv-range-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  line-height: 1;
+}
+.dtv-range-value {
+  font-family: "Share Tech Mono", "Consolas", "Menlo", monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+
+.dtv-range:hover {
+  background: rgba(127, 92, 255, 0.18);
+  color: #ffd700;
+  border-color: #ffd700;
+  box-shadow: 0 2px 12px 0 #ffd700;
+  text-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
+}
+
 .dtv-date:hover {
   background: rgba(127, 92, 255, 0.18);
   color: #ffd700;

@@ -2,18 +2,29 @@ import { useMemo } from "react";
 import { useSelector } from "react-redux";
 import { Layer, Source } from "react-map-gl/maplibre";
 
-import { getAuroraGeoJSON, getAuroraMapLayers } from "../../../utils/aurora";
+import {
+  buildAuroraStaticFromLocations,
+  getAuroraFrameProbabilities,
+  getAuroraMapLayers,
+  AURORA_LAYER_ID,
+  AURORA_BASE_OPACITY,
+  AURORA_DIMMED_OPACITY,
+} from "../../../utils/aurora";
 import { getPlaybackTimestamp, resolvePlaybackEntry } from "../helpers/eventPlayback";
+import useFeatureStateValues from "../../../hooks/useFeatureStateValues";
+import useLayerZoomDim from "../../../hooks/useLayerZoomDim";
+
+const SOURCE_ID = "aurora-cells";
 
 const AuroraOverlay = () => {
   const { showAurora, auroraRegionRange } = useSelector((state) => state.aurora);
-  const { isZooming } = useSelector((state) => state.ui);
   const { liveStreamMode, currentPlaybackTime } = useSelector(
     (state) => state.playback,
   );
   const { data: auroraData, playback: auroraPlayback } = useSelector(
     (state) => state.aurora,
   );
+  const locationsAurora = useSelector((state) => state.locations.aurora);
 
   const auroraPlaybackTimes = useMemo(
     () => auroraPlayback.map(getPlaybackTimestamp).filter(Number.isFinite),
@@ -32,45 +43,29 @@ const AuroraOverlay = () => {
     [liveStreamMode, currentPlaybackTime, auroraPlayback, auroraPlaybackTimes],
   );
 
-  const auroraGeoJson = useMemo(() => {
-    const sourceData =
-      !liveStreamMode && activeAuroraPlayback
-        ? activeAuroraPlayback
-        : auroraData;
-    const sourcePoints = sourceData?.points?? [];
-    if (
-      sourcePoints.length === 0 && !Array.isArray(sourcePoints[0])
-    ) {
-      return null;
-    }
-
-    return getAuroraGeoJSON(
-      sourcePoints,
-      auroraRegionRange,
-    );
-  }, [
-    auroraData,
-    activeAuroraPlayback,
-    liveStreamMode,
-    auroraRegionRange,
-  ]);
-
-  const auroraMapLayers = useMemo(
-    () => getAuroraMapLayers(isZooming),
-    [isZooming],
+  const { featureCollection } = useMemo(
+    () => buildAuroraStaticFromLocations(locationsAurora),
+    [locationsAurora],
   );
 
-  if (
-    !showAurora ||
-    !auroraGeoJson ||
-    !auroraMapLayers ||
-    auroraGeoJson.features?.length === 0
-  ) {
+  const frameValues = useMemo(() => {
+    const points = liveStreamMode
+      ? auroraData?.points ?? []
+      : activeAuroraPlayback?.points ?? [];
+    return getAuroraFrameProbabilities(points, auroraRegionRange);
+  }, [liveStreamMode, auroraData, activeAuroraPlayback, auroraRegionRange]);
+
+  useFeatureStateValues(SOURCE_ID, frameValues, featureCollection);
+  useLayerZoomDim(AURORA_LAYER_ID, AURORA_BASE_OPACITY, AURORA_DIMMED_OPACITY);
+
+  const auroraMapLayers = useMemo(() => getAuroraMapLayers(), []);
+
+  if (!showAurora || featureCollection.features.length === 0) {
     return null;
   }
 
   return (
-    <Source id="aurora-cells" type="geojson" data={auroraGeoJson}>
+    <Source id={SOURCE_ID} type="geojson" data={featureCollection}>
       {auroraMapLayers.map((layer) => (
         <Layer key={layer.id} {...layer} />
       ))}

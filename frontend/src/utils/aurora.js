@@ -1,76 +1,87 @@
 // Aurora Implementation: Filled Polygon Cells
-// Ingests data directly from NOAA's OVATION Prime JSON
+// Static source built once from the canonical locations grid; per-frame updates
+// use feature-state keyed on the locations array index.
 
-export const getAuroraGeoJSON = (sourcePoints, auroraRegionRange = [0, 100]) => {
-  if (!sourcePoints || sourcePoints.length === 0) {
-    return { type: 'FeatureCollection', features: [] };
+const HALF_LAT = 0.5;
+const HALF_LON = 0.5;
+
+const cellFeature = (id, lat, lon) => ({
+  type: "Feature",
+  id,
+  properties: {},
+  geometry: {
+    type: "Polygon",
+    coordinates: [[
+      [lon - HALF_LON, lat - HALF_LAT],
+      [lon + HALF_LON, lat - HALF_LAT],
+      [lon + HALF_LON, lat + HALF_LAT],
+      [lon - HALF_LON, lat + HALF_LAT],
+      [lon - HALF_LON, lat - HALF_LAT],
+    ]],
+  },
+});
+
+export const buildAuroraStaticFromLocations = (locationsAurora) => {
+  if (!Array.isArray(locationsAurora) || locationsAurora.length === 0) {
+    return { featureCollection: { type: "FeatureCollection", features: [] }, count: 0 };
   }
-  
-  const [minAmp, maxAmp] = auroraRegionRange || [0, 100];
- // 1. Filter and normalize coordinates
-  // Data arrives as [lat, lon, prob] from the DB / compressed pipeline
-  const validPoints = sourcePoints
-        .filter(([lat, lon, prob]) => prob >= minAmp && prob <= maxAmp)
-        .map(([lat, lon, prob]) => {
-          // Longitude may still be 0-360 from legacy NOAA data.
-          // MapLibre/deck.gl expects -180 to 180, so we must wrap it.
-          const normalizedLon = lon > 180 ? lon - 360 : lon;
-          return { lat, lon: normalizedLon, prob };
-        }) ?? [];
 
-  // 2. NOAA's grid is uniformly 1x1 degree
-  const halfLat = 0.5;
-  const halfLon = 0.5;
-
-  // 3. Map to GeoJSON Polygons
-  const features = validPoints.map(({ lat, lon, prob }) => {
-    const west = lon - halfLon;
-    const east = lon + halfLon;
-    const south = lat - halfLat;
-    const north = lat + halfLat;
-
-    return {
-      type: 'Feature',
-      properties: {
-        probability: prob, // 0 to 100
-      },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [west, south],
-          [east, south],
-          [east, north],
-          [west, north],
-          [west, south],
-        ]],
-      },
-    };
-  });
+  const features = [];
+  for (let i = 0; i < locationsAurora.length; i += 1) {
+    const entry = locationsAurora[i];
+    if (!Array.isArray(entry)) continue;
+    const lat = Number(entry[0]);
+    const lon = Number(entry[1]);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+    features.push(cellFeature(i + 1, lat, lon));
+  }
 
   return {
-    type: 'FeatureCollection',
-    features,
+    featureCollection: { type: "FeatureCollection", features },
+    count: features.length,
   };
 };
 
-export const getAuroraMapLayers = (isZooming) => {
+export const getAuroraFrameProbabilities = (points, auroraRegionRange = [0, 100]) => {
+  const [minAmp, maxAmp] = auroraRegionRange || [0, 100];
+  const result = new Map();
+  if (!Array.isArray(points)) return result;
+
+  for (let i = 0; i < points.length; i += 1) {
+    const row = points[i];
+    if (!Array.isArray(row)) continue;
+    const prob = Number(row[2]);
+    if (!Number.isFinite(prob) || prob <= 0) continue;
+    if (prob < minAmp || prob > maxAmp) continue;
+    result.set(i + 1, { probability: prob });
+  }
+  return result;
+};
+
+export const AURORA_BASE_OPACITY = 0.6;
+export const AURORA_DIMMED_OPACITY = 0.2;
+export const AURORA_LAYER_ID = "aurora-filled-cells";
+
+export const getAuroraMapLayers = () => {
+  const probExpr = ["coalesce", ["feature-state", "probability"], 0];
   return [
     {
-      id: 'aurora-filled-cells',
-      type: 'fill',
-      source: 'aurora-cells',
+      id: AURORA_LAYER_ID,
+      type: "fill",
+      source: "aurora-cells",
       paint: {
-        'fill-antialias': false,
-        'fill-color': [
-          'interpolate',
-          ['linear'],
-          ['get', 'probability'],    // NOAA gives us a 0-100 scale natively
-          0,   'rgba(0, 0, 0, 0)', // Transparent for 0%
-          10,  '#1eff00',          // Bright green
-          50,  '#fff700',          // Bright yellow
-          80,  '#ff0000',          // Intense red (high probability/intensity)
+        "fill-antialias": false,
+        "fill-color": [
+          "interpolate",
+          ["linear"],
+          probExpr,
+          0, "rgba(0, 0, 0, 0)",
+          10, "#1eff00",
+          50, "#fff700",
+          80, "#ff0000",
         ],
-        'fill-opacity': isZooming ? 0.2 : 0.6,
+        "fill-opacity": AURORA_BASE_OPACITY,
+        "fill-opacity-transition": { duration: 180 },
       },
     },
   ];

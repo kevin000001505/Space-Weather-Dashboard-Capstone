@@ -15,6 +15,7 @@ import {
   fetchAirports,
   fetchGeoelectric,
   fetchElectricTransmissionLines,
+  fetchLocations,
 } from "../../api/api";
 
 // Component imports
@@ -103,7 +104,17 @@ const PlaneTracker = () => {
   const zoomTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!liveStreamMode) return;
+    if (!showElectricTransmissionLines) {
+      setHoveredElectricTransmissionLines(null);
+    }
+  }, [showElectricTransmissionLines]);
+
+  useEffect(() => {
+    dispatch(fetchLocations());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if(!liveStreamMode)return;
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
@@ -307,14 +318,8 @@ const PlaneTracker = () => {
         background: 'linear-gradient(0, #000, #223)'
       }}
     >
-      <Slide
-        direction="down"
-        in={true}
-        timeout={500}
-        mountOnEnter
-        unmountOnExit
-      >
-        <DateTimeViewer />
+      <Slide direction="down" in={true} timeout={500} mountOnEnter unmountOnExit>
+        <DateTimeViewer playbackMode />
       </Slide>
 
       <Map
