@@ -15,6 +15,7 @@ import {
   fetchAirports,
   fetchGeoelectric,
   fetchElectricTransmissionLines,
+  fetchLocations,
 } from "../../api/api";
 
 // Component imports
@@ -103,7 +104,11 @@ const PlaneTracker = () => {
   }, [showElectricTransmissionLines]);
 
   useEffect(() => {
-    if(!liveStreamMode)return; 
+    dispatch(fetchLocations());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if(!liveStreamMode)return;
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
