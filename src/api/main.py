@@ -999,18 +999,21 @@ async def retrieve_flight_paths(
             status_code=404, detail=f"No {icao24} data available for the given range"
         )
 
-    result = []
-    try:
-        for row in rows:
-            row_dict = dict(row)
-            raw_points = row_dict.get("points")
-            row_dict["data"] = json.loads(raw_points) if raw_points is not None else None
-            result.append(FlightPathRangeResponse.model_validate(row_dict))
+    requested_times, times, points = [], [], []
+    for row in rows:
+        row_dict = dict(row)
+        raw = row_dict.get("points")
+        requested_times.append(row_dict["requested_time"])
+        times.append(row_dict["time"])
+        points.append(json.loads(raw) if raw is not None else None)
 
-        add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return result
-    except Exception as e:
-        print(rows)
+    result = FlightPathRangeResponse(
+        requested_time=requested_times,
+        time=times,
+        points=points,
+    )
+    add_timing_headers(response, t_start, t_query_start, t_query_end)
+    return result
 
 
 @app.get("/api/v2/location", response_model=LocationData)
