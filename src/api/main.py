@@ -1000,17 +1000,14 @@ async def retrieve_flight_paths(
         )
 
     result = []
-    try:
-        for row in rows:
-            row_dict = dict(row)
-            raw_points = row_dict.get("points")
-            row_dict["data"] = json.loads(raw_points) if raw_points is not None else None
-            result.append(FlightPathRangeResponse.model_validate(row_dict))
+    for row in rows:
+        row_dict = dict(row)
+        raw_points = row_dict.get("points")
+        row_dict["points"] = json.loads(raw_points) if raw_points is not None else None
+        result.append(FlightPathRangeResponse.model_validate(row_dict))
 
-        add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return result
-    except Exception as e:
-        print(rows)
+    add_timing_headers(response, t_start, t_query_start, t_query_end)
+    return result
 
 
 @app.get("/api/v2/location", response_model=LocationData)
