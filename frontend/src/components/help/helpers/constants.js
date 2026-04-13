@@ -309,7 +309,7 @@ const topicContent = {
           {
             id: "switching-how-url",
             title: "Direct URLs",
-            body: "You can also navigate directly: the map is at '/', the analytics dashboard at '/charts', this help page at '/help', and the about page at '/about'.",
+            body: "You can also navigate directly: the landing page is at '/', the map dashboard at '/map-dashboard', the analytics dashboard at '/charts', this help page at '/help', and the about page at '/about'.",
           },
         ],
       },

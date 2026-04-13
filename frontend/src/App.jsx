@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Help from "./components/help/Help";
 import About from "./components/about/About";
+import Landing from "./components/about/Landing";
 import { Toaster } from "react-hot-toast";
 import Charts from "./components/charts/Charts";
 import { useSelector } from "react-redux";
@@ -27,8 +28,9 @@ function App() {
           <Toaster position="top-center" />
           <Sidebar />
           <Routes>
-            <Route path="/" element={<PlaneTracker />} />
-            <Route path="/charts" element={<Charts />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/map-dashboard" element={<PlaneTracker />} />
+            <Route path="/analytics" element={<Charts />} />
             <Route path="/help" element={<Help />} />
             <Route path="/help/:topicSlug" element={<Help />} />
             <Route path="/help/:groupSlug/:topicSlug" element={<Help />} />

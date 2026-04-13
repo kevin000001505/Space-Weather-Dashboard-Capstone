@@ -4,8 +4,7 @@ import { toIso, getTimeRange } from "./helper";
 import { setLoading } from "../store/slices/chartsSlice";
 import { decodeDeltaBitpack, mergeCoordinatesAndValues } from "../utils/compression";
 
-// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_BASE_URL = "http://10.192.127.91/api/v2";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_V1_URL = API_BASE_URL.replace("/v2", "/v1");
 
 // Module-level cache for grid coordinates (fetched once, reused forever)

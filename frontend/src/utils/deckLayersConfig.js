@@ -92,8 +92,6 @@ const normalizePathCoordinates = (coordinates) => {
     normalized[i] = coord;
     prevLon = lon; // Track the adjusted longitude for the next point
   }
-  console.log(normalized);
-
   return normalized;
 };
 
@@ -398,11 +396,7 @@ export const buildDeckLayers = ({
         )
           return null;
         // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
-        const deckCoords = pathData.path_points.map(([lon, lat, alt]) => [
-          lon,
-          lat,
-          Math.round(alt * 3.28084),
-        ]);
+        const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
         return new PathLayer({
           id: `flight-path-pathlayer-${icao24}`,
           data: [{ coordinates: normalizePathCoordinates(deckCoords) }],

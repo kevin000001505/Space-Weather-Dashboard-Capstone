@@ -1,7 +1,7 @@
 import { Box } from "@mui/material";
-import { TeamSection } from "./sections";
+import { MissionSection } from "./sections";
 
-function AboutPage() {
+function LandingPage() {
   return (
     <Box
       sx={{
@@ -11,9 +11,9 @@ function AboutPage() {
         overflow: "hidden",
       }}
     >
-      <TeamSection />
+      <MissionSection />
     </Box>
   );
 }
 
-export default AboutPage;
+export default LandingPage;

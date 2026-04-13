@@ -290,13 +290,9 @@ const PlaneTracker = () => {
         <ScaleControl
           position="bottom-left"
           style={{
-            border: `2px solid ${darkMode ? "#7f5cff" : "#1565c0"} `,
+            borderBottom: `4px solid ${darkMode ? "#7f5cff" : "#1565c0"} `,
             padding: "2px 6px",
-            background: "rgba(34, 40, 60, 0.35)",
-            backdropFilter: "blur(10px)",
-            boxShadow: darkMode
-              ? `0 16px 36px ${alpha("#000", 0.34)}`
-              : `0 14px 30px ${alpha("#0F172A", 0.1)}`,
+            background: "transparent",
             color: "#fff",
             marginLeft: "20px",
             fontSize: "1rem",

@@ -39,13 +39,17 @@ export const Sidebar = () => {
 
   useEffect(() => {
     dispatch(fetchNoAAScales());
-  },[]);
+  }, []);
   const menuItems = [
-    { text: "Dashboard", icon: <HomeIcon />, path: "/" },
-    { text: "Analytics", icon: <DashboardIcon />, path: "/charts" },
+    { text: "Dashboard", icon: <HomeIcon />, path: "/map-dashboard" },
+    { text: "Analytics", icon: <DashboardIcon />, path: "/analytics" },
   ];
   const bottomMenuItems = [
-    { text: "Help", icon: <HelpOutlineIcon />, path: "/help" },
+    {
+      text: "Help",
+      icon: <HelpOutlineIcon />,
+      path: "/help/overview/purpose-of-the-platform",
+    },
     { text: "About Us", icon: <InfoOutlinedIcon />, path: "/about" },
   ];
 
@@ -55,7 +59,13 @@ export const Sidebar = () => {
       sx={{ width: drawerWidth }}
       role="presentation"
     >
-      <div className="sidebar-app-header">
+      <div
+        className="sidebar-app-header"
+        onClick={() => {
+          navigate("/");
+          handleSidebar(false);
+        }}
+      >
         <img src={"/favicon.svg"} alt="App Icon" className="sidebar-app-icon" />
         <div className="sidebar-app-title-group">
           <span className="sidebar-app-name">Space Weather</span>
@@ -95,21 +105,6 @@ export const Sidebar = () => {
       />
 
       <NOAAScales data={noaaScales} />
-      <List className="sidebar-list sidebar-bottom-list">
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              navigate("/tutorial");
-              handleSidebar(false);
-            }}
-            className={`sidebar-tutorial ${location.pathname === "/tutorial" ? "sidebar-menu-selected" : ""}`}
-            selected={location.pathname === "/tutorial"}
-          >
-            <ListItemIcon><HelpOutlineIcon /></ListItemIcon>
-            <ListItemText primary="Tutorial" />
-          </ListItemButton>
-        </ListItem>
-      </List>
       <List className="sidebar-list sidebar-bottom-list sidebar-tutorial-list">
         {bottomMenuItems.map((item, index) => {
           const isSelected = location.pathname === item.path;

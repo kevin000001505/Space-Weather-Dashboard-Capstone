@@ -28,7 +28,7 @@ import TuneIcon from "@mui/icons-material/Tune";
 import MenuIcon from "@mui/icons-material/Menu";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
-import SsidChartIcon from '@mui/icons-material/SsidChart';
+import SsidChartIcon from "@mui/icons-material/SsidChart";
 import PublicIcon from "@mui/icons-material/Public";
 
 import "./styles/ButtonsControl.css";
@@ -52,7 +52,9 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
   } = useSelector((state) => state.ui);
   const { showAurora } = useSelector((state) => state.aurora);
   const { showDRAP } = useSelector((state) => state.drap);
-  const { showElectricTransmissionLines } = useSelector((state) => state.electricTransmissionLines);
+  const { showElectricTransmissionLines } = useSelector(
+    (state) => state.electricTransmissionLines,
+  );
   const { showGeoElectric } = useSelector((state) => state.geoelectric);
   const btnStyle = {
     width: "45px",
@@ -103,7 +105,10 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     {
       icon: <SsidChartIcon sx={{ fontSize: 28 }} />,
       tooltip: `${showElectricTransmissionLines ? "Hide" : "Show"} Power Grids`,
-      onClick: () => dispatch(setShowElectricTransmissionLines(!showElectricTransmissionLines)),
+      onClick: () =>
+        dispatch(
+          setShowElectricTransmissionLines(!showElectricTransmissionLines),
+        ),
       active: showElectricTransmissionLines,
     },
   ];
@@ -145,22 +150,6 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
             sx={btnStyle}
           >
             <LetterIcon letter={useImperial ? "F" : "M"} />
-          </IconButton>
-        </Tooltip>
-        <Tooltip
-          title={globeView ? "Switch to Mercator View" : "Switch to Globe View"}
-          placement="bottom"
-        >
-          <IconButton
-            onClick={() => dispatch(setGlobeView(!globeView))}
-            sx={{
-              ...btnStyle,
-              background: globeView
-                ? "rgba(46,204,64,0.25)"
-                : "rgba(34, 40, 60, 0.35)",
-            }}
-          >
-            <PublicIcon sx={{ fontSize: 28 }} />
           </IconButton>
         </Tooltip>
         <SpeedDial
@@ -331,6 +320,22 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
             ) : (
               <LightModeIcon sx={{ fontSize: 28 }} />
             )}
+          </IconButton>
+        </Tooltip>
+        <Tooltip
+          title={globeView ? "Switch to Mercator View" : "Switch to Globe View"}
+          placement="bottom"
+        >
+          <IconButton
+            onClick={() => dispatch(setGlobeView(!globeView))}
+            sx={{
+              ...btnStyle,
+              background: globeView
+                ? "rgba(46,204,64,0.25)"
+                : "rgba(34, 40, 60, 0.35)",
+            }}
+          >
+            <PublicIcon sx={{ fontSize: 28 }} />
           </IconButton>
         </Tooltip>
         <Tooltip title="Settings" placement="bottom">

@@ -38,9 +38,12 @@
   justify-content: flex-start;
   gap: 18px;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+  cursor: pointer;
 }
-
+.sidebar-app-header:hover {
+  opacity: 0.9;
+}
 .sidebar-app-icon {
   width: 56px;
   height: 56px;
@@ -49,6 +52,9 @@
   box-shadow: 0 2px 12px 0 rgba(25, 118, 210, 0.13);
   padding: 6px;
   transition: box-shadow 0.2s;
+}
+.sidebar-app-icon:hover {
+  box-shadow: 0 4px 16px 0 #a78bfa;
 }
 .sidebar-app-title-group {
   display: flex;
@@ -140,7 +146,7 @@
   width: 35%;
 }
 .sidebar-list .sidebar-tutorial {
- margin-top: 4px;
+  margin-top: 4px;
 }
 .sidebar-list .sidebar-tutorial .MuiListItemIcon-root {
   width: 35%;

@@ -1,5 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import MapRoundedIcon from "@mui/icons-material/MapRounded";
+import InsightsRoundedIcon from "@mui/icons-material/InsightsRounded";
 import {
   TRANSITION_MS,
   CARD_STAGGER_DELAY_MS,
@@ -9,6 +11,10 @@ import CinematicBackground from "./CinematicBackground";
 import ParticleFieldCanvas from "./ParticleFieldCanvas";
 import PersonCard from "./PersonCard";
 import { SUPERVISORS, DEVELOPERS } from "./constants";
+import { useNavigate } from "react-router-dom";
+import { toggleSidebar } from "../../store/slices/sidebarSlice";
+import { useDispatch } from "react-redux";
+import MenuIcon from "@mui/icons-material/Menu";
 
 export function ProgressDots({ current, total, onDotClick }) {
   return (
@@ -52,6 +58,7 @@ export function ProgressDots({ current, total, onDotClick }) {
 }
 
 export function MissionSection() {
+  const navigate = useNavigate();
   const [booted, setBooted] = React.useState(false);
   useEffect(() => {
     const id = setTimeout(() => setBooted(true), 120);
@@ -86,97 +93,172 @@ export function MissionSection() {
       <Box
         sx={{
           position: "relative",
+          display: "flex",
+          flexDirection: "row",
+          gap: 6,
           top: "22%",
           left: { xs: "0%", sm: "0%", md: "0%", lg: "45%" },
           zIndex: 5,
           px: { xs: 3, sm: 5, md: 8, lg: 10 },
         }}
       >
-        <Box
-          sx={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 1.5,
-            mb: 1.5,
-          }}
-        >
+        <Box>
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1.5,
+              mb: 1.5,
+            }}
+          >
+            <Typography
+              sx={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: "1.25rem",
+                letterSpacing: "0.22em",
+                color: "rgba(100,200,255,0.75)",
+                textTransform: "uppercase",
+              }}
+            >
+              Our Mission
+            </Typography>
+          </Box>
+
+          {/* Main headline */}
+          <Typography
+            variant="h1"
+            sx={{
+              fontFamily: "'Sora', 'Inter', sans-serif",
+              fontWeight: 800,
+              fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
+              color: "#f0f6ff",
+              lineHeight: 1.1,
+              letterSpacing: "-0.02em",
+              mb: 3,
+            }}
+          >
+            The Sun is Unpredictable.
+            <br />
+            <Box
+              component="span"
+              sx={{
+                background:
+                  "linear-gradient(135deg, #60c8ff 0%, #a78bfa 60%, #f472b6 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              Your operations don't have to be.
+            </Box>
+          </Typography>
+
+          {/* Body */}
           <Typography
             sx={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: "1.25rem",
-              letterSpacing: "0.22em",
-              color: "rgba(100,200,255,0.75)",
-              textTransform: "uppercase",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: { xs: "0.95rem", md: "1.25rem" },
+              color: "rgba(180,210,255,0.72)",
+              lineHeight: 1.75,
+              maxWidth: 520,
+              mb: 2,
             }}
           >
-            Our Mission
+            Space weather events such as geomagnetic storms, solar flares,
+            coronal mass ejections, and solar proton events can disrupt
+            power-grids infrastructure and aviation navigation, communication,
+            and surveillance systems, particularly on high-altitude and polar
+            routes.
           </Typography>
-        </Box>
 
-        {/* Main headline */}
-        <Typography
-          variant="h1"
-          sx={{
-            fontFamily: "'Sora', 'Inter', sans-serif",
-            fontWeight: 800,
-            fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
-            color: "#f0f6ff",
-            lineHeight: 1.1,
-            letterSpacing: "-0.02em",
-            mb: 3,
-          }}
-        >
-          The Sun is Unpredictable.
-          <br />
-          <Box
-            component="span"
+          <Typography
             sx={{
-              background:
-                "linear-gradient(135deg, #60c8ff 0%, #a78bfa 60%, #f472b6 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: { xs: "0.95rem", md: "1.25rem" },
+              color: "rgba(180,210,255,0.72)",
+              lineHeight: 1.75,
+              maxWidth: 520,
+              mb: 4,
             }}
           >
-            Your operations don't have to be.
-          </Box>
-        </Typography>
+            Current space-weather products show raw measurements instead of
+            aviation- and infrastructure-ready risk insights. Our goal is to
+            convert real-time space-weather data into risk indicators and
+            operational alerts.
+          </Typography>
 
-        {/* Body */}
-        <Typography
-          sx={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: { xs: "0.95rem", md: "1.25rem" },
-            color: "rgba(180,210,255,0.72)",
-            lineHeight: 1.75,
-            maxWidth: 520,
-            mb: 2,
-          }}
-        >
-          Space weather events such as geomagnetic storms, solar flares, coronal
-          mass ejections, and solar proton events can disrupt power-grids
-          infrastructure and aviation navigation, communication, and
-          surveillance systems, particularly on high-altitude and polar routes.
-        </Typography>
-        <Typography
-          sx={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: { xs: "0.95rem", md: "1.25rem" },
-            color: "rgba(180,210,255,0.72)",
-            lineHeight: 1.75,
-            maxWidth: 520,
-            mb: 4,
-          }}
-        >
-          Current space-weather products show raw measurements instead of
-          aviation- and infrastructure-ready risk insights. Our goal is to
-          convert real-time space-weather data into risk indicators and
-          operational alerts.
-        </Typography>
+          {/* CTA Button */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <Button
+              onClick={() => navigate("/map-dashboard")}
+              variant="contained"
+              size="large"
+              startIcon={<MapRoundedIcon />}
+              sx={{
+                px: 3.2,
+                py: 1.5,
+                borderRadius: "16px",
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.98rem",
+                letterSpacing: "0.02em",
+                color: "#f8fbff",
+                background:
+                  "linear-gradient(135deg, #0ea5e9 0%, #2563eb 55%, #1d4ed8 100%)",
+                boxShadow: "0 10px 30px rgba(37, 99, 235, 0.30)",
+                position: "relative",
+                overflow: "hidden",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #38bdf8 0%, #2563eb 55%, #1e40af 100%)",
+                  boxShadow: "0 16px 38px rgba(37, 99, 235, 0.42)",
+                  transform: "translateY(-3px) scale(1.01)",
+                  filter: "saturate(1.08)",
+                },
+              }}
+            >
+              Explore Map Dashboard
+            </Button>
 
+            <Button
+              variant="contained"
+              onClick={() => navigate("/analytics")}
+              size="large"
+              startIcon={<InsightsRoundedIcon />}
+              sx={{
+                px: 3.2,
+                py: 1.5,
+                borderRadius: "16px",
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.98rem",
+                letterSpacing: "0.02em",
+                color: "#fff7fb",
+                background:
+                  "linear-gradient(135deg, #ec4899 0%, #db2777 55%, #be185d 100%)",
+                boxShadow: "0 10px 30px rgba(219, 39, 119, 0.30)",
+                position: "relative",
+                overflow: "hidden",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #f472b6 0%, #db2777 55%, #9d174d 100%)",
+                  boxShadow: "0 16px 38px rgba(219, 39, 119, 0.42)",
+                  transform: "translateY(-3px) scale(1.01)",
+                  filter: "saturate(1.08)",
+                },
+              }}
+            >
+              View Analytics Dashboard
+            </Button>
+          </Stack>
+        </Box>
         {/* Stats row */}
         <Box
           sx={{
             display: "flex",
+            flexDirection: "column",
+            justifySelf: "end",
+            alignSelf: "end",
+            marginBottom: "80px",
             gap: { xs: 3, md: 4 },
             flexWrap: "wrap",
           }}
@@ -242,6 +324,7 @@ export function StaggerCard({ children, index }) {
 }
 
 export function TeamSection() {
+  const dispatch = useDispatch();
   return (
     <Box
       sx={{
@@ -405,6 +488,31 @@ export function TeamSection() {
           ))}
         </Box>
       </Box>
+
+      <IconButton
+        onClick={() => dispatch(toggleSidebar(true))}
+        sx={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          zIndex: 300,
+          width: "45px",
+          height: "45px",
+          border: `2px solid #a78bfa`,
+          borderRadius: "4px",
+          color: `#fff`,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1.25rem",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          backdropFilter: "blur(6px)",
+          background: "rgba(34, 40, 60, 0.35)",
+        }}
+      >
+        <MenuIcon sx={{ fontSize: 28 }} />
+      </IconButton>
     </Box>
   );
 }

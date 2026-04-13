@@ -40,7 +40,7 @@ export const PARALLAX_NEAR_STR = 2; // px Earth+vehicles move
 export const STAR_COUNT = 280;
 
 // ── Team section — Particle field ────────────────────────────────────────────
-export const PARTICLE_FIELD_COUNT = 90; // total particles
+export const PARTICLE_FIELD_COUNT = 360; // total particles
 export const PARTICLE_FIELD_SOLAR_RATIO = 0.38; // fraction that are orange (solar data)
 export const PARTICLE_FIELD_BG = "#010308"; // background colour
 export const PARTICLE_FIELD_ATTRACT = 0.0012; // pull strength toward centre
