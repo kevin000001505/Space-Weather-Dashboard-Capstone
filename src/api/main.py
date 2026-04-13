@@ -1010,7 +1010,7 @@ async def retrieve_flight_paths(
                 "icao24": row_dict.get("icao24"),
                 "callsign": row_dict.get("callsign"),
                 "lat": row_dict.get("lat"),
-                "long": row_dict.get("long"),
+                "lon": row_dict.get("lon"),
                 "geo_altitude": row_dict.get("geo_altitude"),
                 "on_ground": row_dict.get("on_ground")
             }
