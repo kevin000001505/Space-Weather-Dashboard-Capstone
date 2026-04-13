@@ -111,3 +111,26 @@ def make_alert_row(**overrides):
     }
     base.update(overrides)
     return base
+
+
+def make_flight_range_row(**overrides):
+    base = {
+        "requested_time": datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        "time": datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        "time_pos": datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        "icao24": "a1b2c3",
+        "callsign": "AAL123",
+        "lat": 38.85,
+        "lon": -77.04,
+        "geo_altitude": 10000.0,
+        "on_ground": False,
+    }
+    base.update(overrides)
+    return base
+
+
+def make_location_row(event="drap_region", locations=None):
+    return {
+        "events": event,
+        "locations": locations if locations is not None else [[1.0, 2.0], [3.0, 4.0]],
+    }
