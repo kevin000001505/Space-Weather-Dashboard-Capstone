@@ -84,30 +84,6 @@ function getZoomScale(
   return minScale + t * (maxScale - minScale);
 }
 
-const normalizePathCoordinates = (coordinates) => {
-  if (!coordinates || coordinates.length === 0) return coordinates;
-
-  const normalized = [...coordinates];
-  let prevLon = normalized[0][0];
-  for (let i = 1; i < normalized.length; i++) {
-    // Clone the coordinate array to avoid mutating Redux state
-    let coord = [...normalized[i]];
-    let lon = coord[0];
-
-    // If the longitude jumps more than half the globe, adjust it
-    if (lon - prevLon > 180) {
-      lon -= 360;
-    } else if (lon - prevLon < -180) {
-      lon += 360;
-    }
-
-    coord[0] = lon;
-    normalized[i] = coord;
-    prevLon = lon; // Track the adjusted longitude for the next point
-  }
-  return normalized;
-};
-
 export const buildDeckLayers = ({
   filteredPlanes,
   filteredAirports,
@@ -453,11 +429,9 @@ export const buildDeckLayers = ({
           pathData.path_points.length === 0
         )
           return null;
-        // Strip epoch (3rd element) — deck.gl treats it as altitude in meters
-        const deckCoords = pathData.path_points.map(([lon, lat]) => [lon, lat]);
         return new PathLayer({
           id: `flight-path-pathlayer-${icao24}`,
-          data: [{ coordinates: normalizePathCoordinates(deckCoords) }],
+          data: [{ coordinates: pathData.path_points.map(([lon, lat]) => [lon, lat]) }],
           getPath: (d) => d.coordinates,
           getColor: [0, 128, 255, 200],
           getWidth: 4,
@@ -466,6 +440,7 @@ export const buildDeckLayers = ({
           capRounded: true,
           jointRounded: true,
           pickable: false,
+          wrapLongitude: true,
         });
       })
       .filter(Boolean),
