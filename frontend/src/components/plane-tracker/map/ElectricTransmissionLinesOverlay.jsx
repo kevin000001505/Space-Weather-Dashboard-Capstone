@@ -6,11 +6,8 @@ import {
   getElectricTransmissionLinesGeoJSON,
   getElectricTransmissionLinesLayers,
 } from "../../../utils/electricTransmissionLines";
-import TransmissionLinePopup from "./TransmissionLinePopup";
 
-const ElectricTransmissionLinesOverlay = ({
-  hoveredElectricTransmissionLines,
-}) => {
+const ElectricTransmissionLinesOverlay = () => {
   const { useImperial } = useSelector(
     (state) => state.ui,
   );
@@ -100,22 +97,6 @@ const ElectricTransmissionLinesOverlay = ({
           <Layer key={layer.id} {...layer} />
         ))}
       </Source>
-
-      {hoveredElectricTransmissionLines?.lngLat && hoveredElectricTransmissionLines?.feature && (
-        <Popup
-          longitude={hoveredElectricTransmissionLines.lngLat.lng}
-          latitude={hoveredElectricTransmissionLines.lngLat.lat}
-          closeButton={false}
-          closeOnClick={false}
-          anchor="top"
-          offset={10}
-        >
-          <TransmissionLinePopup
-            hoveredElectricTransmissionLines={hoveredElectricTransmissionLines}
-            useImperial={useImperial}
-          />
-        </Popup>
-      )}
     </>
   );
 };

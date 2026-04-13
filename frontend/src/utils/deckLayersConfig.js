@@ -5,7 +5,19 @@ import {
   LineLayer,
   ScatterplotLayer,
 } from "@deck.gl/layers";
-import { getAltitudeColor, PLANE_ATLAS, PLANE_OUTLINE_ATLAS } from "./mapUtils";
+import {
+  getAltitudeColor,
+  PLANE_ATLAS,
+  PLANE_OUTLINE_ATLAS,
+  getAltDisplay,
+  getSpeedDisplay,
+  formatCoord,
+  capitalizeWords,
+} from "./mapUtils";
+import {
+  getElectricTransmissionLineColor,
+  parseLineString,
+} from "./electricTransmissionLines";
 import { fetchFlightPath, fetchAirportDetails } from "../api/api";
 
 const svgToDataUrl = (svg) =>
@@ -98,17 +110,21 @@ const normalizePathCoordinates = (coordinates) => {
 export const buildDeckLayers = ({
   filteredPlanes,
   filteredAirports,
+  filteredElectricTransmissionLines,
   showAirports,
   showPlanes,
+  showElectricTransmissionLines,
   darkMode,
   useImperial,
   selectedPlane,
   selectedAirport,
+  selectedElectricTransmissionLine,
   currentZoom,
   isZooming,
   flightPath,
   setSelectedPlane,
   setSelectedAirport,
+  setSelectedElectricTransmissionLine,
   dispatch,
   addFlightPanel,
   selectedFlightsPanels,
@@ -165,6 +181,14 @@ export const buildDeckLayers = ({
   const handleAirportHover = ({ object }) => {
     setSelectedAirport(object || null);
     if (object) setSelectedPlane(null);
+  };
+
+  const handleElectricTransmissionLineHover = ({ object }) => {
+    setSelectedElectricTransmissionLine(object || null);
+    if (object) {
+      setSelectedPlane(null);
+      setSelectedAirport(null);
+    }
   };
 
   // Extract all runways that have both end coordinates
@@ -386,6 +410,29 @@ export const buildDeckLayers = ({
         },
       }),
 
+    showElectricTransmissionLines &&
+      filteredElectricTransmissionLines.length > 0 &&
+      new PathLayer({
+        id: "electric-transmission-lines",
+        data: filteredElectricTransmissionLines,
+        getPath: (d) => parseLineString(d.geometry),
+        getColor: (d) => {
+          const color = getElectricTransmissionLineColor(d.VOLTAGE);
+          const opacity = d.STATUS === "IN SERVICE" ? 180 : 90;
+          return isZooming ? [...color, 25] : [...color, opacity];
+        },
+        getWidth: 1,
+        widthUnits: "pixels",
+        pickable: true,
+        wrapLongitude: true,
+        onHover: handleElectricTransmissionLineHover,
+        updateTriggers: {
+          getColor: [isZooming],
+          getPath: [filteredElectricTransmissionLines.length],
+          getWidth: [selectedElectricTransmissionLine],
+        },
+      }),
+
     // Flight Paths Layer
     ...Object.entries(flightPath || {})
       .map(([icao24, pathData]) => {
@@ -501,3 +548,4 @@ export const buildDeckLayers = ({
       }),
   ].filter(Boolean);
 };
+

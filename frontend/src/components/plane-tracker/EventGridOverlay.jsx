@@ -3,15 +3,12 @@ import AuroraOverlay from "./map/AuroraOverlay";
 import GeoElectricOverlay from "./map/GeoElectricOverlay";
 import ElectricTransmissionLinesOverlay from "./map/ElectricTransmissionLinesOverlay";
 
-const EventGridOverlay = ({ hoveredElectricTransmissionLines }) => {
+const EventGridOverlay = () => {
   return (
     <>
       <DrapOverlay />
       <AuroraOverlay />
       <GeoElectricOverlay />
-      <ElectricTransmissionLinesOverlay
-        hoveredElectricTransmissionLines={hoveredElectricTransmissionLines}
-      />
     </>
   );
 };

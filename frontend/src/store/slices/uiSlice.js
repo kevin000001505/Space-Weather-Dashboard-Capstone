@@ -8,6 +8,7 @@ const initialState = {
   showIconLegend: true,
   showSettings: false,
   selectedPlane: null,
+  selectedElectricTransmissionLine: null,
   selectedFlightsPanels: [], // Array of flights for FlightDetailsPanel
   selectedAirportsPanels: [], // Array of airports for AirportDetailsPanel
   hoveredRunwayId: null,
@@ -58,6 +59,9 @@ const uiSlice = createSlice({
     },
     setSelectedPlane: (state, action) => {
       state.selectedPlane = action.payload;
+    },
+    setSelectedElectricTransmissionLine: (state, action) => {
+      state.selectedElectricTransmissionLine = action.payload;
     },
     addFlightPanel: (state, action) => {
       // Toggle: remove if present, add if not
@@ -135,6 +139,7 @@ const uiSlice = createSlice({
     clearSelections: (state) => {
       state.selectedPlane = null;
       state.selectedAirport = null;
+      state.selectedElectricTransmissionLine = null;
     },
     setIsZooming: (state, action) => {
       state.isZooming = action.payload;
@@ -190,6 +195,7 @@ export const {
   setShowIconLegend,
   setShowSettings,
   setSelectedPlane,
+  setSelectedElectricTransmissionLine,
   setSelectedAirport,
   setPlaneFilter,
   setAirportFilter,

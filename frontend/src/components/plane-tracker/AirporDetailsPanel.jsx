@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { Rnd } from 'react-rnd';
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
@@ -12,8 +12,12 @@ const getCenteredPosition = (width = 340, height = 250) => {
   return { x, y };
 };
 
+const PANEL_EDGE_PADDING = 16;
+
 const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
   const [expandedSection, setExpandedSection] = useState(null);
+  const [position, setPosition] = useState(() => getCenteredPosition());
+  const panelContentRef = useRef(null);
   const hoveredRunwayId = useSelector((state) => state.ui.hoveredRunwayId);
 
   const getCoords = () => {
@@ -26,6 +30,21 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
+
+  useLayoutEffect(() => {
+    const panelNode = panelContentRef.current;
+    if (!panelNode || typeof window === 'undefined') return;
+
+    const panelBounds = panelNode.getBoundingClientRect();
+    const overflowBottom = panelBounds.bottom - (window.innerHeight - PANEL_EDGE_PADDING);
+
+    if (overflowBottom > 0) {
+      setPosition((currentPosition) => ({
+        ...currentPosition,
+        y: Math.max(currentPosition.y - overflowBottom, PANEL_EDGE_PADDING),
+      }));
+    }
+  }, [expandedSection, airport.ident]);
 
   const headerStyle = {
     cursor: 'pointer',
@@ -56,6 +75,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
 
   return (
     <Rnd
+      position={position}
       default={{
         ...getCenteredPosition(),
         width: 340, // Made slightly wider to fit the new side-by-side data
@@ -64,6 +84,8 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
       minWidth={320}
       bounds="window"
       dragHandleClassName="airport-details-title"
+      onDragStop={(_, data) => setPosition({ x: data.x, y: data.y })}
+      onResizeStop={(_, __, ___, ____, newPosition) => setPosition(newPosition)}
       enableResizing={{
         top: true, right: true, bottom: true, left: true,
         topRight: true, bottomRight: true, bottomLeft: true, topLeft: true,
@@ -82,7 +104,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
       }}
     >
       {/* Wrapper div to control internal padding and prevent horizontal scroll */}
-      <div style={{ 
+      <div ref={panelContentRef} style={{ 
         padding: '16px', 
         overflowY: 'auto', 
         overflowX: 'hidden', 
@@ -174,7 +196,7 @@ const AirportDetailsPanel = ({ airport, onClose, children, useImperial }) => {
                       <strong style={{ color: runwayColor, fontSize: '0.875rem' }}>
                         {r.le_ident || '?'} / {r.he_ident || '?'}
                       </strong> 
-                      <span style={{ marginLeft: '8px', color: 'var(--ui-border)' }}>
+                      <span style={{ marginLeft: '8px', color: 'var(--ui-text)' }}>
                         {r.length_ft || '?'}x{r.width_ft || '?'}ft • {r.surface || 'Unknown'} 
                         <span style={{ marginLeft: '6px' }}>{r.lighted ? '💡 Lit' : '🌑 Unlit'}</span>
                       </span>

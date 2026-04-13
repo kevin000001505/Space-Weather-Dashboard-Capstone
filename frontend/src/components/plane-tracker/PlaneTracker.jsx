@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import Map, { ScaleControl, useControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-
+import { _GlobeView as GlobeView } from "@deck.gl/core";
 // API imports
 import {
   fetchPlanes,
@@ -27,7 +27,6 @@ import SearchBar from "./SearchBar";
 import PlaybackPanel from "./playback/PlaybackPanel";
 import ColorLegend from "./legends/ColorLegend";
 import EventGridOverlay from "./EventGridOverlay";
-import SelectedEntityPopups from "./map/SelectedEntityPopups";
 import { alpha, Slide } from "@mui/material";
 
 // Redux action imports
@@ -35,6 +34,7 @@ import {
   clearSelections,
   setSelectedAirport,
   setSelectedPlane,
+  setSelectedElectricTransmissionLine,
   setViewState,
   setIsZooming,
   addFlightPanel,
@@ -47,6 +47,8 @@ import {
 // Utility imports
 import { getAltDisplay } from "../../utils/mapUtils";
 import { buildDeckLayers } from "../../utils/deckLayersConfig";
+import { buildDeckTooltip } from "../../utils/deckTooltip";
+import { filterElectricTransmissionLines } from "../../utils/electricTransmissionLines";
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -55,11 +57,8 @@ const DeckGLOverlay = (props) => {
 };
 
 const PlaneTracker = () => {
-  const [
-    hoveredElectricTransmissionLines,
-    setHoveredElectricTransmissionLines,
-  ] = useState(null);
   const dispatch = useDispatch();
+  const [hoverTooltip, setHoverTooltip] = useState(null);
 
   const { data: planes } = useSelector((state) => state.planes);
   const selectedFlightsPanels = useSelector(
@@ -69,11 +68,15 @@ const PlaneTracker = () => {
     (state) => state.ui.selectedAirportsPanels || [],
   );
   const hoveredRunwayId = useSelector((state) => state.ui.hoveredRunwayId);
+  const selectedElectricTransmissionLine = useSelector(
+    (state) => state.ui.selectedElectricTransmissionLine,
+  );
   const { data: airports } = useSelector((state) => state.airports);
   const flightPath = useSelector((state) => state.flightPath.paths);
-  const { showElectricTransmissionLines } = useSelector(
+  const electricTransmissionLinesState = useSelector(
     (state) => state.electricTransmissionLines,
   );
+  const { showElectricTransmissionLines } = electricTransmissionLinesState;
 
   const {
     useImperial,
@@ -100,12 +103,6 @@ const PlaneTracker = () => {
   const zoomTimeoutRef = useRef(null);
 
   useEffect(() => {
-    if (!showElectricTransmissionLines) {
-      setHoveredElectricTransmissionLines(null);
-    }
-  }, [showElectricTransmissionLines]);
-
-  useEffect(() => {
     if (!liveStreamMode) return;
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
@@ -114,6 +111,16 @@ const PlaneTracker = () => {
     dispatch(fetchElectricTransmissionLines());
     dispatch(fetchAirports());
   }, [dispatch, liveStreamMode]);
+
+  useEffect(() => {
+    if (!showElectricTransmissionLines && selectedElectricTransmissionLine) {
+      dispatch(setSelectedElectricTransmissionLine(null));
+    }
+  }, [
+    dispatch,
+    selectedElectricTransmissionLine,
+    showElectricTransmissionLines,
+  ]);
 
   const filteredPlanes = useMemo(() => {
     return planes.filter((p) => {
@@ -147,6 +154,29 @@ const PlaneTracker = () => {
     });
   }, [airports, airportFilter, airportAltitudeRange, useImperial]);
 
+  const filteredElectricTransmissionLines = useMemo(() => {
+    const {
+      data,
+      electricTransmissionLinesVoltageRange,
+      showOnlyInServiceLines,
+      dontShowInferredLines,
+      showACLines,
+      showDCLines,
+      showOverheadLines,
+      showUndergroundLines,
+    } = electricTransmissionLinesState;
+
+    return filterElectricTransmissionLines(data, {
+      electricTransmissionLinesVoltageRange,
+      showOnlyInServiceLines,
+      dontShowInferredLines,
+      showACLines,
+      showDCLines,
+      showOverheadLines,
+      showUndergroundLines,
+    });
+  }, [electricTransmissionLinesState]);
+
   const showPlanesIsolate = isolateMode ? true : showPlanes;
   const showAirportsIsolate = isolateMode ? true : showAirports;
   const filteredPlanesIsolate = isolateMode
@@ -163,20 +193,25 @@ const PlaneTracker = () => {
       filteredAirports: filteredAirportsIsolate,
       showAirports: showAirportsIsolate,
       showPlanes: showPlanesIsolate,
+      showElectricTransmissionLines,
       darkMode,
       useImperial,
       selectedPlane,
       selectedAirport,
+      selectedElectricTransmissionLine,
       currentZoom,
       isZooming,
       flightPath,
       setSelectedPlane: (plane) => dispatch(setSelectedPlane(plane)),
       setSelectedAirport: (airport) => dispatch(setSelectedAirport(airport)),
+      setSelectedElectricTransmissionLine: (line) =>
+        dispatch(setSelectedElectricTransmissionLine(line)),
       dispatch,
       addFlightPanel: (plane) => dispatch(addFlightPanel(plane)),
       selectedFlightsPanels,
       addAirportPanel: (airport) => dispatch(addAirportPanel(airport)),
       selectedAirportsPanels,
+      filteredElectricTransmissionLines,
       hoveredRunwayId,
       setHoveredRunwayId: (id) => dispatch(setHoveredRunwayId(id)),
       airportIconSize,
@@ -189,15 +224,18 @@ const PlaneTracker = () => {
     filteredPlanesIsolate,
     showAirportsIsolate,
     showPlanesIsolate,
+    showElectricTransmissionLines,
     darkMode,
     useImperial,
     selectedPlane,
     selectedAirport,
+    selectedElectricTransmissionLine,
     currentZoom,
     isZooming,
     flightPath,
     selectedAirportsPanels,
     selectedFlightsPanels,
+    filteredElectricTransmissionLines,
     hoveredRunwayId,
     airportIconSize,
     flightIconSize,
@@ -215,6 +253,48 @@ const PlaneTracker = () => {
     zoomTimeoutRef.current = setTimeout(() => {
       dispatch(setIsZooming(false));
     }, 250);
+  };
+
+  const getHoverTooltipPosition = (info, tooltip) => {
+    const offset = 16;
+    const edgePadding = 1;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const estimatedWidth = tooltip.estimatedWidth ?? 340;
+    const estimatedHeight = tooltip.estimatedHeight ?? 220;
+
+    const shouldFlipX =
+      info.x + offset + estimatedWidth + edgePadding > viewportWidth;
+    const shouldFlipY =
+      info.y + offset + estimatedHeight + edgePadding > viewportHeight;
+
+    let left = shouldFlipX ? info.x - offset - estimatedWidth : info.x + offset;
+    let top = shouldFlipY ? info.y - offset - estimatedHeight : info.y + offset;
+
+    left = Math.max(
+      edgePadding,
+      Math.min(left, viewportWidth - estimatedWidth - edgePadding),
+    );
+    top = Math.max(
+      edgePadding,
+      Math.min(top, viewportHeight - estimatedHeight - edgePadding),
+    );
+
+    return { left, top };
+  };
+
+  const handleDeckHover = (info) => {
+    const tooltip = buildDeckTooltip({ info, useImperial });
+
+    if (!tooltip) {
+      setHoverTooltip(null);
+      return;
+    }
+
+    setHoverTooltip({
+      ...tooltip,
+      position: getHoverTooltipPosition(info, tooltip),
+    });
   };
 
   return (
@@ -246,46 +326,17 @@ const PlaneTracker = () => {
         }
         projection={globeView ? "globe" : "mercator"}
         onClick={() => dispatch(clearSelections())}
-        onMouseMove={(e) => {
-          if (!showElectricTransmissionLines) {
-            setHoveredElectricTransmissionLines(null);
-            return;
-          }
-
-          const map =
-            e.target && e.target.queryRenderedFeatures
-              ? e.target
-              : e.currentTarget;
-          if (!map || !e.lngLat) return;
-          const features = map.queryRenderedFeatures
-            ? map.queryRenderedFeatures(e.point, {
-                layers: ["electric-transmission-lines"],
-              })
-            : [];
-          if (features && features.length > 0) {
-            setHoveredElectricTransmissionLines({
-              feature: features[0],
-              lngLat: e.lngLat,
-            });
-          } else {
-            setHoveredElectricTransmissionLines(null);
-          }
-        }}
-        onMouseLeave={() => setHoveredElectricTransmissionLines(null)}
       >
-        <EventGridOverlay
-          hoveredElectricTransmissionLines={hoveredElectricTransmissionLines}
-        />
+        <EventGridOverlay />
 
         <DeckGLOverlay
           layers={deckLayers}
           interleaved={true}
+          onHover={handleDeckHover}
           getCursor={({ isDragging, isHovering }) =>
             isDragging ? "grabbing" : isHovering ? "pointer" : "grab"
           }
         />
-
-        <SelectedEntityPopups />
 
         <ScaleControl
           position="bottom-left"
@@ -301,6 +352,21 @@ const PlaneTracker = () => {
         />
       </Map>
 
+      {hoverTooltip && (
+        <div
+          className={hoverTooltip.className}
+          style={{
+            position: "fixed",
+            left: hoverTooltip.position.left,
+            top: hoverTooltip.position.top,
+            pointerEvents: "none",
+            zIndex: 20,
+            ...hoverTooltip.style,
+          }}
+          dangerouslySetInnerHTML={{ __html: hoverTooltip.html }}
+        />
+      )}
+
       <style>{`
         .maplibregl-popup-content {
           background-color: var(--ui-bg) !important;
@@ -314,6 +380,12 @@ const PlaneTracker = () => {
         }
         .maplibregl-popup-close-button {
           display: none !important;
+        }
+        .deck-tooltip {
+          font-family: inherit;
+        }
+        .plane-tracker-tooltip {
+          pointer-events: none;
         }
       `}</style>
       {selectedFlightsPanels.map((flight) => (
