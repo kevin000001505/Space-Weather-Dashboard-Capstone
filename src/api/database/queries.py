@@ -486,47 +486,25 @@ SELECT * FROM events_location;
 """
 
 FLIGHTS_RANGE_QUERY = """
-WITH time_ticks AS (
-    SELECT generate_series(
-		$1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-    ) AS requested_time
-),
-events AS (
-    SELECT DISTINCT ON (t.requested_time)
-        t.requested_time,
-        d.time
-    FROM time_ticks t
-    LEFT JOIN LATERAL (
-        SELECT time
-        FROM flight_states
-        WHERE icao24 = $4::text
-          AND time >= t.requested_time - INTERVAL '15 minutes'
-          AND time <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY time DESC
-        LIMIT 1
-    ) d ON true
-    ORDER BY t.requested_time
-)
 SELECT
-    e.requested_time,
-    e.time,
-    agg.points
-FROM events e
-LEFT JOIN LATERAL (
-    SELECT json_build_object(
-        'time_pos',      fs.time_pos,
-        'icao24',        fs.icao24,
-        'callsign',      fs.callsign,
-        'lat',           fs.lat,
-        'lon',           fs.lon,
-        'geo_altitude', fs.geo_altitude,
-        'on_ground',     fs.on_ground
-    ) AS points
-    FROM flight_states fs
-    WHERE fs.icao24 = $4::text
-      AND fs.time = e.time
-) agg ON true
-ORDER BY e.requested_time;
+    time_bucket_gapfill(
+        make_interval(mins => $3::int),
+        time,
+        start => $1::timestamptz,
+        finish => $2::timestamptz
+    ) AS requested_time,
+    locf(last(time,           time))                            AS time,
+    locf(last(time_pos,       time))                            AS time_pos,
+    locf(last(icao24,         time))                            AS icao24,
+    locf(last(callsign, time), treat_null_as_missing => true)   AS callsign,
+    locf(last(lat,            time))                            AS lat,
+    locf(last(lon,            time))                            AS lon,
+    locf(last(geo_altitude,   time))                            AS geo_altitude,
+    locf(last(on_ground,      time))                            AS on_ground
+FROM flight_states
+WHERE icao24 = $4::text
+  AND time >= $1::timestamptz
+  AND time <= $2::timestamptz
+GROUP BY 1
+ORDER BY 1;
 """
