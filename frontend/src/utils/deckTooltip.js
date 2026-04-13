@@ -23,7 +23,7 @@ const tooltipChrome = {
   backdropFilter: "blur(14px) saturate(1.25)",
   borderRadius: "18px",
   padding: "0",
-  minWidth: "280px",
+  minWidth: "200px",
   maxWidth: "400px",
   overflow: "hidden",
 };
@@ -41,15 +41,15 @@ const headerStyle =
   "display:flex; align-items:center; justify-content:space-between; gap:16px; padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0));";
 
 const titleStyle =
-  "margin:0; font-size:1.25rem; line-height:1.25; letter-spacing:0.02em; font-weight:700; color:#fff; text-align:left; overflow-wrap:anywhere;";
+  "margin:0; font-size:1rem; line-height:1.25; letter-spacing:0.02em; font-weight:700; color:#fff; text-align:left; overflow-wrap:anywhere;";
 
 const sectionStyle = "padding: 12px;";
 
 const bodyStyle =
-  "font-size:1rem; line-height:1.6; color:rgba(255, 255, 255, 0.9);";
+  "font-size:0.875rem; line-height:1.6; color:rgba(255, 255, 255, 0.9);";
 
 const rowStyle =
-  "display:grid; grid-template-columns:minmax(60px, 0.5fr) minmax(0, 1.5fr); column-gap:8px; align-items:start; margin:0 0 8px 0;";
+  "display:grid; grid-template-columns:minmax(100px, 0.2fr) minmax(0, 0.8fr); column-gap:8px; align-items:start; margin:0 0 8px 0;";
 
 const labelStyle =
   "color:rgba(255, 255, 255, 0.68); font-weight:500; letter-spacing:0.03em; text-align:left;";
@@ -69,7 +69,7 @@ const renderRows = (rows) =>
     .join("");
 
 const buildTooltipCard = ({ badge, badgeTone = "flight", title, rows }) => ({
-  estimatedWidth: badgeTone === "transmission" ? 380 : 280,
+  estimatedWidth: badgeTone === "transmission" ? 380 : 200,
   estimatedHeight: 96 + rows.length * 28,
   html: `
     <div style="${headerStyle}">

@@ -114,7 +114,7 @@ export function MissionSection() {
             <Typography
               sx={{
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: "1.25rem",
+                fontSize: "12px",
                 letterSpacing: "0.22em",
                 color: "rgba(100,200,255,0.75)",
                 textTransform: "uppercase",
@@ -130,7 +130,7 @@ export function MissionSection() {
             sx={{
               fontFamily: "'Sora', 'Inter', sans-serif",
               fontWeight: 800,
-              fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem", lg: "3rem" },
+              fontSize: { xs: "12px", sm: "16px", md: "20px", lg: "24px" },
               color: "#f0f6ff",
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
@@ -156,7 +156,7 @@ export function MissionSection() {
           <Typography
             sx={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: { xs: "0.95rem", md: "1.25rem" },
+              fontSize: { xs: "12px", md: "14px" },
               color: "rgba(180,210,255,0.72)",
               lineHeight: 1.75,
               maxWidth: 520,
@@ -173,7 +173,7 @@ export function MissionSection() {
           <Typography
             sx={{
               fontFamily: "'Inter', sans-serif",
-              fontSize: { xs: "0.95rem", md: "1.25rem" },
+              fontSize: { xs: "12px", md: "14px" },
               color: "rgba(180,210,255,0.72)",
               lineHeight: 1.75,
               maxWidth: 520,
@@ -273,7 +273,7 @@ export function MissionSection() {
                 sx={{
                   fontFamily: "'Sora', sans-serif",
                   fontWeight: 700,
-                  fontSize: { xs: "1.5rem", md: "1.8rem" },
+                  fontSize: { xs: "12px", md: "14px" },
                   color: "#a0d8ff",
                   lineHeight: 1,
                 }}
@@ -283,7 +283,7 @@ export function MissionSection() {
               <Typography
                 sx={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: "1rem",
+                  fontSize: "12px",
                   letterSpacing: "0.14em",
                   color: "rgba(120,180,255,0.5)",
                   textTransform: "uppercase",

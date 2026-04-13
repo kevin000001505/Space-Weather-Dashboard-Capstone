@@ -258,6 +258,7 @@ export const buildDeckLayers = ({
       stroked: false,
       filled: true,
       getFillColor: [40, 40, 40, 10],
+      pickable: true,
       visible: globeView,
     }),
     

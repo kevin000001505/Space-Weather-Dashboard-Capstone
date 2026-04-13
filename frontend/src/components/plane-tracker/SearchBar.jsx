@@ -311,11 +311,10 @@ const SearchBar = React.forwardRef(function SearchBar(props, ref) {
                   }}
                 >
                   <strong style={{ fontSize: "0.95em" }}>
-                    {item.hiddenCount} hidden results
+                    {item.hiddenCount} hidden results. Click to Load More Results.
                   </strong>
                   <span style={{ fontSize: "0.85em", opacity: 0.85 }}>
                     {item.hiddenPlaneCount} flights and {item.hiddenAirportCount} airports hidden.
-                    Optimize your search query, click to load more.
                   </span>
                 </span>
               </li>
