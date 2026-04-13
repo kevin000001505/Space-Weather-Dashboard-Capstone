@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { MapboxOverlay } from "@deck.gl/mapbox";
 import Map, { ScaleControl, useControl } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { _GlobeView as GlobeView } from "@deck.gl/core";
+import { _GlobeView as GlobeView, MapView } from "@deck.gl/core";
 // API imports
 import {
   fetchPlanes,
@@ -304,6 +304,7 @@ const PlaneTracker = () => {
         height: "100vh",
         position: "relative",
         display: "flex",
+        background: 'linear-gradient(0, #000, #223)'
       }}
     >
       <Slide
@@ -317,6 +318,7 @@ const PlaneTracker = () => {
       </Slide>
 
       <Map
+        reuseMaps
         {...viewState}
         onMove={handleViewStateChange}
         mapStyle={
@@ -325,11 +327,14 @@ const PlaneTracker = () => {
             : "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
         }
         projection={globeView ? "globe" : "mercator"}
-        onClick={() => dispatch(clearSelections())}
+        onClick={() => dispatch(clearSelections())}        
+        dragRotate={false}
+        maxPitch={0}
       >
         <EventGridOverlay />
 
         <DeckGLOverlay
+          views={globeView ? new GlobeView() : new MapView()}
           layers={deckLayers}
           interleaved={true}
           onHover={handleDeckHover}

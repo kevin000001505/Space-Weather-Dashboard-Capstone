@@ -4,6 +4,7 @@ import {
   TextLayer,
   LineLayer,
   ScatterplotLayer,
+  SolidPolygonLayer,
 } from "@deck.gl/layers";
 import {
   getAltitudeColor,
@@ -264,174 +265,184 @@ export const buildDeckLayers = ({
   const outlineColor = darkMode ? [255, 255, 255] : [0, 0, 0];
 
   return [
+    //Layer to Prevent Occlusion (icons on the back side of earth appearing)
+    new SolidPolygonLayer({
+      id: "background-polygon",
+      data: [
+        [
+          [-180, 90],
+          [0, 90],
+          [180, 90],
+          [180, -90],
+          [0, -90],
+          [-180, -90],
+        ],
+      ],
+      getPolygon: (d) => d,
+      stroked: false,
+      filled: true,
+      getFillColor: [40, 40, 40, 10],
+      visible: globeView,
+    }),
+    
     // Runway Lines Layer
-    showAirports &&
-      activeRunways.length > 0 &&
-      new LineLayer({
-        id: "airport-runways-layer",
-        data: activeRunways,
-        getSourcePosition: (d) => d.le_geom.coordinates,
-        getTargetPosition: (d) => d.he_geom.coordinates,
-        getColor: (d) => {
-          let baseColor;
-          if (d.id === hoveredRunwayId) {
-            baseColor = [255, 255, 255]; // White hover highlight
-          } else if (d.closed) {
-            baseColor = [255, 50, 50]; // Red
-          } else {
-            baseColor = RUNWAY_PALETTE[d.colorIndex % RUNWAY_PALETTE.length];
-          }
-          // Drop opacity to 25 when dragging the map
-          return [...baseColor, isZooming ? 25 : 255];
-        },
-        getWidth: 8,
-        widthUnits: "pixels",
-        pickable: true,
-        onHover: ({ object }) => {
-          setHoveredRunwayId(object ? object.id : null);
-        },
-        updateTriggers: {
-          getWidth: [hoveredRunwayId],
-          getColor: [darkMode, hoveredRunwayId, isZooming],
-        },
-      }),
+    new LineLayer({
+      id: "airport-runways-layer",
+      data: activeRunways,
+      getSourcePosition: (d) => d.le_geom.coordinates,
+      getTargetPosition: (d) => d.he_geom.coordinates,
+      getColor: (d) => {
+        let baseColor;
+        if (d.id === hoveredRunwayId) {
+          baseColor = [255, 255, 255]; // White hover highlight
+        } else if (d.closed) {
+          baseColor = [255, 50, 50]; // Red
+        } else {
+          baseColor = RUNWAY_PALETTE[d.colorIndex % RUNWAY_PALETTE.length];
+        }
+        // Drop opacity to 25 when dragging the map
+        return [...baseColor, isZooming ? 25 : 255];
+      },
+      visible: showAirports && activeRunways.length > 0,
+      getWidth: 8,
+      widthUnits: "pixels",
+      pickable: true,
+      onHover: ({ object }) => {
+        setHoveredRunwayId(object ? object.id : null);
+      },
+      updateTriggers: {
+        getWidth: [hoveredRunwayId],
+        getColor: [darkMode, hoveredRunwayId, isZooming],
+      },
+    }),
 
     // Runway End Text Labels
-    showAirports &&
-      runwayLabels.length > 0 &&
-      new TextLayer({
-        id: "airport-runways-text-layer",
-        data: runwayLabels,
-        getPosition: (d) => d.coordinates,
-        getText: (d) => d.text,
-        getSize: 14 * zoomScale,
-        getColor: darkMode
-          ? [255, 255, 255, isZooming ? 20 : 255]
-          : [0, 0, 0, isZooming ? 20 : 255],
-        getBackgroundColor: darkMode
-          ? [0, 0, 0, isZooming ? 20 : 200]
-          : [255, 255, 255, isZooming ? 20 : 200],
-        background: true,
-        backgroundPadding: [2, 2],
-        fontFamily: "monospace",
-        fontWeight: "bold",
-        getTextAnchor: "middle",
-        getAlignmentBaseline: "center",
-        pickable: false,
-        updateTriggers: {
-          getSize: [zoomScale],
-          getColor: [darkMode, isZooming],
-          getBackgroundColor: [darkMode, isZooming],
-        },
-      }),
+    new TextLayer({
+      id: "airport-runways-text-layer",
+      data: runwayLabels,
+      getPosition: (d) => d.coordinates,
+      getText: (d) => d.text,
+      getSize: 14 * zoomScale,
+      getColor: darkMode
+        ? [255, 255, 255, isZooming ? 20 : 255]
+        : [0, 0, 0, isZooming ? 20 : 255],
+      getBackgroundColor: darkMode
+        ? [0, 0, 0, isZooming ? 20 : 200]
+        : [255, 255, 255, isZooming ? 20 : 200],
+      background: true,
+      visible: showAirports && runwayLabels.length > 0,
+      backgroundPadding: [2, 2],
+      fontFamily: "monospace",
+      fontWeight: "bold",
+      getTextAnchor: "middle",
+      getAlignmentBaseline: "center",
+      pickable: false,
+      updateTriggers: {
+        getSize: [zoomScale],
+        getColor: [darkMode, isZooming],
+        getBackgroundColor: [darkMode, isZooming],
+      },
+    }),
 
     // Navaid Points Layer
-    showAirports &&
-      activeNavaidPoints.length > 0 &&
-      new ScatterplotLayer({
-        id: "airport-navaids-layer",
-        data: activeNavaidPoints,
-        getPosition: (d) => d.coordinates,
-        getFillColor: (d) => {
-          const color = d.isDME ? [156, 39, 176] : [0, 200, 255];
-          return [...color, isZooming ? 25 : 200];
-        },
-        getLineColor: darkMode
-          ? [255, 255, 255, isZooming ? 25 : 255]
-          : [0, 0, 0, isZooming ? 25 : 255],
-        lineWidthMinPixels: 1,
-        stroked: true,
-        getRadius: 5 * zoomScale,
-        radiusUnits: "pixels",
-        pickable: true,
-        updateTriggers: {
-          getFillColor: [isZooming],
-          getLineColor: [darkMode, isZooming],
-          getRadius: [zoomScale],
-        },
-      }),
+    new ScatterplotLayer({
+      id: "airport-navaids-layer",
+      data: activeNavaidPoints,
+      getPosition: (d) => d.coordinates,
+      getFillColor: (d) => {
+        const color = d.isDME ? [156, 39, 176] : [0, 200, 255];
+        return [...color, isZooming ? 25 : 200];
+      },
+      getLineColor: darkMode
+        ? [255, 255, 255, isZooming ? 25 : 255]
+        : [0, 0, 0, isZooming ? 25 : 255],
+      lineWidthMinPixels: 1,
+      stroked: true,
+      visible: showAirports && activeNavaidPoints.length > 0,
+      getRadius: 5 * zoomScale,
+      radiusUnits: "pixels",
+      pickable: true,
+      updateTriggers: {
+        getFillColor: [isZooming],
+        getLineColor: [darkMode, isZooming],
+        getRadius: [zoomScale],
+      },
+    }),
 
     // Airport Highlight Outline — renders below airports-base
-    showAirports &&
-      highlightedAirports.length > 0 &&
-      new IconLayer({
-        id: "airports-outline",
-        data: highlightedAirports,
-        getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-        getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
-        getSize: 3 * scaledAirportIconSize,
-        getColor: (d) => {
-          return isZooming
-            ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
-            : outlineColor;
-        },
-        pickable: false,
-        wrapLongitude: true,
-        updateTriggers: {
-          getColor: [darkMode, isZooming],
-          getSize: [scaledAirportIconSize],
-        },
-      }),
+    new IconLayer({
+      id: "airports-outline",
+      data: highlightedAirports,
+      getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
+      getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+      getSize: 3 * scaledAirportIconSize,
+      getColor: (d) => {
+        return isZooming
+          ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
+          : outlineColor;
+      },
+      visible: showAirports && highlightedAirports.length > 0,
+      pickable: false,
+      wrapLongitude: true,
+      updateTriggers: {
+        getColor: [darkMode, isZooming],
+        getSize: [scaledAirportIconSize],
+      },
+    }),
 
     // Airports Icon Layer
-    showAirports &&
-      new IconLayer({
-        id: "airports-base",
-        data: filteredAirports,
-        getPosition: (d) =>
-          globeView
-            ? [
-                parseFloat(d.lon),
-                parseFloat(d.lat),
-                parseFloat(d.elevation_ft) * 100,
-              ]
-            : [parseFloat(d.lon), parseFloat(d.lat)],
-        getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
-        getSize: (d) =>
-          highlightedAirports.some((a) => a.ident === d.ident)
-            ? 2 * scaledAirportIconSize
-            : scaledAirportIconSize,
-        getColor: (d) => {
-          const color = getAltitudeColor(d.elevation_ft, true, useImperial);
-          return isZooming ? [color[0], color[1], color[2], 25] : color;
-        },
-        pickable: true,
-        wrapLongitude: true,
-        getPolygonOffset: ({ layerIndex }) => [0, -layerIndex * 100],
-        parameters: {
-          cullMode: "none",
-        },
-        onClick: handleAirportClick,
-        onHover: handleAirportHover,
-        updateTriggers: {
-          getColor: [darkMode, useImperial, isZooming],
-          getSize: [scaledAirportIconSize, highlightedAirportIdents],
-          getPosition: [globeView],
-        },
-      }),
+    new IconLayer({
+      id: "airports-base",
+      data: filteredAirports,
+      getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
+      getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+      getSize: (d) =>
+        highlightedAirports.some((a) => a.ident === d.ident)
+          ? 2 * scaledAirportIconSize
+          : scaledAirportIconSize,
+      getColor: (d) => {
+        const color = getAltitudeColor(d.elevation_ft, true, useImperial);
+        return isZooming ? [color[0], color[1], color[2], 25] : color;
+      },
+      visible: showAirports,
+      pickable: true,
+      wrapLongitude: true,
+      getPolygonOffset: ({ layerIndex }) => [0, -layerIndex * 100],
+      parameters: {
+        cullMode: "none",
+      },
+      onClick: handleAirportClick,
+      onHover: handleAirportHover,
+      updateTriggers: {
+        getColor: [darkMode, useImperial, isZooming],
+        getSize: [scaledAirportIconSize, highlightedAirportIdents],
+      },
+    }),
 
-    showElectricTransmissionLines &&
-      filteredElectricTransmissionLines.length > 0 &&
-      new PathLayer({
-        id: "electric-transmission-lines",
-        data: filteredElectricTransmissionLines,
-        getPath: (d) => parseLineString(d.geometry),
-        getColor: (d) => {
-          const color = getElectricTransmissionLineColor(d.VOLTAGE);
-          const opacity = d.STATUS === "IN SERVICE" ? 180 : 90;
-          return isZooming ? [...color, 25] : [...color, opacity];
-        },
-        getWidth: 1,
-        widthUnits: "pixels",
-        pickable: true,
-        wrapLongitude: true,
-        onHover: handleElectricTransmissionLineHover,
-        updateTriggers: {
-          getColor: [isZooming],
-          getPath: [filteredElectricTransmissionLines.length],
-          getWidth: [selectedElectricTransmissionLine],
-        },
-      }),
+    // Electric Transmission Lines Layer
+    new PathLayer({
+      id: "electric-transmission-lines",
+      data: filteredElectricTransmissionLines,
+      getPath: (d) => parseLineString(d.geometry),
+      getColor: (d) => {
+        const color = getElectricTransmissionLineColor(d.VOLTAGE);
+        const opacity = d.STATUS === "IN SERVICE" ? 180 : 90;
+        return isZooming ? [...color, 25] : [...color, opacity];
+      },
+      getWidth: 1,
+      widthUnits: "pixels",
+      pickable: true,
+      wrapLongitude: true,
+      visible:
+        showElectricTransmissionLines &&
+        filteredElectricTransmissionLines.length > 0,
+      onHover: handleElectricTransmissionLineHover,
+      updateTriggers: {
+        getColor: [isZooming],
+        getPath: [filteredElectricTransmissionLines.length],
+        getWidth: [selectedElectricTransmissionLine],
+      },
+    }),
 
     // Flight Paths Layer
     ...Object.entries(flightPath || {})
@@ -460,92 +471,87 @@ export const buildDeckLayers = ({
       .filter(Boolean),
 
     // Planes Icon Layer
-    showPlanes &&
-      new IconLayer({
-        id: "planes-base",
-        data: filteredPlanes,
-        pickable: true,
-        wrapLongitude: true,
-        iconAtlas: PLANE_ATLAS,
-        iconMapping: {
-          plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
-        },
-        getIcon: (d) => "plane",
-        getPosition: (d) =>
-          globeView ? [d.lon, d.lat, d.geo_altitude * 100] : [d.lon, d.lat],
-        getSize: (d) =>
-          highlightedPlanes.some((p) => p.icao24 === d.icao24)
-            ? 2 * scaledFlightIconSize
-            : scaledFlightIconSize,
-        getAngle: (d) => -(d.heading || 0),
-        getColor: (d) => {
-          const color = getAltitudeColor(d.geo_altitude, false, useImperial);
-          // Reduce opacity to 0.1 when zooming
-          return isZooming ? [color[0], color[1], color[2], 25] : color;
-        },
-        parameters: {
-          cullMode: "none",
-        },
-        onClick: handlePlaneClick,
-        onHover: handlePlaneHover,
-        updateTriggers: {
-          getSize: [scaledFlightIconSize, highlightedPlaneIdents],
-          getColor: [useImperial, isZooming],
-          getPosition: [globeView],
-        },
-      }),
+    new IconLayer({
+      id: "planes-base",
+      data: filteredPlanes,
+      pickable: true,
+      wrapLongitude: true,
+      iconAtlas: PLANE_ATLAS,
+      iconMapping: {
+        plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
+      },
+      visible: showPlanes,
+      getIcon: (d) => "plane",
+      getPosition: (d) => [d.lon, d.lat],
+      getSize: (d) =>
+        highlightedPlanes.some((p) => p.icao24 === d.icao24)
+          ? 2 * scaledFlightIconSize
+          : scaledFlightIconSize,
+      getAngle: (d) => -(d.heading || 0),
+      getColor: (d) => {
+        const color = getAltitudeColor(d.geo_altitude, false, useImperial);
+        // Reduce opacity to 0.1 when zooming
+        return isZooming ? [color[0], color[1], color[2], 25] : color;
+      },
+      parameters: {
+        cullMode: "none",
+      },
+      onClick: handlePlaneClick,
+      onHover: handlePlaneHover,
+      updateTriggers: {
+        getSize: [scaledFlightIconSize, highlightedPlaneIdents],
+        getColor: [useImperial, isZooming],
+      },
+    }),
 
     // Plane Highlight Outline (hovered + clicked panels)
-    showPlanes &&
-      highlightedPlanes.length > 0 &&
-      new IconLayer({
-        id: "selected-plane-outline",
-        data: highlightedPlanes,
-        iconAtlas: PLANE_OUTLINE_ATLAS,
-        iconMapping: {
-          plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
-        },
-        getIcon: (d) => "plane",
-        getPosition: (d) => [d.lon, d.lat],
-        wrapLongitude: true,
-        getSize: 2.15 * scaledFlightIconSize,
-        getAngle: (d) => -(d.heading || 0),
-        getColor: () =>
-          isZooming
-            ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
-            : outlineColor,
-        updateTriggers: {
-          getColor: [darkMode, isZooming],
-          getSize: [scaledFlightIconSize],
-        },
-      }),
+    new IconLayer({
+      id: "selected-plane-outline",
+      data: highlightedPlanes,
+      iconAtlas: PLANE_OUTLINE_ATLAS,
+      iconMapping: {
+        plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
+      },
+      getIcon: (d) => "plane",
+      getPosition: (d) => [d.lon, d.lat],
+      wrapLongitude: true,
+      getSize: 2.15 * scaledFlightIconSize,
+      visible: showPlanes && highlightedPlanes.length > 0,
+      getAngle: (d) => -(d.heading || 0),
+      getColor: () =>
+        isZooming
+          ? [outlineColor[0], outlineColor[1], outlineColor[2], 25]
+          : outlineColor,
+      updateTriggers: {
+        getColor: [darkMode, isZooming],
+        getSize: [scaledFlightIconSize],
+      },
+    }),
 
     // Callsign label for selected planes
-    showPlanes &&
-      selectedFlightsPanels &&
-      selectedFlightsPanels.length > 0 &&
-      new TextLayer({
-        id: "selected-plane-callsign-labels",
-        data: selectedFlightsPanels,
-        getPosition: (d) => [d.lon, d.lat],
-        getText: (d) => (d.callsign ? d.callsign : d.icao24.toUpperCase()),
-        getSize: 12 * zoomScale,
-        getColor: () => [30, 30, 30, 255],
-        getAngle: () => 0,
-        getTextAnchor: () => "middle",
-        getAlignmentBaseline: () => "bottom",
-        getPixelOffset: () => [0, 24],
-        background: true,
-        backgroundPadding: [2, 2],
-        getBackgroundColor: () => [255, 255, 255, 200],
-        pickable: false,
-        parameters: {
-          depthTest: false,
-        },
-        updateTriggers: {
-          getSize: [zoomScale],
-        },
-      }),
+    new TextLayer({
+      id: "selected-plane-callsign-labels",
+      data: selectedFlightsPanels,
+      getPosition: (d) => [d.lon, d.lat],
+      getText: (d) => (d.callsign ? d.callsign : d.icao24.toUpperCase()),
+      getSize: 12 * zoomScale,
+      getColor: () => [30, 30, 30, 255],
+      getAngle: () => 0,
+      getTextAnchor: () => "middle",
+      getAlignmentBaseline: () => "bottom",
+      getPixelOffset: () => [0, 24],
+      background: true,
+      visible:
+        showPlanes && selectedFlightsPanels && selectedFlightsPanels.length > 0,
+      backgroundPadding: [2, 2],
+      getBackgroundColor: () => [255, 255, 255, 200],
+      pickable: false,
+      parameters: {
+        depthTest: false,
+      },
+      updateTriggers: {
+        getSize: [zoomScale],
+      },
+    }),
   ].filter(Boolean);
 };
-
