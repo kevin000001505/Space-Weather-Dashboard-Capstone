@@ -322,14 +322,14 @@ SELECT
         start => $1::timestamptz,
         finish => $2::timestamptz
     ) AS requested_time,
-    locf(last(time,           time))                            AS time,
-    locf(last(time_pos,       time))                            AS time_pos,
-    locf(last(icao24,         time))                            AS icao24,
-    locf(last(callsign, time), treat_null_as_missing => true)   AS callsign,
-    locf(last(lat,            time))                            AS lat,
-    locf(last(lon,            time))                            AS lon,
-    locf(last(geo_altitude,   time))                            AS geo_altitude,
-    locf(last(on_ground,      time))                            AS on_ground
+    locf(last(time,          time), treat_null_as_missing => true)  AS time,
+    locf(last(time_pos,      time), treat_null_as_missing => true)  AS time_pos,
+    locf(last(icao24,        time), treat_null_as_missing => true)  AS icao24,
+    locf(last(callsign,      time), treat_null_as_missing => true)  AS callsign,
+    locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
+    locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
+    locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
 FROM flight_states
 WHERE icao24 = $4::text
   AND time >= $1::timestamptz
