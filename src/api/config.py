@@ -229,12 +229,8 @@ class LocationData(BaseModel):
     aurora: List[List[float]]
     geoelectric: List[List[float]]
 
-
-class SingleFlightPath(BaseModel):
-    icao24: str
-    locations: List[float]
-
     
 class FlightPathRangeResponse(BaseModel):
     requested_time: List[datetime]
-    points: List[SingleFlightPath]
+    time: List[Optional[datetime]]
+    points: List[Optional[Dict[str, Any]]]
