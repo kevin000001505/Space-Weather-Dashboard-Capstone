@@ -521,7 +521,7 @@ LEFT JOIN LATERAL (
         'callsign',      fs.callsign,
         'lat',           fs.lat,
         'lon',           fs.lon,
-        'baro_altitude', fs.baro_altitude,
+        'geo_altitude', fs.geo_altitude,
         'on_ground',     fs.on_ground
     ) AS points
     FROM flight_states fs
