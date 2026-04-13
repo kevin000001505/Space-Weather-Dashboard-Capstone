@@ -20,25 +20,6 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
 """
 
 
-LATEST_DRAP_QUERY = """
-    WITH latest_time AS (
-        SELECT MAX(observed_at) AS max_ts
-        FROM drap_region
-    )
-    SELECT JSON_BUILD_OBJECT(
-        'timestamp', lt.max_ts,
-        'points', JSON_AGG(JSON_BUILD_ARRAY(
-            lat, 
-            long, 
-            COALESCE(d.absorption, 0)
-        ))
-    )::text AS payload
-    FROM drap_region d
-    JOIN latest_time lt ON d.observed_at = lt.max_ts
-    GROUP BY lt.max_ts;
-"""
-
-
 KP_INDEX_RANGE_QUERY = """
 SELECT time_tag, kp, a_running, station_count
 FROM kp_index
@@ -61,19 +42,6 @@ WHERE time_tag >= $1 AND time_tag <= $2
 ORDER BY time_tag DESC
 """
 
-AURORA_QUERY = """
-WITH latest_aurora AS (
-	-- Your existing logic to grab the latest data goes here
-	SELECT observed_at, lat, long, aurora 
-	FROM aurora_forecast
-	WHERE observed_at = (SELECT MAX(observed_at) FROM aurora_forecast)
-)
-SELECT 
-	MAX(observed_at) AS timestamp,
-	JSON_AGG(JSON_BUILD_ARRAY(lat, long, aurora)) AS points
-FROM latest_aurora;
-"""
-
 
 
 ALERT_QUERY = """
@@ -85,18 +53,6 @@ WHERE issue_datetime >= date_trunc('day', NOW()) - (($1 - 1) * INTERVAL '1 day')
 ORDER BY issue_datetime DESC
 """
 
-LATEST_GEOELECTRIC_QUERY = """
-    WITH latest_grid AS (
-        -- Your existing logic to grab the latest data goes here
-        SELECT observed_at, lat, long, e_magnitude, quality_flag 
-        FROM geoelectric_field
-        WHERE observed_at = (SELECT MAX(observed_at) FROM geoelectric_field)
-    )
-    SELECT 
-        MAX(observed_at) AS timestamp,
-        JSON_AGG(JSON_BUILD_ARRAY(lat, long, ROUND(e_magnitude::numeric, 2), quality_flag)) AS points
-    FROM latest_grid;
-"""
 
 
 LATEST_EVENT_QUERY_V2 = """
@@ -233,133 +189,6 @@ LEFT JOIN airport_navs n ON a.ident = n.associated_airport
 WHERE a.ident = $1
 """
 
-# -----------------------------
-# Range Query
-
-DRAP_RANGE_QUERY = """
-WITH time_ticks AS (
-	SELECT generate_series(
-		$1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-	) AS requested_time
-),
-events AS (
-	SELECT DISTINCT ON (t.requested_time)
-		t.requested_time,
-		d.observed_at
-	FROM time_ticks t
-	LEFT JOIN LATERAL (
-		SELECT observed_at
-		FROM drap_region
-		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
-		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
-        ORDER BY observed_at DESC
-		LIMIT 1
-	) d ON true
-	ORDER BY t.requested_time
-)
-SELECT
-	e.requested_time,
-	e.observed_at,
-	JSON_AGG(
-		JSON_BUILD_ARRAY(
-			d.lat,
-			d.long,
-			COALESCE(d.absorption, 0)
-		)
-	) AS points
-FROM events e
-LEFT JOIN drap_region d 
-ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
-ORDER BY e.requested_time;
-"""
-
-AURORA_RANGE_QUERY = """
-WITH time_ticks AS (
-	SELECT generate_series(
-		$1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-	) AS requested_time
-),
-events AS (
-    SELECT DISTINCT ON (t.requested_time)
-        t.requested_time,
-        d.observed_at
-    FROM time_ticks t
-    LEFT JOIN LATERAL (
-        SELECT observed_at
-        FROM aurora_forecast
-        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
-          AND observed_at <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY observed_at DESC
-        LIMIT 1
-    ) d ON true
-    ORDER BY t.requested_time
-),
-event_points AS (
-    SELECT
-        e.requested_time,
-        e.observed_at,
-        f.lat,
-        f.long,
-        COALESCE(f.aurora, 0) AS aurora
-    FROM events e
-    LEFT JOIN aurora_forecast f ON f.observed_at = e.observed_at
-)
-SELECT
-    requested_time,
-    observed_at,
-    JSON_AGG(
-        JSON_BUILD_ARRAY(lat, long, aurora)
-    ) AS points
-FROM event_points
-GROUP BY requested_time, observed_at
-ORDER BY requested_time;
-"""
-
-GEOELECTRIC_RANGE_QUERY = """
-WITH time_ticks AS (
-	SELECT generate_series(
-		$1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-	) AS requested_time
-),
-events AS (
-	SELECT DISTINCT ON (t.requested_time)
-		t.requested_time,
-		d.observed_at
-	FROM time_ticks t
-	LEFT JOIN LATERAL (
-		SELECT observed_at
-		FROM geoelectric_field
-		WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
-		  AND observed_at <= t.requested_time + INTERVAL '5 minute'
-		ORDER BY observed_at DESC
-		LIMIT 1
-	) d ON true
-	ORDER BY t.requested_time
-)
-SELECT
-	e.requested_time,
-	e.observed_at,
-	JSON_AGG(
-		JSON_BUILD_ARRAY(
-			d.lat,
-			d.long,
-			ROUND(COALESCE(d.e_magnitude, 0)::numeric, 2),
-            quality_flag
-		)
-	) AS points
-FROM events e
-LEFT JOIN geoelectric_field d 
-ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
-ORDER BY e.requested_time;
-"""
 
 
 # --- V2 ---
@@ -486,47 +315,25 @@ SELECT * FROM events_location;
 """
 
 FLIGHTS_RANGE_QUERY = """
-WITH time_ticks AS (
-    SELECT generate_series(
-		$1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-    ) AS requested_time
-),
-events AS (
-    SELECT DISTINCT ON (t.requested_time)
-        t.requested_time,
-        d.time
-    FROM time_ticks t
-    LEFT JOIN LATERAL (
-        SELECT time
-        FROM flight_states
-        WHERE icao24 = $4::text
-          AND time >= t.requested_time - INTERVAL '15 minutes'
-          AND time <= t.requested_time + INTERVAL '5 minutes'
-        ORDER BY time DESC
-        LIMIT 1
-    ) d ON true
-    ORDER BY t.requested_time
-)
 SELECT
-    e.requested_time,
-    e.time,
-    agg.points
-FROM events e
-LEFT JOIN LATERAL (
-    SELECT json_build_object(
-        'time_pos',      fs.time_pos,
-        'icao24',        fs.icao24,
-        'callsign',      fs.callsign,
-        'lat',           fs.lat,
-        'lon',           fs.lon,
-        'geo_altitude', fs.geo_altitude,
-        'on_ground',     fs.on_ground
-    ) AS points
-    FROM flight_states fs
-    WHERE fs.icao24 = $4::text
-      AND fs.time = e.time
-) agg ON true
-ORDER BY e.requested_time;
+    time_bucket_gapfill(
+        make_interval(mins => $3::int),
+        time,
+        start => $1::timestamptz,
+        finish => $2::timestamptz
+    ) AS requested_time,
+    locf(last(time,          time), treat_null_as_missing => true)  AS time,
+    locf(last(time_pos,      time), treat_null_as_missing => true)  AS time_pos,
+    locf(last(icao24,        time), treat_null_as_missing => true)  AS icao24,
+    locf(last(callsign,      time), treat_null_as_missing => true)  AS callsign,
+    locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
+    locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
+    locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
+FROM flight_states
+WHERE icao24 = $4::text
+  AND time >= $1::timestamptz
+  AND time <= $2::timestamptz
+GROUP BY 1
+ORDER BY 1;
 """

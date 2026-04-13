@@ -1,4 +1,5 @@
-"""Tests for v2 endpoints: /api/v2/{events}/latest and /api/v2/kermit."""
+"""Tests for v2 endpoints: /api/v2/{events}/latest, /api/v2/kermit,
+/api/v2/kermit/flight-path, and /api/v2/location."""
 
 import json
 import sys
@@ -8,7 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src" / "api"))
 
-from config import EventsResponseV2, SnapshotResponseV2
+from config import EventsResponseV2, FlightPathRangeResponse, LocationData, SnapshotResponseV2
+from helpers import make_flight_range_row, make_location_row
 
 _PAST_START = "2026-01-01T00:00:00Z"
 _PAST_END = "2026-01-01T06:00:00Z"
@@ -149,4 +151,109 @@ async def test_kermit_v2_event_geoelectric(client, mock_conn):
 async def test_kermit_v2_timing_header(client, mock_conn):
     mock_conn.fetch.return_value = [_make_v2_snapshot_row()]
     r = await client.get(f"/api/v2/kermit?start={_PAST_START}&end={_PAST_END}")
+    assert "X-Process-Time" in r.headers
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v2/kermit/flight-path
+# ---------------------------------------------------------------------------
+
+
+async def test_flight_path_range_200_icao24(client, mock_conn):
+    mock_conn.fetch.return_value = [make_flight_range_row()]
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_PAST_START}&end={_PAST_END}"
+    )
+    assert r.status_code == 200
+
+
+async def test_flight_path_range_200_callsign(client, mock_conn):
+    mock_conn.fetch.return_value = [make_flight_range_row()]
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?callsign=AAL123&start={_PAST_START}&end={_PAST_END}"
+    )
+    assert r.status_code == 200
+
+
+async def test_flight_path_range_schema(client, mock_conn):
+    mock_conn.fetch.return_value = [make_flight_range_row()]
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_PAST_START}&end={_PAST_END}"
+    )
+    FlightPathRangeResponse(**r.json())
+
+
+async def test_flight_path_range_400_no_identifier(client):
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?start={_PAST_START}&end={_PAST_END}"
+    )
+    assert r.status_code == 400
+
+
+async def test_flight_path_range_404_empty(client, mock_conn):
+    mock_conn.fetch.return_value = []
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_PAST_START}&end={_PAST_END}"
+    )
+    assert r.status_code == 404
+
+
+async def test_flight_path_range_future_start_400(client):
+    r = await client.get(f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_FUTURE}")
+    assert r.status_code == 400
+
+
+async def test_flight_path_range_end_before_start_422(client):
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_PAST_END}&end={_PAST_START}"
+    )
+    assert r.status_code == 422
+
+
+async def test_flight_path_range_timing_header(client, mock_conn):
+    mock_conn.fetch.return_value = [make_flight_range_row()]
+    r = await client.get(
+        f"/api/v2/kermit/flight-path?icao24=a1b2c3&start={_PAST_START}&end={_PAST_END}"
+    )
+    assert "X-Process-Time" in r.headers
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v2/location
+# ---------------------------------------------------------------------------
+
+
+def _make_all_location_rows():
+    return [
+        make_location_row("drap_region"),
+        make_location_row("aurora_forecast"),
+        make_location_row("geoelectric_field"),
+    ]
+
+
+async def test_location_200(client, mock_conn):
+    mock_conn.fetch.return_value = _make_all_location_rows()
+    r = await client.get("/api/v2/location")
+    assert r.status_code == 200
+
+
+async def test_location_schema(client, mock_conn):
+    mock_conn.fetch.return_value = _make_all_location_rows()
+    r = await client.get("/api/v2/location")
+    data = r.json()
+    LocationData(**data)
+    assert "drap" in data
+    assert "aurora" in data
+    assert "geoelectric" in data
+
+
+async def test_location_404_empty(client, mock_conn):
+    mock_conn.fetch.return_value = []
+    r = await client.get("/api/v2/location")
+    assert r.status_code == 404
+
+
+async def test_location_timing_header(client, mock_conn):
+    mock_conn.fetch.return_value = _make_all_location_rows()
+    r = await client.get("/api/v2/location")
     assert "X-Process-Time" in r.headers

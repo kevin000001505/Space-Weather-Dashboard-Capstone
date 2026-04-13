@@ -39,13 +39,17 @@ def benchmark_latest(api_url, events):
 
     for event in events:
         unc_body, unc_t = fetch(f"{api_url}/api/v2/{event}/latest")
-        comp_body, comp_t = fetch(f"{api_url}/api/v2/{event}/latest?encoding=delta-bitpack")
+        comp_body, comp_t = fetch(
+            f"{api_url}/api/v2/{event}/latest?encoding=delta-bitpack"
+        )
         unc_sz = len(unc_body)
         comp_sz = len(comp_body)
         pct = (1 - comp_sz / unc_sz) * 100 if unc_sz else 0
 
         print(f"{event:<14} {'uncompressed':<18} {fmt_kb(unc_sz):>10} {unc_t:>7.3f}s")
-        print(f"{'':<14} {'delta-bitpack':<18} {fmt_kb(comp_sz):>10} {comp_t:>7.3f}s {pct:>5.1f}%")
+        print(
+            f"{'':<14} {'delta-bitpack':<18} {fmt_kb(comp_sz):>10} {comp_t:>7.3f}s {pct:>5.1f}%"
+        )
     print()
 
 
@@ -53,21 +57,27 @@ def benchmark_kermit(api_url, events, start, end, interval):
     print("=" * 72)
     print(f"  Playback Endpoint (kermit, {start} to {end}, {interval}m)")
     print("=" * 72)
-    print(f"{'Event':<14} {'Version':<6} {'Size':>12} {'Time':>8} {'Snaps':>6} {'Saved':>7}")
+    print(
+        f"{'Event':<14} {'Version':<6} {'Size':>12} {'Time':>8} {'Snaps':>6} {'Saved':>7}"
+    )
     print("-" * 62)
 
     qs = f"start={start}&end={end}&interval={interval}"
 
     for event in events:
         results = {}
-        for ver, path in [("V1", f"/api/v1/kermit?event={event}&{qs}"),
-                          ("V2", f"/api/v2/kermit?event={event}&{qs}")]:
+        for ver, path in [
+            ("V1", f"/api/v1/kermit?event={event}&{qs}"),
+            ("V2", f"/api/v2/kermit?event={event}&{qs}"),
+        ]:
             try:
                 body, elapsed = fetch(f"{api_url}{path}")
                 data = json.loads(body)
                 snaps = len(data)
                 results[ver] = (len(body), elapsed, snaps)
-                print(f"{event:<14} {ver:<6} {fmt_kb(len(body)):>12} {elapsed:>7.3f}s {snaps:>6}")
+                print(
+                    f"{event:<14} {ver:<6} {fmt_kb(len(body)):>12} {elapsed:>7.3f}s {snaps:>6}"
+                )
             except Exception as e:
                 print(f"{event:<14} {ver:<6} {'ERROR':>12} {'':<8} {str(e)[:30]}")
 
@@ -82,11 +92,21 @@ def benchmark_kermit(api_url, events, start, end, interval):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark V1 vs V2 API transfer size and query time")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Base API URL")
-    parser.add_argument("--start", default="2026-04-08T00:00:00Z", help="Playback start (ISO 8601)")
-    parser.add_argument("--end", default="2026-04-08T06:00:00Z", help="Playback end (ISO 8601)")
-    parser.add_argument("--interval", type=int, default=5, help="Playback interval in minutes")
+    parser = argparse.ArgumentParser(
+        description="Benchmark V1 vs V2 API transfer size and query time"
+    )
+    parser.add_argument(
+        "--api-url", default="http://localhost:8000", help="Base API URL"
+    )
+    parser.add_argument(
+        "--start", default="2026-04-08T00:00:00Z", help="Playback start (ISO 8601)"
+    )
+    parser.add_argument(
+        "--end", default="2026-04-08T06:00:00Z", help="Playback end (ISO 8601)"
+    )
+    parser.add_argument(
+        "--interval", type=int, default=5, help="Playback interval in minutes"
+    )
     args = parser.parse_args()
 
     events = ["drap", "aurora", "geoelectric"]

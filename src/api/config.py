@@ -4,10 +4,6 @@ from datetime import datetime
 from enum import Enum
 
 
-class DRAPResponse(BaseModel):
-    timestamp: datetime
-    points: List[List[float]]  # [lat, lon, intensity]
-
 
 class EventsResponseV2(BaseModel):
     timestamp: datetime
@@ -32,9 +28,6 @@ class EventType(str, Enum):
     geoelectric = "geoelectric"
     aurora = "aurora"
 
-
-class DRAPRangeResponse(BaseModel):
-    snapshots: List[DRAPResponse]
 
 
 class FlightPathResponse(BaseModel):
@@ -169,11 +162,6 @@ class ProtonFluxResponse(BaseModel):
     flux_500_mev: Optional[float] = None
 
 
-class AuroraResponse(BaseModel):
-    timestamp: datetime
-    points: List[List[float]]
-
-
 class XRayResponse(BaseModel):
     time_tag: datetime
     satellite: int
@@ -187,22 +175,6 @@ class XRayResponse(BaseModel):
 class AlertResponse(BaseModel):
     time: datetime
     message: str
-
-
-class GeoelectricResponse(BaseModel):
-    timestamp: datetime
-    points: List[List[float]]
-
-
-class GeoelectricRangeResponse(BaseModel):
-    count: int
-    snapshots: List[GeoelectricResponse]
-
-
-class SnapshotResponse(BaseModel):
-    requested_time: datetime
-    observed_at: Optional[datetime] = None
-    points: Optional[List[List[float]]] = None
 
 
 class SnapshotResponseV2(BaseModel):
@@ -229,7 +201,7 @@ class LocationData(BaseModel):
     aurora: List[List[float]]
     geoelectric: List[List[float]]
 
-    
+
 class FlightPathRangeResponse(BaseModel):
     requested_time: List[datetime]
     time: List[Optional[datetime]]
