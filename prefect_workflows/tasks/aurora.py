@@ -102,7 +102,7 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
         client = get_redis_client()
 
         observation_time = data.get("Observation Time")
-        forecast_time = data.get("Forecast Time")
+        # forecast_time = data.get("Forecast Time")
 
         # Ensure the timestamp is formatted as ISO 8601 for the frontend
         formatted_observation_time = (
@@ -112,13 +112,13 @@ async def broadcast_aurora_to_redis(data: dict) -> None:
             if observation_time
             else ""
         )
-        formatted_forecast_time = (
-            forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-            if forecast_time and hasattr(forecast_time, "strftime")
-            else str(forecast_time)
-            if forecast_time
-            else ""
-        )
+        # formatted_forecast_time = (
+        #     forecast_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        #     if forecast_time and hasattr(forecast_time, "strftime")
+        #     else str(forecast_time)
+        #     if forecast_time
+        #     else ""
+        # )
 
         coords = data.get("coordinates", [])
         # Normalize longitude (0-359 → -180/180) and sort to match

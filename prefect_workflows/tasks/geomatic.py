@@ -137,7 +137,10 @@ async def broadcast_geoelectric_to_redis(
         # Sort features to match events_location order (lat DESC, long ASC)
         sorted_features = sorted(
             features,
-            key=lambda f: (-f["geometry"]["coordinates"][1], f["geometry"]["coordinates"][0]),
+            key=lambda f: (
+                -f["geometry"]["coordinates"][1],
+                f["geometry"]["coordinates"][0],
+            ),
         )
         # Extract e_magnitude values and compress
         values = [

@@ -13,17 +13,11 @@ from database.queries import (
     ALERT_QUERY,
     AIRPORTS_LATEST_QUERY,
     AIRPORT_QUERY,
-    AURORA_QUERY,
-    AURORA_RANGE_QUERY,
     FLIGHT_PATH_QUERY,
     FLIGHTS_RANGE_QUERY,
     KP_INDEX_RANGE_QUERY,
-    LATEST_DRAP_QUERY,
-    DRAP_RANGE_QUERY,
     XRAY_FLUX_RANGE_QUERY,
     PROTON_FLUX_RANGE_QUERY,
-    LATEST_GEOELECTRIC_QUERY,
-    GEOELECTRIC_RANGE_QUERY,
     GEOELECTRIC_RANGE_QUERY_V2,
     DRAP_RANGE_QUERY_V2,
     AURORA_RANGE_QUERY_V2,
@@ -31,10 +25,8 @@ from database.queries import (
     LATEST_EVENT_QUERY_V2,
 )
 from config import (
-    AuroraResponse,
     EventsResponseV2,
     FlightStatesResponse,
-    DRAPResponse,
     FlightPathResponse,
     Airport,
     AirportDetailResponse,
@@ -42,16 +34,14 @@ from config import (
     XRayResponse,
     ProtonFluxResponse,
     AlertResponse,
-    GeoelectricResponse,
     TimeTestingData,
-    SnapshotResponse,
     SnapshotResponseV2,
     EventType,
     LocationData,
     FlightPathRangeResponse,
 )
 from shared.compression import delta_bitpack_compress
-from validator import points_adapter, airports_adapter
+from validator import airports_adapter
 import shared.redis as redis_config  # Pull from the shared volume
 import logging
 import json
@@ -200,12 +190,6 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-query_dict = {
-    "drap": DRAP_RANGE_QUERY,
-    "geoelectric": GEOELECTRIC_RANGE_QUERY,
-    "aurora": AURORA_RANGE_QUERY,
-    "flight": FLIGHTS_RANGE_QUERY,
-}
 
 query_dict_v2 = {
     "drap": DRAP_RANGE_QUERY_V2,
@@ -541,57 +525,6 @@ async def get_activate_flight_states(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
-@app.get("/api/v1/drap/latest", response_model=DRAPResponse)
-async def latest_drap(
-    conn: asyncpg.Connection = Depends(get_db_connection), debug: bool = Query(False)
-):
-    t_start = time.perf_counter()
-    redis_client = redis_config.get_redis_client()
-    try:
-        t_query_start = time.perf_counter()
-        cached_drap = await redis_client.get(redis_config.DRAP_CACHE_KEY)
-        t_query_end = time.perf_counter()
-
-        if cached_drap:
-            if debug:
-                return timing_debug_response(t_start, t_query_start, t_query_end)
-
-            response = Response(content=cached_drap, media_type="application/json")
-            add_timing_headers(response, t_start, t_query_start, t_query_end)
-            return response
-
-        t_query_start = time.perf_counter()
-        row = await conn.fetchrow(LATEST_DRAP_QUERY)
-        t_query_end = time.perf_counter()
-
-        if not row:
-            raise HTTPException(status_code=404, detail="No D-RAP data available")
-
-        raw_json_string = row["payload"]
-        final_model = DRAPResponse.model_validate_json(raw_json_string)
-
-        # 3. Dump back to JSON for Redis and the response
-        cache_payload_bytes = final_model.model_dump_json()
-
-        await redis_client.set(
-            redis_config.DRAP_CACHE_KEY,
-            cache_payload_bytes,
-            ex=redis_config.VERY_LONG_TTL,  # Or whatever your DRAP TTL is
-        )
-
-        if debug:
-            return timing_debug_response(t_start, t_query_start, t_query_end)
-
-        response = Response(content=cache_payload_bytes, media_type="application/json")
-        add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
-
-
 @app.get("/api/v2/{events}/latest")
 async def latest_events(
     conn: asyncpg.Connection = Depends(get_db_connection),
@@ -766,48 +699,6 @@ async def proton_flux(
     )
 
 
-@app.get("/api/v1/aurora", response_model=AuroraResponse)
-async def aurora(
-    response: Response,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    utc_time: Optional[str] = Query(
-        default=None,
-        description="Observation time in ISO 8601 UTC format (required).",
-        openapi_examples={
-            "recent": {"summary": "Recent observation", "value": _iso_now()},
-            "earlier": {"summary": "Earlier observation", "value": _iso_days_ago(1)},
-        },
-    ),
-    debug: bool = Query(False),
-):
-    """Retrieve aurora forecast data.
-
-    - With **utc_time** (ISO 8601 UTC): returns data for that observation time.
-    """
-    t_start = time.perf_counter()
-    try:
-        t_query_start = time.perf_counter()
-        row = await conn.fetchrow(AURORA_QUERY)
-        t_query_end = time.perf_counter()
-
-        if not row:
-            raise HTTPException(status_code=404, detail="No aurora data available")
-
-        aurora_data = dict(row)
-        aurora_data["points"] = points_adapter.validate_json(aurora_data["points"])
-
-        if debug:
-            return timing_debug_response(t_start, t_query_start, t_query_end)
-
-        add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return aurora_data
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
-
-
 @app.get("/api/v1/alert", response_model=List[AlertResponse])
 async def get_alerts(
     response: Response,
@@ -836,83 +727,6 @@ async def get_alerts(
     except Exception as e:
         logger.error(f"Error fetching alerts: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
-
-
-@app.get("/api/v1/geoelectric/latest", response_model=GeoelectricResponse)
-async def latest_geoelectric(
-    response: Response,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    debug: bool = Query(False),
-):
-    t_start = time.perf_counter()
-    try:
-        t_query_start = time.perf_counter()
-        row = await conn.fetchrow(LATEST_GEOELECTRIC_QUERY)
-        t_query_end = time.perf_counter()
-
-        if not row:
-            raise HTTPException(status_code=404, detail="No Geoelectric data available")
-
-        geoelectric_data = dict(row)
-        geoelectric_data["points"] = points_adapter.validate_json(
-            geoelectric_data["points"]
-        )
-
-        if debug:
-            return timing_debug_response(t_start, t_query_start, t_query_end)
-
-        add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return geoelectric_data
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {e}")
-
-
-@app.get("/api/v1/kermit", response_model=List[SnapshotResponse])
-async def range_data_retrieve(
-    response: Response,
-    conn: asyncpg.Connection = Depends(get_db_connection),
-    start: Optional[datetime] = Query(
-        default=None,
-        description="The start time for event (ISO 8601 UTC). Defaults to 1 day before end.",
-    ),
-    end: Optional[datetime] = Query(
-        default=None,
-        description="The end time for event (ISO 8601 UTC). Defaults to now.",
-    ),
-    event: Literal["drap", "geoelectric", "aurora"] = Query(
-        default="drap", description="Space weather event."
-    ),
-    interval: int = Query(default=5, description="The time range for each data gap."),
-):
-    t_start = time.perf_counter()
-    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
-    start_utc = start_utc.replace(second=0, microsecond=0)
-    end_utc = end_utc.replace(second=0, microsecond=0)
-    query = query_dict[event]
-
-    t_query_start = time.perf_counter()
-    rows = await conn.fetch(query, start_utc, end_utc, interval)
-    t_query_end = time.perf_counter()
-
-    if not rows:
-        raise HTTPException(
-            status_code=404, detail=f"No {event} data available for the given range"
-        )
-
-    result = []
-    for row in rows:
-        row_dict = dict(row)
-        raw_points = row_dict.get("points")
-        row_dict["points"] = (
-            points_adapter.validate_json(raw_points) if raw_points is not None else None
-        )
-        result.append(SnapshotResponse.model_validate(row_dict))
-
-    add_timing_headers(response, t_start, t_query_start, t_query_end)
-    return result
 
 
 @app.get("/api/v2/kermit", response_model=List[SnapshotResponseV2])
@@ -960,7 +774,8 @@ async def range_data_values_retrieve(
 
 @app.get("/api/v2/kermit/flight-path", response_model=FlightPathRangeResponse)
 async def retrieve_flight_paths(
-    response: Response, conn: asyncpg.Connection = Depends(get_db_connection),
+    response: Response,
+    conn: asyncpg.Connection = Depends(get_db_connection),
     start: Optional[datetime] = Query(
         default=None,
         description="The start time for event (ISO 8601 UTC). Defaults to 1 day before end.",
@@ -977,18 +792,17 @@ async def retrieve_flight_paths(
     callsign: Optional[str] = Query(
         default=None,
         description="Flight callsign",
-    )
+    ),
 ):
     t_start = time.perf_counter()
     start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
     start_utc = start_utc.replace(second=0, microsecond=0)
     end_utc = end_utc.replace(second=0, microsecond=0)
-    
+
     if icao24 is None and callsign is None:
         raise HTTPException(
-        status_code=400,
-        detail="Either provide both icao24 or callsign"
-    )
+            status_code=400, detail="Either provide both icao24 or callsign"
+        )
 
     t_query_start = time.perf_counter()
     rows = await conn.fetch(FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24)
@@ -1012,10 +826,9 @@ async def retrieve_flight_paths(
                 "lat": row_dict.get("lat"),
                 "lon": row_dict.get("lon"),
                 "geo_altitude": row_dict.get("geo_altitude"),
-                "on_ground": row_dict.get("on_ground")
+                "on_ground": row_dict.get("on_ground"),
             }
         )
-
 
     result = FlightPathRangeResponse(
         requested_time=requested_times,

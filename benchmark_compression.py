@@ -20,6 +20,7 @@ import urllib.request
 # Compression methods
 # ---------------------------------------------------------------------------
 
+
 def rle_compress(data):
     if not data:
         return []
@@ -116,6 +117,7 @@ def delta_bitpack_compress(data, precision=2):
 # Benchmark helpers
 # ---------------------------------------------------------------------------
 
+
 def json_size(obj):
     return len(json.dumps(obj).encode("utf-8"))
 
@@ -143,19 +145,23 @@ def benchmark_event(api_url, event):
     bits_direct = max(1, math.ceil(math.log2(n_unique))) if n_unique > 1 else 1
     deltas = delta_compress(points)
     n_unique_deltas = len(set(deltas))
-    bits_delta = max(1, math.ceil(math.log2(n_unique_deltas))) if n_unique_deltas > 1 else 1
-    print(f"Unique values: {n_unique} ({bits_direct}b)  |  Unique deltas: {n_unique_deltas} ({bits_delta}b)")
+    bits_delta = (
+        max(1, math.ceil(math.log2(n_unique_deltas))) if n_unique_deltas > 1 else 1
+    )
+    print(
+        f"Unique values: {n_unique} ({bits_direct}b)  |  Unique deltas: {n_unique_deltas} ({bits_delta}b)"
+    )
 
     methods = [
-        ("RLE",              lambda p: rle_compress(p)),
-        ("Sparse",           lambda p: sparse_compress(p)),
-        ("Delta",            lambda p: delta_compress(p)),
-        ("Delta+RLE",        lambda p: delta_rle_compress(p)),
+        ("RLE", lambda p: rle_compress(p)),
+        ("Sparse", lambda p: sparse_compress(p)),
+        ("Delta", lambda p: delta_compress(p)),
+        ("Delta+RLE", lambda p: delta_rle_compress(p)),
         ("QDelta+RLE (1dp)", lambda p: quantized_delta_rle_compress(p, precision=1)),
-        ("Dict",             lambda p: dictionary_compress(p)),
-        ("Dict+RLE",         lambda p: dictionary_rle_compress(p)),
-        ("Bitpack",          lambda p: bitpack_compress(p)),
-        ("Delta+Bitpack",    lambda p: delta_bitpack_compress(p)),
+        ("Dict", lambda p: dictionary_compress(p)),
+        ("Dict+RLE", lambda p: dictionary_rle_compress(p)),
+        ("Bitpack", lambda p: bitpack_compress(p)),
+        ("Delta+Bitpack", lambda p: delta_bitpack_compress(p)),
     ]
 
     print(f"\n{'Method':<20} {'Size':>9} {'Ratio':>7} {'Encode':>10}")
@@ -166,7 +172,7 @@ def benchmark_event(api_url, event):
         elapsed = time.perf_counter() - t0
         size = json_size(result)
         ratio = size / original_size
-        print(f"{name:<20} {size/1024:>8.1f}K {ratio:>6.1%} {elapsed:>9.4f}s")
+        print(f"{name:<20} {size / 1024:>8.1f}K {ratio:>6.1%} {elapsed:>9.4f}s")
 
     # QDelta max error
     reconstructed = [points[0]]
@@ -181,9 +187,14 @@ def benchmark_event(api_url, event):
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark compression methods for space weather data")
-    parser.add_argument("--api-url", default="http://localhost:8000", help="Base API URL")
+    parser = argparse.ArgumentParser(
+        description="Benchmark compression methods for space weather data"
+    )
+    parser.add_argument(
+        "--api-url", default="http://localhost:8000", help="Base API URL"
+    )
     args = parser.parse_args()
 
     print(f"Fetching data from {args.api_url}")
