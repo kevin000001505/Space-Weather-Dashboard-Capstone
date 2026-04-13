@@ -1002,10 +1002,20 @@ async def retrieve_flight_paths(
     requested_times, times, points = [], [], []
     for row in rows:
         row_dict = dict(row)
-        raw = row_dict.get("points")
-        requested_times.append(row_dict["requested_time"])
-        times.append(row_dict["time"])
-        points.append(json.loads(raw) if raw is not None else None)
+        requested_times.append(row_dict.get("requested_time"))
+        times.append(row_dict.get("time"))
+        points.append(
+            {
+                "time_pos": row_dict.get("time_pos"),
+                "icao24": row_dict.get("icao24"),
+                "callsign": row_dict.get("callsign"),
+                "lat": row_dict.get("lat"),
+                "long": row_dict.get("long"),
+                "geo_altitude": row_dict.get("geo_altitude"),
+                "on_ground": row_dict.get("on_ground")
+            }
+        )
+
 
     result = FlightPathRangeResponse(
         requested_time=requested_times,
