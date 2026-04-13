@@ -361,47 +361,6 @@ GROUP BY e.requested_time, e.observed_at
 ORDER BY e.requested_time;
 """
 
-FLIGHTS_RANGE_QUERY = """"""
-
-PAST_RANGE_DATA = """
-WITH time_ticks AS (
-    SELECT generate_series(
-        $1::timestamptz,
-		$2::timestamptz,
-		make_interval(mins => $3::int)
-    ) AS requested_time
-),
-events AS (
-    SELECT DISTINCT ON (t.requested_time)
-        t.requested_time,
-        d.observed_at
-    FROM time_ticks t
-    LEFT JOIN LATERAL (
-        SELECT observed_at
-        FROM drap_region
-        WHERE observed_at >= t.requested_time - INTERVAL '15 minutes'
-          AND observed_at <= t.requested_time + INTERVAL '1 minute'
-        ORDER BY observed_at DESC
-        LIMIT 1
-    ) d ON true
-    ORDER BY t.requested_time
-)
-SELECT
-    e.requested_time,
-    e.observed_at,
-    JSON_AGG(
-        JSON_BUILD_ARRAY(
-            d.lat,
-            d.long,
-            ROUND(COALESCE(d.absorption, 0)::numeric, 2)
-        )
-    ) AS points
-FROM events e
-LEFT JOIN drap_region d
-    ON d.observed_at = e.observed_at
-GROUP BY e.requested_time, e.observed_at
-ORDER BY e.requested_time;
-"""
 
 # --- V2 ---
 DRAP_RANGE_QUERY_V2 = """
@@ -524,4 +483,50 @@ ORDER BY e.requested_time;
 
 LOCATION_QUERY = """
 SELECT * FROM events_location;
+"""
+
+FLIGHTS_RANGE_QUERY = """
+WITH time_ticks AS (
+    SELECT generate_series(
+		$1::timestamptz,
+		$2::timestamptz,
+		make_interval(mins => $3::int)
+    ) AS requested_time
+),
+events AS (
+    SELECT DISTINCT ON (t.requested_time)
+        t.requested_time,
+        d.time
+    FROM time_ticks t
+    LEFT JOIN LATERAL (
+        SELECT time
+        FROM flight_states
+        WHERE icao24 = $4::text
+          AND time >= t.requested_time - INTERVAL '15 minutes'
+          AND time <= t.requested_time + INTERVAL '5 minutes'
+        ORDER BY time DESC
+        LIMIT 1
+    ) d ON true
+    ORDER BY t.requested_time
+)
+SELECT
+    e.requested_time,
+    e.time,
+    agg.points
+FROM events e
+LEFT JOIN LATERAL (
+    SELECT json_build_object(
+        'time_pos',      fs.time_pos,
+        'icao24',        fs.icao24,
+        'callsign',      fs.callsign,
+        'lat',           fs.lat,
+        'lon',           fs.lon,
+        'baro_altitude', fs.baro_altitude,
+        'on_ground',     fs.on_ground
+    ) AS points
+    FROM flight_states fs
+    WHERE fs.icao24 = $4::text
+      AND fs.time = e.time
+) agg ON true
+ORDER BY e.requested_time;
 """

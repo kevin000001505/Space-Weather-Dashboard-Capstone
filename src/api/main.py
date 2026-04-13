@@ -48,6 +48,7 @@ from config import (
     SnapshotResponseV2,
     EventType,
     LocationData,
+    FlightPathRangeResponse,
 )
 from shared.compression import delta_bitpack_compress
 from validator import points_adapter, airports_adapter
@@ -955,6 +956,61 @@ async def range_data_values_retrieve(
 
     add_timing_headers(response, t_start, t_query_start, t_query_end)
     return result
+
+
+@app.get("/api/v2/kermit/flight-path", response_model=FlightPathRangeResponse)
+async def retrieve_flight_paths(
+    response: Response, conn: asyncpg.Connection = Depends(get_db_connection),
+    start: Optional[datetime] = Query(
+        default=None,
+        description="The start time for event (ISO 8601 UTC). Defaults to 1 day before end.",
+    ),
+    end: Optional[datetime] = Query(
+        default=None,
+        description="The end time for event (ISO 8601 UTC). Defaults to now.",
+    ),
+    interval: int = Query(default=5, description="The time range for each data gap."),
+    icao24: Optional[str] = Query(
+        default=None,
+        description="Flight icao24",
+    ),
+    callsign: Optional[str] = Query(
+        default=None,
+        description="Flight callsign",
+    )
+):
+    t_start = time.perf_counter()
+    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
+    start_utc = start_utc.replace(second=0, microsecond=0)
+    end_utc = end_utc.replace(second=0, microsecond=0)
+    
+    if icao24 is None and callsign is None:
+        raise HTTPException(
+        status_code=400,
+        detail="Either provide both icao24 or callsign"
+    )
+
+    t_query_start = time.perf_counter()
+    rows = await conn.fetch(FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24)
+    t_query_end = time.perf_counter()
+
+    if not rows:
+        raise HTTPException(
+            status_code=404, detail=f"No {icao24} data available for the given range"
+        )
+
+    result = []
+    try:
+        for row in rows:
+            row_dict = dict(row)
+            raw_points = row_dict.get("points")
+            row_dict["data"] = json.loads(raw_points) if raw_points is not None else None
+            result.append(FlightPathRangeResponse.model_validate(row_dict))
+
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return result
+    except Exception as e:
+        print(rows)
 
 
 @app.get("/api/v2/location", response_model=LocationData)
