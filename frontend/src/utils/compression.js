@@ -61,7 +61,6 @@ export function mergeCoordinatesAndValues(coordinates, values) {
   const len = Math.min(coordinates.length, values.length);
   const result = [];
   for (let i = 0; i < len; i++) {
-    if(values[i] === 0) continue; 
     result.push([...coordinates[i], values[i]]);
   }
   return result;
