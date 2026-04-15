@@ -4,10 +4,11 @@ from shared.prefect_utils import variable_upsert
 from prefect.variables import Variable
 from shared.db_utils import get_connection
 from tasks.drap import broadcast_drap_to_redis, extract_data, transform_data, load_data
-
+from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
+    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for D-RAP data extraction, transformation, and loading.",
 )
 async def rap_extract_flow():

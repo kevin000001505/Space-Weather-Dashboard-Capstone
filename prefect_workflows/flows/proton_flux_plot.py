@@ -1,6 +1,7 @@
 """Proton Flux Plot data ingestion and maintenance flows."""
 
 from prefect import flow
+from config import EVENTS_TIMEOUT
 from shared.db_utils import get_connection
 from tasks.proton_flux_plot import (
     fetch_proton_flux_plot,
@@ -11,6 +12,7 @@ from tasks.proton_flux_plot import (
 @flow(
     name="Ingest Proton Flux Plot Data",
     log_prints=True,
+    timeout_seconds=EVENTS_TIMEOUT,
     retries=3,
     retry_delay_seconds=5,
 )

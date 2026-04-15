@@ -2,10 +2,11 @@ from prefect import flow
 from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks.alert import fetch_alerts, parse_alerts, store_alert
-
+from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
+    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for alerts data extraction.",
 )
 async def alerts_extract_flow():

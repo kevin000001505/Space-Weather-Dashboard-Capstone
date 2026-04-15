@@ -39,6 +39,7 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 secrets/pyopensky-settings
+secrets/users.yml
 Running
 
 # uv

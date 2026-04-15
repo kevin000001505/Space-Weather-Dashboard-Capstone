@@ -1,6 +1,7 @@
 from prefect import flow
 from shared.logger import get_logger
 from shared.db_utils import get_connection
+from config import FLIGHT_TIMEOUT
 from tasks import airports
 import asyncio
 
@@ -8,6 +9,7 @@ import asyncio
 @flow(
     log_prints=True,
     description="ETL flow for airports data extraction.",
+    timeout_seconds=FLIGHT_TIMEOUT,
     retries=3,
 )
 async def airports_extract_flow():

@@ -4,10 +4,11 @@ from prefect.variables import Variable
 from shared.prefect_utils import variable_upsert
 from shared.db_utils import get_connection
 from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_aurora_data
-
+from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
+    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for aurora forecast data extraction and loading.",
 )
 async def aurora_extract_flow():

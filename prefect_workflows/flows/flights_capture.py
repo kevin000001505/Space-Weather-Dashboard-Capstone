@@ -1,6 +1,7 @@
 """Flight data ingestion and maintenance flows."""
 
 from prefect import flow
+from config import FLIGHT_TIMEOUT
 from shared.db_utils import get_connection
 from tasks.flights import (
     fetch_flights,
@@ -10,7 +11,7 @@ from tasks.flights import (
 )
 
 
-@flow(name="Ingest Flight Data", log_prints=True)
+@flow(name="Ingest Flight Data", log_prints=True, timeout_seconds=FLIGHT_TIMEOUT)
 async def ingest_flow():
     """Main flow for ingesting flight data from OpenSky."""
     df = fetch_flights()

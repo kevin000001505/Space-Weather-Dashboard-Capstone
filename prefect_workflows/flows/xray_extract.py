@@ -1,4 +1,5 @@
 from prefect import flow
+from config import EVENTS_TIMEOUT
 from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks.xray_latest import (
@@ -10,6 +11,7 @@ from tasks.xray_latest import (
 
 @flow(
     log_prints=True,
+    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for X-ray data extraction.",
 )
 async def xray_extract_flow():
