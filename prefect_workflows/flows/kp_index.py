@@ -14,7 +14,6 @@ from tasks.kp_index import (
     log_prints=True,
     retries=3,
     retry_delay_seconds=300,
-    timeout_seconds=EVENTS_TIMEOUT,
 )
 async def ingest_kp_index_flow():
     """Main flow for ingesting Kp index data from NOAA."""

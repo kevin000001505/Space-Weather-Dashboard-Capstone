@@ -9,7 +9,6 @@ from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for aurora forecast data extraction and loading.",
 )
 async def aurora_extract_flow():

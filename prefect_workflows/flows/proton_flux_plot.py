@@ -12,7 +12,6 @@ from tasks.proton_flux_plot import (
 @flow(
     name="Ingest Proton Flux Plot Data",
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     retries=3,
     retry_delay_seconds=5,
 )

@@ -9,7 +9,6 @@ from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for D-RAP data extraction, transformation, and loading.",
 )
 async def rap_extract_flow():

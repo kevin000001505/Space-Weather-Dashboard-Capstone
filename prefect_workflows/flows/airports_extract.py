@@ -9,7 +9,6 @@ import asyncio
 @flow(
     log_prints=True,
     description="ETL flow for airports data extraction.",
-    timeout_seconds=FLIGHT_TIMEOUT,
     retries=3,
 )
 async def airports_extract_flow():

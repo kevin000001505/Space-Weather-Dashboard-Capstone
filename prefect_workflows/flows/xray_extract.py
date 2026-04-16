@@ -11,7 +11,6 @@ from tasks.xray_latest import (
 
 @flow(
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for X-ray data extraction.",
 )
 async def xray_extract_flow():

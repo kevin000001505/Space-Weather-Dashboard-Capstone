@@ -7,7 +7,6 @@ from config import EVENTS_TIMEOUT
 
 @flow(
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for alerts data extraction.",
 )
 async def alerts_extract_flow():

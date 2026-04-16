@@ -18,7 +18,6 @@ from tasks.geomatic import (
 
 @flow(
     log_prints=True,
-    timeout_seconds=EVENTS_TIMEOUT,
     description="ETL flow for NOAA geoelectric field data extraction and loading.",
 )
 async def geomatic_extract_flow():
