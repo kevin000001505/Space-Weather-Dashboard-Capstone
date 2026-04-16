@@ -9,7 +9,13 @@ from tasks.kp_index import (
 )
 
 
-@flow(name="Ingest Kp Index Data", log_prints=True, retries=3, retry_delay_seconds=300, timeout_seconds=EVENTS_TIMEOUT)
+@flow(
+    name="Ingest Kp Index Data",
+    log_prints=True,
+    retries=3,
+    retry_delay_seconds=300,
+    timeout_seconds=EVENTS_TIMEOUT,
+)
 async def ingest_kp_index_flow():
     """Main flow for ingesting Kp index data from NOAA."""
     records = fetch_kp_index()

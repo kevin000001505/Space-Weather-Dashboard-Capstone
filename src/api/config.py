@@ -4,7 +4,6 @@ from datetime import datetime
 from enum import Enum
 
 
-
 class EventsResponseV2(BaseModel):
     timestamp: datetime
     points: List[float]  # [intensity]
@@ -27,7 +26,6 @@ class EventType(str, Enum):
     drap = "drap"
     geoelectric = "geoelectric"
     aurora = "aurora"
-
 
 
 class FlightPathResponse(BaseModel):

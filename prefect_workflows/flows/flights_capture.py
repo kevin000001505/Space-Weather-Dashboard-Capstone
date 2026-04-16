@@ -11,7 +11,7 @@ from tasks.flights import (
 )
 
 
-@flow(name="Ingest Flight Data", log_prints=True, timeout_seconds=FLIGHT_TIMEOUT)
+@flow(name="Ingest Flight Data", log_prints=True, timeout_seconds=120)
 async def ingest_flow():
     """Main flow for ingesting flight data from OpenSky."""
     df = fetch_flights()
@@ -21,3 +21,4 @@ async def ingest_flow():
 
         if records:
             await broadcast_active_flights_to_redis(conn)
+        

@@ -43,7 +43,6 @@ ORDER BY time_tag DESC
 """
 
 
-
 ALERT_QUERY = """
 SELECT
     issue_datetime AS time,
@@ -52,7 +51,6 @@ FROM alerts
 WHERE issue_datetime >= date_trunc('day', NOW()) - (($1 - 1) * INTERVAL '1 day')
 ORDER BY issue_datetime DESC
 """
-
 
 
 LATEST_EVENT_QUERY_V2 = """
@@ -188,7 +186,6 @@ LEFT JOIN airport_freqs f ON a.ident = f.airport_ident
 LEFT JOIN airport_navs n ON a.ident = n.associated_airport
 WHERE a.ident = $1
 """
-
 
 
 # --- V2 ---

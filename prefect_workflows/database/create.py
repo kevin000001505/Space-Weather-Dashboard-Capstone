@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS events_location (
 );
 """
 
-# Need Fix
+# Might have bug (Kermit)
 EVENTS_LOCATION_INGEST = """
     INSERT INTO events_location (events, locations)
     SELECT 
@@ -268,6 +268,42 @@ EVENTS_LOCATION_INGEST = """
         )
     ON CONFLICT (events) DO UPDATE
         SET locations = EXCLUDED.locations
+"""
+
+CREATE_FLIGHT_DRAP_EVENTS = """
+CREATE TABLE IF NOT EXISTS flight_drap_events (
+    time             TIMESTAMPTZ      NOT NULL,
+    icao24           CHAR(6)          NOT NULL,
+    time_pos         TIMESTAMPTZ,
+    lat              DOUBLE PRECISION,
+    lon              DOUBLE PRECISION,
+    geo_altitude     REAL,
+    velocity         REAL,
+    heading          REAL,
+    vert_rate        REAL,
+    on_ground        BOOLEAN,
+    drap_observed_at TIMESTAMPTZ,
+    drap_lat         DOUBLE PRECISION,
+    drap_long        DOUBLE PRECISION,
+    absorption       REAL
+);
+
+SELECT create_hypertable(
+    'flight_drap_events', 'time',
+    if_not_exists => TRUE
+);
+
+ALTER TABLE flight_drap_events SET (
+    timescaledb.compress,
+    timescaledb.compress_orderby   = 'time DESC',
+    timescaledb.compress_segmentby = 'icao24'
+);
+
+SELECT add_compression_policy(
+    'flight_drap_events',
+    INTERVAL '1 hour',
+    if_not_exists => TRUE
+);
 """
 
 # ------------------------------------------------------------------------------------------

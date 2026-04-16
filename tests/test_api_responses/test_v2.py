@@ -9,7 +9,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src" / "api"))
 
-from config import EventsResponseV2, FlightPathRangeResponse, LocationData, SnapshotResponseV2
+from config import (
+    EventsResponseV2,
+    FlightPathRangeResponse,
+    LocationData,
+    SnapshotResponseV2,
+)
 from helpers import make_flight_range_row, make_location_row
 
 _PAST_START = "2026-01-01T00:00:00Z"

@@ -1,15 +1,5 @@
 """SQL queries for creating tables, indexes, performing upserts, and latest queries to insert into redis for the space weather data pipeline."""
 
-PARTITION_TABLE_LISTS = [
-    "flight_states",
-    "drap_region",
-    "goes_xray_6hour",
-    "goes_proton_flux",
-    "kp_index",
-    "aurora_forecast",
-    "geoelectric_field",
-]
-
 CLEANUP_OLD_FLIGHT_DATA_QUERY = """
 DELETE FROM flight_states WHERE time < $1
 """
@@ -53,7 +43,7 @@ CREATE TEMP TABLE flight_states_staging (
     geom_lon        DOUBLE PRECISION,
     geom_lat        DOUBLE PRECISION,
     geom            GEOMETRY(Point, 4326)
-) ON COMMIT DROP
+) ON COMMIT PRESERVE ROWS
 """
 
 FLIGHT_STATES_STAGING_COLUMNS = [
@@ -96,6 +86,52 @@ SELECT
     heading, vert_rate, on_ground, squawk, spi, source, sensors,
     geom
 FROM flight_states_staging
+ON CONFLICT DO NOTHING
+"""
+
+FLIGHT_DRAP_EVENTS = """
+INSERT INTO flight_drap_events (
+    time, icao24, time_pos, lat, lon, geo_altitude,
+    velocity, heading, vert_rate, on_ground,
+    drap_observed_at, drap_lat, drap_long, absorption
+)
+WITH latest_drap_time AS (
+    SELECT MAX(observed_at) AS observed_at
+    FROM drap_region
+    WHERE observed_at >= NOW() - INTERVAL '60 minutes'
+),
+latest_drap AS (
+    SELECT
+        dr.lat,
+        dr.long,
+        dr.absorption,
+        dr.observed_at,
+        ST_MakeEnvelope(dr.long - 2, dr.lat - 1, dr.long + 2, dr.lat + 1, 4326) AS cell_geom
+    FROM drap_region dr
+    INNER JOIN latest_drap_time ldt USING (observed_at)
+)
+SELECT
+    s.time,
+    s.icao24,
+    s.time_pos,
+    s.lat,
+    s.lon,
+    s.geo_altitude,
+    s.velocity,
+    s.heading,
+    s.vert_rate,
+    s.on_ground,
+    ld.observed_at,
+    ld.lat,
+    ld.long,
+    COALESCE(ld.absorption, 0)
+FROM flight_states_staging s
+LEFT JOIN LATERAL (
+    SELECT ld2.lat, ld2.long, ld2.absorption, ld2.observed_at
+    FROM latest_drap ld2
+    WHERE ST_Within(s.geom, ld2.cell_geom)
+    LIMIT 1
+) ld ON true
 ON CONFLICT DO NOTHING
 """
 

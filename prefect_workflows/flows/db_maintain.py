@@ -25,7 +25,7 @@ from database.queries import RETENTION_CONFIG
 from flows.kp_index import ingest_kp_index_flow
 from flows.airports_extract import airports_extract_flow
 
-    
+
 @flow(log_prints=True, timeout_seconds=FLIGHT_TIMEOUT)
 async def db_maintenance_flow():
     """Flow to enforce retention policy on all partitioned tables."""

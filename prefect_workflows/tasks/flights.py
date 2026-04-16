@@ -11,6 +11,7 @@ from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
 from database.queries import (
     ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
+    FLIGHT_DRAP_EVENTS,
     FLIGHT_STATES_STAGING_DDL,
     FLIGHT_STATES_STAGING_COLUMNS,
     FLIGHT_STATES_STAGING_GEOM_SQL,
@@ -160,6 +161,8 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
 
             await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
 
+            await conn.execute(FLIGHT_DRAP_EVENTS)
+
         logger.info(f"Finished inserting {len(records)} records.")
 
     except TimeoutError:
@@ -167,6 +170,10 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
     except Exception as e:
         logger.error(f"Insert failed: {e}")
         raise
+    
+    finally:
+        # Always drop — even if second INSERT fails
+        await conn.execute("DROP TABLE IF EXISTS flight_states_staging")
 
 
 @task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE, retries=3)

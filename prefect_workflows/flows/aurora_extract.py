@@ -6,6 +6,7 @@ from shared.db_utils import get_connection
 from tasks.aurora import broadcast_aurora_to_redis, fetch_aurora_data, load_aurora_data
 from config import EVENTS_TIMEOUT
 
+
 @flow(
     log_prints=True,
     timeout_seconds=EVENTS_TIMEOUT,

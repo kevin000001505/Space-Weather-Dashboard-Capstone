@@ -190,7 +190,6 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-
 query_dict_v2 = {
     "drap": DRAP_RANGE_QUERY_V2,
     "geoelectric": GEOELECTRIC_RANGE_QUERY_V2,
