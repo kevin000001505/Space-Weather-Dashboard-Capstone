@@ -11,7 +11,7 @@ from tasks.flights import (
 )
 
 
-@flow(name="Ingest Flight Data", log_prints=True, timeout_seconds=120)
+@flow(name="Ingest Flight Data", log_prints=True, timeout_seconds=FLIGHT_TIMEOUT)
 async def ingest_flow():
     """Main flow for ingesting flight data from OpenSky."""
     df = fetch_flights()
