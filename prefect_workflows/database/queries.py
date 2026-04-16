@@ -95,10 +95,21 @@ INSERT INTO flight_drap_events (
     velocity, heading, vert_rate, on_ground,
     drap_observed_at, drap_lat, drap_long, absorption
 )
-WITH latest_drap_time AS (
-    SELECT MAX(observed_at) AS observed_at
+WITH drap_snapshots AS (
+    -- All distinct DRAP timestamps within a reasonable lookback
+    -- circuit breaker to avoid full table scan
+    SELECT DISTINCT observed_at
     FROM drap_region
-    WHERE observed_at >= NOW() - INTERVAL '60 minutes'
+    WHERE observed_at >= NOW() - INTERVAL '3 hours'
+),
+closest_drap_time AS (
+    -- Pick the single DRAP snapshot closest to each flight time
+    SELECT DISTINCT ON (s.time)
+        s.time        AS flight_time,
+        ds.observed_at
+    FROM flight_states_staging s
+    CROSS JOIN drap_snapshots ds
+    ORDER BY s.time, ABS(EXTRACT(EPOCH FROM (ds.observed_at - s.time)))
 ),
 latest_drap AS (
     SELECT
@@ -108,7 +119,7 @@ latest_drap AS (
         dr.observed_at,
         ST_MakeEnvelope(dr.long - 2, dr.lat - 1, dr.long + 2, dr.lat + 1, 4326) AS cell_geom
     FROM drap_region dr
-    INNER JOIN latest_drap_time ldt USING (observed_at)
+    INNER JOIN closest_drap_time cdt USING (observed_at)
 )
 SELECT
     s.time,
@@ -124,12 +135,16 @@ SELECT
     ld.observed_at,
     ld.lat,
     ld.long,
-    COALESCE(ld.absorption, 0)
+    ld.absorption
 FROM flight_states_staging s
 LEFT JOIN LATERAL (
     SELECT ld2.lat, ld2.long, ld2.absorption, ld2.observed_at
     FROM latest_drap ld2
-    WHERE ST_Within(s.geom, ld2.cell_geom)
+    WHERE ld2.observed_at = (
+        SELECT observed_at FROM closest_drap_time
+        WHERE flight_time = s.time
+    )
+    AND ST_Within(s.geom, ld2.cell_geom)
     LIMIT 1
 ) ld ON true
 ON CONFLICT DO NOTHING
