@@ -1,7 +1,6 @@
 from prefect import flow
 from shared.logger import get_logger
 from shared.db_utils import get_connection
-from config import FLIGHT_TIMEOUT
 from tasks import airports
 import asyncio
 

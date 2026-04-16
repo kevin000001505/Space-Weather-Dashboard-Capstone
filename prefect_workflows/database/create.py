@@ -114,6 +114,8 @@ ALTER TABLE drap_region SET (
 );
 
 SELECT set_chunk_time_interval('drap_region', INTERVAL '7 day');
+
+CREATE INDEX IF NOT EXISTS idx_drap_region_location ON drap_region USING GIST(location);
 """
 
 

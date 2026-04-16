@@ -1,6 +1,5 @@
 from prefect import flow
 from prefect.variables import Variable
-from config import EVENTS_TIMEOUT
 from shared.prefect_utils import variable_upsert
 from shared.db_utils import get_connection
 from shared.logger import get_logger

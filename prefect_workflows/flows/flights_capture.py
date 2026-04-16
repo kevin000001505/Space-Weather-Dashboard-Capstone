@@ -1,7 +1,6 @@
 """Flight data ingestion and maintenance flows."""
 
 from prefect import flow
-from config import FLIGHT_TIMEOUT
 from shared.db_utils import get_connection
 from tasks.flights import (
     fetch_flights,

@@ -103,23 +103,15 @@ WITH drap_snapshots AS (
     WHERE observed_at >= NOW() - INTERVAL '3 hours'
 ),
 closest_drap_time AS (
-    -- Pick the single DRAP snapshot closest to each flight time
+    -- Pick the single DRAP snapshot closest to each flight time.
+    -- Only consider flights that have a known position.
     SELECT DISTINCT ON (s.time)
         s.time        AS flight_time,
         ds.observed_at
     FROM flight_states_staging s
     CROSS JOIN drap_snapshots ds
+    WHERE s.geom IS NOT NULL
     ORDER BY s.time, ABS(EXTRACT(EPOCH FROM (ds.observed_at - s.time)))
-),
-latest_drap AS (
-    SELECT
-        dr.lat,
-        dr.long,
-        dr.absorption,
-        dr.observed_at,
-        ST_MakeEnvelope(dr.long - 2, dr.lat - 1, dr.long + 2, dr.lat + 1, 4326) AS cell_geom
-    FROM drap_region dr
-    INNER JOIN closest_drap_time cdt USING (observed_at)
 )
 SELECT
     s.time,
@@ -137,14 +129,14 @@ SELECT
     ld.long,
     ld.absorption
 FROM flight_states_staging s
-LEFT JOIN LATERAL (
-    SELECT ld2.lat, ld2.long, ld2.absorption, ld2.observed_at
-    FROM latest_drap ld2
-    WHERE ld2.observed_at = (
-        SELECT observed_at FROM closest_drap_time
-        WHERE flight_time = s.time
-    )
-    AND ST_Within(s.geom, ld2.cell_geom)
+INNER JOIN closest_drap_time cdt ON cdt.flight_time = s.time
+INNER JOIN LATERAL (
+    SELECT dr.lat, dr.long, dr.absorption, dr.observed_at
+    FROM drap_region dr
+    WHERE dr.observed_at = cdt.observed_at
+      AND dr.lat  = ROUND(s.lat)::INTEGER
+      AND dr.long = ROUND(s.lon)::INTEGER
+      AND dr.absorption > 0
     LIMIT 1
 ) ld ON true
 ON CONFLICT DO NOTHING

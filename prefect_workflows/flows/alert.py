@@ -2,7 +2,6 @@ from prefect import flow
 from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks.alert import fetch_alerts, parse_alerts, store_alert
-from config import EVENTS_TIMEOUT
 
 
 @flow(

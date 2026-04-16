@@ -1,5 +1,4 @@
 from prefect import flow
-from config import EVENTS_TIMEOUT
 from shared.logger import get_logger
 from shared.db_utils import get_connection
 from tasks.xray_latest import (

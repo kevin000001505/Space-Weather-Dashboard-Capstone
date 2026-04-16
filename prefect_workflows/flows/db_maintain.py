@@ -1,6 +1,5 @@
 import os
 
-from config import FLIGHT_TIMEOUT
 from shared.db_utils import get_connection
 from prefect import flow
 from shared.logger import get_logger
