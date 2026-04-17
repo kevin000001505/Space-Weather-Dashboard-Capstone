@@ -123,7 +123,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
       labels: labels,
       datasets: [
         {
-          label: "GOES-18 Long (0.1-0.8nm)",
+          label: "GOES-18 Long (0.1-0.8 nm)",
           data: goes18Long,
           borderColor: "#ff9800",
           backgroundColor: "#ff980033",
@@ -133,7 +133,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           borderWidth: borderWidth,
         },
         {
-          label: "GOES-18 Short (0.05-0.4nm)",
+          label: "GOES-18 Short (0.05-0.4 nm)",
           data: goes18Short,
           borderColor: "#f44336",
           backgroundColor: "#f4433633",
@@ -143,7 +143,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           borderWidth: borderWidth,
         },
         {
-          label: "GOES-19 Long (0.1-0.8nm)",
+          label: "GOES-19 Long (0.1-0.8 nm)",
           data: goes19Long,
           borderColor: "#1976d2",
           backgroundColor: "#1976d233",
@@ -153,7 +153,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           borderWidth: borderWidth,
         },
         {
-          label: "GOES-19 Short (0.05-0.4nm)",
+          label: "GOES-19 Short (0.05-0.4 nm)",
           data: goes19Short,
           borderColor: "#b39ddb",
           backgroundColor: "#ede7f6",
@@ -179,7 +179,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
           const labelIso = xrayLabels[nearestIndex];
           const date = new Date(labelIso);
           const month = date.toLocaleString("en-US", {
-            month: "short",
+            month: "long",
             timeZone:
               selectedTimezone === "local" ? undefined : selectedTimezone,
           });
@@ -411,7 +411,7 @@ const XrayFluxChart = ({ chartRef: externalChartRef }) => {
                   },
                   title: {
                     display: true,
-                    text: "X-ray Flux (W/m²)",
+                    text: "X-ray Flux ( W/m² )",
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { weight: "bold", size: axisLabelSize },
                   },

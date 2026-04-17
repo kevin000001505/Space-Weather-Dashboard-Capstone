@@ -92,11 +92,12 @@ export function MissionSection() {
       {/* Content overlay */}
       <Box
         sx={{
-          position: "relative",
+          position: "absolute",
+          top: "50%",
+          transform: "translateY(-50%)",
           display: "flex",
           flexDirection: "row",
           gap: 6,
-          top: "22%",
           left: { xs: "0%", sm: "0%", md: "0%", lg: "45%" },
           zIndex: 5,
           px: { xs: 3, sm: 5, md: 8, lg: 10 },
@@ -163,11 +164,10 @@ export function MissionSection() {
               mb: 2,
             }}
           >
-            Space weather events such as geomagnetic storms, solar flares,
-            coronal mass ejections, and solar proton events can disrupt
-            power-grids infrastructure and aviation navigation, communication,
-            and surveillance systems, particularly on high-altitude and polar
-            routes.
+            Space weather events such as coronal mass ejections, solar flares
+            and solar proton events can disrupt aviation operations and
+            navigations, along with power grids and other critical
+            infrastructure.
           </Typography>
 
           <Typography
@@ -180,9 +180,9 @@ export function MissionSection() {
               mb: 4,
             }}
           >
-            Current space-weather products show raw measurements instead of
-            aviation- and infrastructure-ready risk insights. Our goal is to
-            convert real-time space-weather data into risk indicators and
+            Current space weather products show raw measurements instead of
+            aviation- and infrastructure ready risk insights. We convert real
+            time space weather data into operational risk indicators and
             operational alerts.
           </Typography>
 
@@ -216,38 +216,7 @@ export function MissionSection() {
                 },
               }}
             >
-              Explore Map Dashboard
-            </Button>
-
-            <Button
-              variant="contained"
-              onClick={() => navigate("/analytics")}
-              size="large"
-              startIcon={<InsightsRoundedIcon />}
-              sx={{
-                px: 3.2,
-                py: 1.5,
-                borderRadius: "16px",
-                textTransform: "none",
-                fontWeight: 700,
-                fontSize: "0.98rem",
-                letterSpacing: "0.02em",
-                color: "#fff7fb",
-                background:
-                  "linear-gradient(135deg, #ec4899 0%, #db2777 55%, #be185d 100%)",
-                boxShadow: "0 10px 30px rgba(219, 39, 119, 0.30)",
-                position: "relative",
-                overflow: "hidden",
-                "&:hover": {
-                  background:
-                    "linear-gradient(135deg, #f472b6 0%, #db2777 55%, #9d174d 100%)",
-                  boxShadow: "0 16px 38px rgba(219, 39, 119, 0.42)",
-                  transform: "translateY(-3px) scale(1.01)",
-                  filter: "saturate(1.08)",
-                },
-              }}
-            >
-              View Analytics Dashboard
+              Explore Dashboard
             </Button>
           </Stack>
         </Box>

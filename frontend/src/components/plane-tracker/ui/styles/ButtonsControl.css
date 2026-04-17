@@ -1,7 +1,10 @@
 
-.MuiTooltip-tooltip {
-  font-size: 1rem !important;
-  max-width: "600px" !important;
+.MuiSpeedDialAction-staticTooltipLabel {
+  font-size: 0.82rem !important;
+  max-width: none !important;
+  padding: 6px 12px !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
 }
 .MuiFab-root {
   min-height: 45px !important;

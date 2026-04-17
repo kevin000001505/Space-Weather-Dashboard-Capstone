@@ -282,7 +282,7 @@ const MainContent = ({ article }) => {
                     id={subsection.id}
                     sx={{ scrollMarginTop: `24px` }}
                   >
-                    <Typography variant="h3" sx={{ mb: 1.15 }}>
+                    <Typography variant="h3" sx={{ mb: 1.15, color: "text.secondary" }}>
                       {subsection.title}
                     </Typography>
                     {renderEntryContent(subsection, subsection.id)}

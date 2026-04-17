@@ -103,7 +103,7 @@ const KpIndexChart = ({ chartRef }) => {
             const date = new Date(point.time_tag);
             // Show date as 'Mon DD, HH:MM AM/PM' in the selected timezone
             const month = date.toLocaleString("en-US", {
-              month: "short",
+              month: "long",
               timeZone:
                 selectedTimezone === "local" ? undefined : selectedTimezone,
             });

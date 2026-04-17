@@ -186,7 +186,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
           const labelIso = fluxLabels[nearestIndex];
           const date = new Date(labelIso);
           const month = date.toLocaleString("en-US", {
-            month: "short",
+            month: "long",
             timeZone:
               selectedTimezone === "local" ? undefined : selectedTimezone,
           });
@@ -463,7 +463,7 @@ const ProtonFluxChart = ({ chartRef: externalChartRef }) => {
                   },
                   title: {
                     display: true,
-                    text: "Proton Flux ( log₁₀(pfu) )",
+                    text: "Proton Flux ( log₁₀pfu )",
                     color: darkMode ? "#e0e0e0" : "#333",
                     font: { weight: "bold", size: axisLabelSize },
                   },

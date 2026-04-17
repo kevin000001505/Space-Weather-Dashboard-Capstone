@@ -5,6 +5,7 @@ import { IconButton, Tooltip } from "@mui/material";
 import InfoOutlineIcon from '@mui/icons-material/InfoOutline';
 import { getHelpTopicPath } from "../../help/helpers/constants";
 import "./styles/ColorLegend.css";
+import { formatNumberWithSeparator } from "../../help/helpers/helper";
 
 const DRAP_STOPS = [
   { val: 0, color: "#000000" },
@@ -74,19 +75,19 @@ const trimNumber = (value) => {
 const formatAltitudeLabel = (value, useImperial) => {
   if (useImperial) {
     if (Math.abs(value) >= 1000) {
-      return `${trimNumber(value / 1000)}k ft`;
+      return `${formatNumberWithSeparator(value)}`;
     }
-    return `${value} ft`;
+    return `${formatNumberWithSeparator(value)}`;
   }
 
   if (Math.abs(value) >= 1000) {
-    return `${trimNumber(value / 1000)} km`;
+    return `${formatNumberWithSeparator(value)}`;
   }
-  return `${value} m`;
+  return `${formatNumberWithSeparator(value)}`;
 };
 
 const formatPlainLabel = (value, suffix = "") => {
-  return suffix ? `${value}${suffix}` : `${value}`;
+  return suffix ? `${formatNumberWithSeparator(value)} ${suffix}` : `${formatNumberWithSeparator(value)}`;
 };
 
 const LegendTicks = ({ stops, formatter }) => {
@@ -176,7 +177,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "altitude",
         title: "Flights & Airports",
-        subtitle: `Altitude | ${useImperial ? "Feet" : "Meters"}`,
+        subtitle: `Altitude (${useImperial ? "Feet" : "Meters"})`,
         stops: altitudeStops,
         available: true,
         formatter: (value) => formatAltitudeLabel(value, useImperial),
@@ -184,7 +185,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "drap",
         title: "DRAP",
-        subtitle: "Absorption | dB",
+        subtitle: "Absorption (dB)",
         stops: DRAP_STOPS,
         available: true,
         formatter: (value) => formatPlainLabel(value),
@@ -192,7 +193,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "aurora",
         title: "Aurora",
-        subtitle: "Percentage | %",
+        subtitle: "Percentage (%)",
         stops: AURORA_STOPS,
         available: false,
         formatter: (value) => formatPlainLabel(value),
@@ -200,7 +201,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "geoelectric",
         title: "Geoelectric Field",
-        subtitle: "Amplitude | mV/km",
+        subtitle: "Amplitude (mV/km)",
         stops: GEOELECTRIC_STOPS,
         available: false,
         formatter: (value) => formatPlainLabel(value),
@@ -208,7 +209,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       {
         key: "electricTransmissionLines",
         title: "Power Grids",
-        subtitle: "Voltage Level | kV",
+        subtitle: "Voltage Level (kV)",
         stops: electricTransmissionLines_STOPS,
         available: false,
         formatter: (value) => formatPlainLabel(value),

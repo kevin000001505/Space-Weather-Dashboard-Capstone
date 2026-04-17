@@ -34,6 +34,10 @@ import PublicIcon from "@mui/icons-material/Public";
 import "./styles/ButtonsControl.css";
 import { LetterIcon } from "../../ui/LetterIcon";
 import { setShowElectricTransmissionLines } from "../../../store/slices/electricTransmissionLinesSlice";
+import {
+  InfrastructureVisibilityIcon,
+  SolarEventsVisibilityIcon,
+} from "../../ui/visibilityIcons";
 const ButtonsControl = React.forwardRef(function ButtonsControl(
   { settingsRef },
   ref,
@@ -71,7 +75,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     backdropFilter: "blur(6px)",
     background: "rgba(34, 40, 60, 0.35)",
   };
-  const visibilityActions = [
+  const infrastructureVisibilityActions = [
     {
       icon: <AirplanemodeActiveIcon sx={{ fontSize: 28 }} />,
       tooltip: `${showPlanes ? "Hide" : "Show"} Airplanes`,
@@ -85,24 +89,6 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
       active: showAirports,
     },
     {
-      icon: <SettingsInputAntennaIcon sx={{ fontSize: 28 }} />,
-      tooltip: `${showDRAP ? "Hide" : "Show"} DRAP Region`,
-      onClick: () => dispatch(setShowDRAP(!showDRAP)),
-      active: showDRAP,
-    },
-    {
-      icon: <AutoAwesomeIcon sx={{ fontSize: 28 }} />,
-      tooltip: `${showAurora ? "Hide" : "Show"} Aurora`,
-      onClick: () => dispatch(setShowAurora(!showAurora)),
-      active: showAurora,
-    },
-    {
-      icon: <OfflineBoltIcon sx={{ fontSize: 28 }} />,
-      tooltip: `${showGeoElectric ? "Hide" : "Show"} GeoElectric`,
-      onClick: () => dispatch(setShowGeoElectric(!showGeoElectric)),
-      active: showGeoElectric,
-    },
-    {
       icon: <SsidChartIcon sx={{ fontSize: 28 }} />,
       tooltip: `${showElectricTransmissionLines ? "Hide" : "Show"} Power Grids`,
       onClick: () =>
@@ -112,18 +98,52 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
       active: showElectricTransmissionLines,
     },
   ];
+  const spaceWeatherVisibilityActions = [
+    {
+      icon: <SettingsInputAntennaIcon sx={{ fontSize: 28 }} />,
+      tooltip: `${showDRAP ? "Hide" : "Show"} DRAP Region`,
+      onClick: () => dispatch(setShowDRAP(!showDRAP)),
+      active: showDRAP,
+    },
+    {
+      icon: <AutoAwesomeIcon sx={{ fontSize: 28 }} />,
+      tooltip: `${showAurora ? "Hide" : "Show"} Aurora Forecast`,
+      onClick: () => dispatch(setShowAurora(!showAurora)),
+      active: showAurora,
+    },
+    {
+      icon: <OfflineBoltIcon sx={{ fontSize: 28 }} />,
+      tooltip: `${showGeoElectric ? "Hide" : "Show"} GeoElectric Field`,
+      onClick: () => dispatch(setShowGeoElectric(!showGeoElectric)),
+      active: showGeoElectric,
+    },
+  ];
   const legendActions = [
     {
-      icon: <LetterIcon letter="I" strike={!showIconLegend} />,
-      tooltip: `${showIconLegend ? "Hide" : "Show"} Icon Legend`,
+      icon: <LetterIcon letter="S" strike={!showIconLegend} />,
+      tooltip: `${showIconLegend ? "Hide" : "Show"} Symbol Legend`,
       onClick: () => dispatch(setShowIconLegend(!showIconLegend)),
       active: showIconLegend,
     },
     {
-      icon: <LetterIcon letter="A" strike={!showAltitudeLegend} />,
-      tooltip: `${showAltitudeLegend ? "Hide" : "Show"} Altitude Legend`,
+      icon: <LetterIcon letter="C" strike={!showAltitudeLegend} />,
+      tooltip: `${showAltitudeLegend ? "Hide" : "Show"} Color Legend`,
       onClick: () => dispatch(setShowAltitudeLegend(!showAltitudeLegend)),
       active: showAltitudeLegend,
+    },
+  ];
+  const unitActions = [
+    {
+      icon: <LetterIcon letter="I" />,
+      tooltip: `Switch to Imperial Units`,
+      onClick: () => dispatch(setUseImperial(!useImperial)),
+      active: useImperial,
+    },
+    {
+      icon: <LetterIcon letter="M" />,
+      tooltip: `Switch to Metric Units`,
+      onClick: () => dispatch(setUseImperial(!useImperial)),
+      active: !useImperial,
     },
   ];
   return (
@@ -141,17 +161,91 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
       }}
     >
       <div style={{ display: "flex", gap: "10px" }}>
-        <Tooltip
-          title={`${useImperial ? "Switch to Metric  Units (m, m/s)" : "Switch to Imperial  Units (ft, knots) "}`}
-          placement="bottom"
+        <SpeedDial
+          ariaLabel="Units Controls"
+          icon={<LetterIcon letter="U" />}
+          direction="down"
+          FabProps={{
+            sx: {
+              ...btnStyle,
+              background:
+                !showAltitudeLegend && !showIconLegend
+                  ? "rgba(229,57,53,0.35)"
+                  : "rgba(34, 40, 60, 0.35)",
+              color: "#fff",
+              "&:hover": {
+                background:
+                  !showAltitudeLegend && !showIconLegend
+                    ? "rgba(229,57,53,0.35)"
+                    : "rgba(34, 40, 60, 0.35)",
+              },
+            },
+            height: "45px",
+            size: "medium",
+          }}
+          sx={{
+            width: "45px",
+            height: "45px",
+            "& .MuiSpeedDial-actions": {
+              marginTop: "-46px",
+              backdropFilter: "blur(2px)",
+              background: "rgba(34, 40, 60, 0.35)",
+            },
+            "& .MuiSpeedDial-actionsClosed": {
+              backdropFilter: "none",
+              background: "none",
+            },
+          }}
         >
-          <IconButton
-            onClick={() => dispatch(setUseImperial(!useImperial))}
-            sx={btnStyle}
-          >
-            <LetterIcon letter={useImperial ? "F" : "M"} />
-          </IconButton>
-        </Tooltip>
+          {unitActions.map((action) => (
+            <SpeedDialAction
+              key={action.tooltip}
+              icon={action.icon}
+              slotProps={{
+                tooltip: {
+                  title: action.tooltip,
+                  arrow: true,
+                  open: true,
+                  placement: "left",
+                },
+                staticTooltipLabel: {
+                  sx: {
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: "999px",
+                    background: "rgba(34, 40, 60, 0.9)",
+                    color: "#f8fbff",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  },
+                },
+                fab: {
+                  sx: {
+                    ...btnStyle,
+                    background: action.active
+                      ? "rgba(46,204,64,0.25)"
+                      : "rgba(229,57,53,0.25)",
+                    backdropFilter: "blur(6px)",
+                    color: "#000",
+                    border: action.active
+                      ? "2px solid #2ecc40"
+                      : "2px solid #e53935",
+                    "&:hover": {
+                      background: action.active
+                        ? "rgba(46,204,64,0.35)"
+                        : "rgba(229,57,53,0.35)",
+                      backdropFilter: "blur(8px)",
+                    },
+                  },
+                },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick();
+              }}
+            />
+          ))}
+        </SpeedDial>
         <SpeedDial
           ariaLabel="Legend Controls"
           icon={
@@ -205,6 +299,19 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
                 tooltip: {
                   title: action.tooltip,
                   arrow: true,
+                  open: true,
+                  placement: "left",
+                },
+                staticTooltipLabel: {
+                  sx: {
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: "999px",
+                    background: "rgba(34, 40, 60, 0.9)",
+                    color: "#f8fbff",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  },
                 },
                 fab: {
                   sx: {
@@ -235,15 +342,8 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
         </SpeedDial>
         <SpeedDial
           ariaLabel="Layer Controls"
-          icon={
-            isolateMode ? (
-              <VisibilityOffIcon sx={{ fontSize: 28 }} />
-            ) : (
-              <VisibilityIcon sx={{ fontSize: 28 }} />
-            )
-          }
+          icon={<InfrastructureVisibilityIcon size={28} />}
           direction="down"
-          onClick={() => dispatch(toggleIsolateMode(!isolateMode))}
           FabProps={{
             sx: {
               ...btnStyle,
@@ -274,7 +374,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
             },
           }}
         >
-          {visibilityActions.map((action) => (
+          {infrastructureVisibilityActions.map((action) => (
             <SpeedDialAction
               key={action.tooltip}
               icon={action.icon}
@@ -282,6 +382,19 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
                 tooltip: {
                   title: action.tooltip,
                   arrow: true,
+                  open: true,
+                  placement: "left",
+                },
+                staticTooltipLabel: {
+                  sx: {
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: "999px",
+                    background: "rgba(34, 40, 60, 0.9)",
+                    color: "#f8fbff",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  },
                 },
                 fab: {
                   sx: {
@@ -310,18 +423,89 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
             />
           ))}
         </SpeedDial>
-        <Tooltip title="Toggle Dark Mode" placement="bottom">
-          <IconButton
-            onClick={() => dispatch(setDarkMode(!darkMode))}
-            sx={btnStyle}
-          >
-            {darkMode ? (
-              <DarkModeIcon sx={{ fontSize: 28 }} />
-            ) : (
-              <LightModeIcon sx={{ fontSize: 28 }} />
-            )}
-          </IconButton>
-        </Tooltip>
+        <SpeedDial
+          ariaLabel="Layer Controls"
+          icon={<SolarEventsVisibilityIcon sx={{ fontSize: 28 }} />}
+          direction="down"
+          FabProps={{
+            sx: {
+              ...btnStyle,
+              background: isolateMode
+                ? "rgba(229,57,53,0.35)"
+                : "rgba(34, 40, 60, 0.35)",
+              color: "#fff",
+              "&:hover": {
+                background: isolateMode
+                  ? "rgba(229,57,53,0.35)"
+                  : "rgba(34, 40, 60, 0.35)",
+              },
+            },
+            height: "45px",
+            size: "medium",
+          }}
+          sx={{
+            width: "45px",
+            height: "45px",
+            "& .MuiSpeedDial-actions": {
+              marginTop: "-46px",
+              backdropFilter: "blur(2px)",
+              background: "rgba(34, 40, 60, 0.35)",
+            },
+            "& .MuiSpeedDial-actionsClosed": {
+              backdropFilter: "none",
+              background: "none",
+            },
+          }}
+        >
+          {spaceWeatherVisibilityActions.map((action) => (
+            <SpeedDialAction
+              key={action.tooltip}
+              icon={action.icon}
+              slotProps={{
+                tooltip: {
+                  title: action.tooltip,
+                  arrow: true,
+                  open: true,
+                  placement: "left",
+                },
+                staticTooltipLabel: {
+                  sx: {
+                    px: 1.25,
+                    py: 0.75,
+                    borderRadius: "999px",
+                    background: "rgba(34, 40, 60, 0.9)",
+                    color: "#f8fbff",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+                  },
+                },
+                fab: {
+                  sx: {
+                    ...btnStyle,
+                    background: action.active
+                      ? "rgba(46,204,64,0.25)"
+                      : "rgba(229,57,53,0.25)",
+                    backdropFilter: "blur(6px)",
+                    color: "#fff",
+                    border: action.active
+                      ? "2px solid #2ecc40"
+                      : "2px solid #e53935",
+                    "&:hover": {
+                      background: action.active
+                        ? "rgba(46,204,64,0.35)"
+                        : "rgba(229,57,53,0.35)",
+                      backdropFilter: "blur(8px)",
+                    },
+                  },
+                },
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                action.onClick();
+              }}
+            />
+          ))}
+        </SpeedDial>
         <Tooltip
           title={globeView ? "Switch to Mercator View" : "Switch to Globe View"}
           placement="bottom"

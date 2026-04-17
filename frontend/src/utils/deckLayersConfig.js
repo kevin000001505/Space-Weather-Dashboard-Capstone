@@ -74,7 +74,8 @@ const RUNWAY_PALETTE = [
   [255, 105, 180], // Pink
 ];
 
-// Removed: individual AIRPORT_ICONS / DEFAULT_AIRPORT_ICON — now uses atlas
+const getAirportIconName = (airportType) =>
+  AIRPORT_TYPE_TO_SHAPE[airportType] || DEFAULT_AIRPORT_SHAPE;
 
 function getZoomScale(
   zoom,
@@ -355,7 +356,9 @@ export const buildDeckLayers = ({
       id: "airports-outline",
       data: highlightedAirports,
       getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-      getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+      iconAtlas: AIRPORT_ATLAS,
+      iconMapping: AIRPORT_ICON_MAPPING,
+      getIcon: (d) => getAirportIconName(d.type),
       getSize: 3 * scaledAirportIconSize,
       getColor: (d) => {
         return isZooming
@@ -376,7 +379,9 @@ export const buildDeckLayers = ({
       id: "airports-base",
       data: filteredAirports,
       getPosition: (d) => [parseFloat(d.lon), parseFloat(d.lat)],
-      getIcon: (d) => AIRPORT_ICONS[d.type] || DEFAULT_AIRPORT_ICON,
+      iconAtlas: AIRPORT_ATLAS,
+      iconMapping: AIRPORT_ICON_MAPPING,
+      getIcon: (d) => getAirportIconName(d.type),
       getSize: (d) =>
         highlightedAirports.some((a) => a.ident === d.ident)
           ? 2 * scaledAirportIconSize

@@ -48,6 +48,7 @@ import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import { getHelpTopicPath } from "../help/helpers/constants";
 import { setDrapRegionRange } from "../../store/slices/drapSlice";
 import { setAuroraRegionRange } from "../../store/slices/auroraSlice";
+import { formatNumberWithSeparator } from "../help/helpers/helper";
 const PANEL_WIDTH = 550;
 const SettingsPanel = () => {
   const dispatch = useDispatch();
@@ -437,6 +438,7 @@ const SettingsPanel = () => {
                           max={100}
                           step={1}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           onChange={(e, v) => dispatch(setFlightIconSize(v))}
                           sx={{
                             width: "calc(100% - 32px)",
@@ -496,6 +498,7 @@ const SettingsPanel = () => {
                           max={40}
                           step={1}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           onChange={(e, v) => dispatch(setAirportIconSize(v))}
                           sx={{
                             width: "calc(100% - 32px)",
@@ -555,6 +558,7 @@ const SettingsPanel = () => {
                           max={93}
                           step={1}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           onChange={(e, v) => dispatch(setFontSizePercent(v))}
                           sx={{
                             width: "calc(100% - 32px)",
@@ -591,9 +595,9 @@ const SettingsPanel = () => {
                       title={
                         <span>
                           <b>Filter Airplanes</b> - Showing{" "}
-                          <b>{filteredPlanesCount}</b> planes between{" "}
-                          <b>{altitudeRange[0]}</b> and{" "}
-                          <b>{altitudeRange[1]}</b>{" "}
+                          <b>{formatNumberWithSeparator(filteredPlanesCount, 0)}</b> planes between{" "}
+                            <b>{formatNumberWithSeparator(altitudeRange[0], 0)}</b> and{" "}
+                            <b>{formatNumberWithSeparator(altitudeRange[1], 0)}</b>{" "}
                           <b>{useImperial ? "ft" : "m"}</b>
                         </span>
                       }
@@ -667,11 +671,14 @@ const SettingsPanel = () => {
                           max={useImperial ? 50000 : 15000}
                           step={useImperial ? 1000 : 300}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           marks={[
-                            { value: 0, label: "0" },
+                            { value: 0, label: formatNumberWithSeparator(0, 0) },
                             {
                               value: useImperial ? 50000 : 15000,
-                              label: useImperial ? "50,000 ft" : "15,000 m",
+                              label: useImperial
+                                ? `${formatNumberWithSeparator(50000, 0)} ft`
+                                : `${formatNumberWithSeparator(15000, 0)} m`,
                             },
                           ]}
                           onChange={(e, v) => dispatch(setAltitudeRange(v))}
@@ -712,9 +719,9 @@ const SettingsPanel = () => {
                       title={
                         <span>
                           <b>Filter Airports</b> - Showing{" "}
-                          <b>{filteredAirportsCount}</b> airports between{" "}
-                          <b>{airportAltitudeRange[0]}</b> and{" "}
-                          <b>{airportAltitudeRange[1]}</b>{" "}
+                          <b>{formatNumberWithSeparator(filteredAirportsCount, 0)}</b> airports between{" "}
+                            <b>{formatNumberWithSeparator(airportAltitudeRange[0], 0)}</b> and{" "}
+                            <b>{formatNumberWithSeparator(airportAltitudeRange[1], 0)}</b>{" "}
                           <b>{useImperial ? "ft" : "m"}</b>
                         </span>
                       }
@@ -950,6 +957,7 @@ const SettingsPanel = () => {
                             },
                           ]}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           onChange={(e, v) =>
                             dispatch(setAirportAltitudeRange(v))
                           }
@@ -989,10 +997,20 @@ const SettingsPanel = () => {
                       title={
                         <span>
                           <b>Filter Electric Transmission Lines</b> - Showing{" "}
-                          <b>{filteredElectricTransmissionLinesCount}</b> Lines
+                          <b>{formatNumberWithSeparator(filteredElectricTransmissionLinesCount, 0)}</b> Lines
                           between{" "}
-                          <b>{electricTransmissionLinesVoltageRange[0]}</b> and{" "}
-                          <b>{electricTransmissionLinesVoltageRange[1]}</b>{" "}
+                            <b>
+                              {formatNumberWithSeparator(
+                                electricTransmissionLinesVoltageRange[0],
+                                0,
+                              )}
+                            </b> and{" "}
+                            <b>
+                              {formatNumberWithSeparator(
+                                electricTransmissionLinesVoltageRange[1],
+                                0,
+                              )}
+                            </b>{" "}
                           <b>kV</b>
                         </span>
                       }
@@ -1066,11 +1084,12 @@ const SettingsPanel = () => {
                           max={1000}
                           step={100}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           marks={[
-                            { value: 200, label: "200" },
+                            { value: 200, label: formatNumberWithSeparator(200, 0) },
                             {
                               value: 1000,
-                              label: "1000",
+                              label: formatNumberWithSeparator(1000, 0),
                             },
                           ]}
                           onChange={(e, v) =>
@@ -1315,17 +1334,17 @@ const SettingsPanel = () => {
                       title={
                         <span>
                           <b>DRAP Region</b> - Showing{" "}
-                          <b>{filteredDRAPCount}</b> DRAP Cells between{" "}
+                          <b>{formatNumberWithSeparator(filteredDRAPCount, 0)}</b> DRAP Cells between{" "}
                           <b>
                             {Array.isArray(drapRegionRange)
-                              ? drapRegionRange[0]
-                              : drapRegionRange}
+                                ? formatNumberWithSeparator(drapRegionRange[0], 0)
+                                : formatNumberWithSeparator(drapRegionRange, 0)}
                           </b>{" "}
                           dB and{" "}
                           <b>
                             {Array.isArray(drapRegionRange)
-                              ? drapRegionRange[1]
-                              : drapRegionRange}
+                                ? formatNumberWithSeparator(drapRegionRange[1], 0)
+                                : formatNumberWithSeparator(drapRegionRange, 0)}
                           </b>{" "}
                           dB absorption.
                         </span>
@@ -1392,7 +1411,7 @@ const SettingsPanel = () => {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          Absorption Range
+                          Absorption Range (dB)
                         </Typography>
                         <Slider
                           value={drapRegionRange}
@@ -1407,6 +1426,7 @@ const SettingsPanel = () => {
                             },
                           ]}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 1)}
                           onChange={(e, v) => dispatch(setDrapRegionRange(v))}
                           sx={{
                             width: "calc(100% - 32px)",
@@ -1439,18 +1459,18 @@ const SettingsPanel = () => {
                     <CardHeader
                       title={
                         <span>
-                          <b>Ovation Aurora</b> - Showing{" "}
-                          <b>{filteredAuroraCount}</b> Aurora Cells between{" "}
+                          <b>Aurora Forecast</b> - Showing{" "}
+                          <b>{formatNumberWithSeparator(filteredAuroraCount, 0)}</b> Aurora Cells between{" "}
                           <b>
                             {Array.isArray(auroraRegionRange)
-                              ? auroraRegionRange[0]
-                              : auroraRegionRange}
+                                ? formatNumberWithSeparator(auroraRegionRange[0], 0)
+                                : formatNumberWithSeparator(auroraRegionRange, 0)}
                           </b>
                           % and{" "}
                           <b>
                             {Array.isArray(auroraRegionRange)
-                              ? auroraRegionRange[1]
-                              : auroraRegionRange}
+                                ? formatNumberWithSeparator(auroraRegionRange[1], 0)
+                                : formatNumberWithSeparator(auroraRegionRange, 0)}
                           </b>
                           %
                         </span>
@@ -1517,7 +1537,7 @@ const SettingsPanel = () => {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          Possibility % Range
+                          Possibility Range (%)
                         </Typography>
                         <Slider
                           value={auroraRegionRange}
@@ -1532,6 +1552,7 @@ const SettingsPanel = () => {
                             },
                           ]}
                           valueLabelDisplay="auto"
+                          valueLabelFormat={(value) => formatNumberWithSeparator(value, 0)}
                           onChange={(e, v) => dispatch(setAuroraRegionRange(v))}
                           sx={{
                             width: "calc(100% - 32px)",
@@ -1565,23 +1586,27 @@ const SettingsPanel = () => {
                       title={
                         <span>
                           <b>Geoelectric Field</b> - Showing{" "}
-                          <b>{filteredGeoElectricCount}</b> Geoelectric Cells
+                          <b>{formatNumberWithSeparator(filteredGeoElectricCount, 0)}</b> Geoelectric Cells
                           between{" "}
                           <b>
                             {Array.isArray(geoElectricLogRange)
-                              ? Math.round(
-                                  Math.pow(10, geoElectricLogRange[0]) * 100,
-                                ) / 100
-                              : geoElectricLogRange}
+                                ? formatNumberWithSeparator(
+                                    Math.round(
+                                      Math.pow(10, geoElectricLogRange[0]) * 100,
+                                    ) / 100,
+                                  )
+                                : formatNumberWithSeparator(geoElectricLogRange)}
                           </b>
-                          {""}
+                          {" "}
                           mV/km and{" "}
                           <b>
                             {Array.isArray(geoElectricLogRange)
-                              ? Math.round(
-                                  Math.pow(10, geoElectricLogRange[1]) * 100,
-                                ) / 100
-                              : geoElectricLogRange}
+                                ? formatNumberWithSeparator(
+                                    Math.round(
+                                      Math.pow(10, geoElectricLogRange[1]) * 100,
+                                    ) / 100,
+                                  )
+                                : formatNumberWithSeparator(geoElectricLogRange)}
                           </b>{" "}
                           mV/km
                         </span>
@@ -1648,7 +1673,7 @@ const SettingsPanel = () => {
                             whiteSpace: "nowrap",
                           }}
                         >
-                          Field strength
+                          Field Strength (mV/km)
                         </Typography>
                         <Slider
                           min={-1}
@@ -1668,7 +1693,9 @@ const SettingsPanel = () => {
                           }
                           valueLabelDisplay="auto"
                           valueLabelFormat={(x) =>
-                            Math.round(Math.pow(10, x) * 100) / 100
+                            formatNumberWithSeparator(
+                              Math.round(Math.pow(10, x) * 100) / 100,
+                            )
                           }
                           sx={{
                             width: "calc(100% - 32px)",

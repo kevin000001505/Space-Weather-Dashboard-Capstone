@@ -79,7 +79,7 @@ export function formatChartLabel(date, selectedTimezone, prevDateStr) {
     dateStr = `${month} ${dayNum}`;
   } else {
     month = date.toLocaleString("en-US", {
-      month: "short",
+      month: "long",
       timeZone: selectedTimezone,
     });
     dayNum = date.toLocaleString("en-US", {

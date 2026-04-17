@@ -56,7 +56,7 @@ const formatSegmentLabel = (timestamp, timezone) => {
   const tz = !timezone || timezone === "local" ? undefined : timezone;
   return new Date(timestamp).toLocaleString(undefined, {
     weekday: "short",
-    month: "short",
+    month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
