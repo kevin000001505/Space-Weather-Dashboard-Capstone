@@ -310,7 +310,9 @@ const SettingsPanel = () => {
             <Tabs
               value={settingsTabIndex}
               onChange={(e, v) => dispatch(setSettingsTabIndex(v))}
-              aria-label="settings tabs"
+              aria-label="settings tabs"  
+              variant="scrollable"
+              scrollButtons="auto"
               sx={{
                 padding: "6px 6px 0px 6px",
                 fontSize: "0.92rem",

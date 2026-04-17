@@ -149,7 +149,7 @@ const ChartsTabBar = () => {
           <Tab label="X-ray Flux" />
           <Tab label="Proton Flux" />
         </Tabs>
-        <Typography variant="h6">ANALYTICS DASHBOARD</Typography>
+        <Typography variant="h6">ANALYTICS</Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, height: 48 }}>
           <CustomDateTime
             value={customdt.range}
