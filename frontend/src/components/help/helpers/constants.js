@@ -82,13 +82,13 @@ const topicContent = {
   "Purpose of the platform": {
     title: "Purpose of the Platform",
     intro:
-      "The Space Weather Dashboard is a real-time monitoring and analytics platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space-weather overlays into a single interactive map, alongside an analytics dashboard for historical trend analysis.",
+      "The Space Weather Dashboard is a real-time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space-weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
     sections: [
       {
         id: "overview",
         title: "Overview",
         body: [
-          "Space weather events such as solar flares, geomagnetic storms, and radiation storms can disrupt high-frequency radio communications, satellite navigation, and power grids. This platform brings together data from NOAA's Space Weather Prediction Center, OpenSky Network, and other authoritative sources so that operators can see impacts at a glance.",
+          "Space weather events such as solar flares, geoelectric field activity, and radiation storms can disrupt high-frequency radio communications, satellite navigation, and power grids. This platform brings together data from NOAA's Space Weather Prediction Center, OpenSky Network, and other authoritative sources so that operators can see impacts at a glance.",
           "Whether you are an air-traffic controller checking HF-radio absorption along polar routes, or a grid operator monitoring geoelectric field intensity near transmission lines, this tool provides the situational awareness you need.",
         ],
         subsections: [
@@ -133,7 +133,7 @@ const topicContent = {
           {
             id: "target-audiences-researchers",
             title: "Researchers & Students",
-            body: "Researchers and students studying heliophysics, ionospheric science, or space-weather impacts can use the analytics dashboard to explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows.",
+            body: "Researchers and students studying heliophysics, ionospheric science, or space-weather impacts can use the analytics to explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows.",
           },
         ],
       },
@@ -143,7 +143,7 @@ const topicContent = {
   "Main dashboards at a glance": {
     title: "Main Dashboards at a Glance",
     intro:
-      "The platform has two primary views: the Plane & Events Tracker (the home page map) and the Analytics Dashboard (charts). You can switch between them from the sidebar.",
+      "The platform has two primary views: the Plane & Events Tracker (the home page map) and the analytics (charts). You can switch between them from the sidebar.",
     sections: [
       {
         id: "plane-tracker-glance",
@@ -162,7 +162,7 @@ const topicContent = {
       },
       {
         id: "analytics-glance",
-        title: "Analytics Dashboard",
+        title: "Analytics",
         body: [
           "Navigate to the Analytics page via the sidebar. It presents Kp Index, X-ray Flux, and Proton Flux charts. Tabs at the top let you view all plots at once or focus on a single metric.",
           "A time-range selector and settings gear icon provide control over the date window, timezone, axis sizes, and chart styling. You can also download chart data or images.",
@@ -202,14 +202,14 @@ const topicContent = {
         id: "workflow-analysis",
         title: "Historical Analysis",
         body: [
-          "Switch to the Analytics Dashboard to explore historical trends. Select a time range (6 hours, 1 day, 3 days, 7 days, or custom) and view how Kp index, X-ray flux, or proton flux evolved.",
+          "Switch to the Analytics to explore historical trends. Select a time range (6 hours, 1 day, 3 days, 7 days, or custom) and view how Kp index, X-ray flux, or proton flux evolved.",
           "Charts include color-coded NOAA-scale background bands (G0-G5, R0-R5, S0-S5) so you can quickly see when conditions reached storm thresholds.",
         ],
         subsections: [
           {
             id: "workflow-analysis-export",
             title: "Exporting Data",
-            body: "Use the download button on the Analytics Dashboard to export chart data as CSV, JSON, HTML, or XML. You can also export the chart image as PNG or PDF.",
+            body: "Use the download button on the Analytics to export chart data as CSV, JSON, HTML, or XML. You can also export the chart image as PNG or PDF.",
           },
         ],
       },

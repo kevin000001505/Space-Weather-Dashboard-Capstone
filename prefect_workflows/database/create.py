@@ -45,6 +45,36 @@ SELECT add_compression_policy('flight_states', INTERVAL '7 days', if_not_exists 
 """
 
 
+TRANSMISSION_LINES_CREATE_TABLE_SQL = """
+CREATE TABLE IF NOT EXISTS electric_transmission_lines (
+    objectid    INTEGER PRIMARY KEY,
+    line_id     INTEGER NOT NULL,
+    type        VARCHAR(100),
+    status      VARCHAR(50),
+    naics_code  INTEGER,
+    naics_desc  VARCHAR(255),
+    source      VARCHAR(255),
+    sourcedate  DATE,
+    val_method  VARCHAR(100),
+    val_date    DATE,
+    owner       VARCHAR(255),
+    voltage     DOUBLE PRECISION,
+    volt_class  VARCHAR(50),
+    inferred    BOOLEAN,
+    sub_1       VARCHAR(255),
+    sub_2       VARCHAR(255),
+    shape_len   DOUBLE PRECISION,
+    global_id   VARCHAR(36),
+    geom        GEOMETRY(LINESTRING, 4326),
+    length      DOUBLE PRECISION
+);
+
+CREATE INDEX IF NOT EXISTS idx_etl_geom       ON electric_transmission_lines USING GIST(geom);
+CREATE INDEX IF NOT EXISTS idx_etl_volt_class ON electric_transmission_lines(volt_class);
+CREATE INDEX IF NOT EXISTS idx_etl_status     ON electric_transmission_lines(status);
+"""
+
+
 READONLY_GRANTS_SQL = """
 GRANT USAGE  ON SCHEMA public TO readonly;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO readonly;

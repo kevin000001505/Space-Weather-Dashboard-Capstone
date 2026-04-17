@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Any
 
 
@@ -500,3 +500,67 @@ class AlertRecord(BaseModel):
         )
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
+
+
+class TransmissionLineRecord(BaseCSVModel):
+    """Electric transmission line record for database insertion."""
+
+    objectid: int = Field(alias="OBJECTID")
+    line_id: int
+    type: Optional[str] = Field(default=None, alias="TYPE")
+    status: Optional[str] = Field(default=None, alias="STATUS")
+    naics_code: Optional[int] = Field(default=None, alias="NAICS_CODE")
+    naics_desc: Optional[str] = Field(default=None, alias="NAICS_DESC")
+    source: Optional[str] = Field(default=None, alias="SOURCE")
+    sourcedate: Optional[date] = Field(default=None, alias="SOURCEDATE")
+    val_method: Optional[str] = Field(default=None, alias="VAL_METHOD")
+    val_date: Optional[date] = Field(default=None, alias="VAL_DATE")
+    owner: Optional[str] = Field(default=None, alias="OWNER")
+    voltage: Optional[float] = Field(default=None, alias="VOLTAGE")
+    volt_class: Optional[str] = Field(default=None, alias="VOLT_CLASS")
+    inferred: Optional[bool] = Field(default=None, alias="INFERRED")
+    sub_1: Optional[str] = Field(default=None, alias="SUB_1")
+    sub_2: Optional[str] = Field(default=None, alias="SUB_2")
+    shape_len: Optional[float] = Field(default=None, alias="SHAPE__Len")
+    global_id: Optional[str] = Field(default=None, alias="GlobalID")
+    geometry_wkt: str = Field(alias="geometry")
+    length: Optional[float] = Field(default=None)
+
+    @field_validator("inferred", mode="before")
+    @classmethod
+    def parse_inferred(cls, v):
+        if v == "Y":
+            return True
+        if v == "N":
+            return False
+        return v
+
+    def to_tuple(self) -> tuple:
+        return (
+            self.objectid,
+            self.line_id,
+            self.type,
+            self.status,
+            self.naics_code,
+            self.naics_desc,
+            self.source,
+            self.sourcedate,
+            self.val_method,
+            self.val_date,
+            self.owner,
+            self.voltage,
+            self.volt_class,
+            self.inferred,
+            self.sub_1,
+            self.sub_2,
+            self.shape_len,
+            self.global_id,
+            self.geometry_wkt,
+            self.length,
+        )
+
+    model_config = ConfigDict(
+        validate_assignment=True,
+        extra="ignore",  # ignore obj and unknown columns
+        populate_by_name=True,
+    )

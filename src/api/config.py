@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 
@@ -226,3 +226,22 @@ class FlightDRAPAlertsResponse(BaseModel):
     threshold: float
     count: int
     alerts: List[FlightDRAPAlertItem]
+
+
+class TransmissionLineResponse(BaseModel):
+    objectid: int
+    line_id: int
+    type: Optional[str] = None
+    status: Optional[str] = None
+    owner: Optional[str] = None
+    voltage: Optional[float] = None
+    volt_class: Optional[str] = None
+    inferred: Optional[bool] = None
+    sub_1: Optional[str] = None
+    sub_2: Optional[str] = None
+    sourcedate: Optional[date] = None
+    val_date: Optional[date] = None
+    shape_len: Optional[float] = None
+    global_id: Optional[str] = None
+    geom: Optional[Dict[str, Any]] = None
+    length: Optional[float] = None

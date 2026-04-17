@@ -111,3 +111,11 @@ deployments:
     schedules:
       - cron: "0 0 * * *"
         timezone: UTC
+
+  # --- Reference Data Flows ---
+
+  - name: transmission-lines-ingest
+    entrypoint: flows/transmission_lines_extract.py:transmission_lines_extract_flow
+    description: "One-time ingestion of electric transmission lines from local CSV into PostGIS"
+    work_pool:
+      name: NOAA-pool

@@ -854,7 +854,7 @@ ON CONFLICT (observed_at, lat, long) DO NOTHING
 
 
 ACTIVATE_FLIGHT_STATES_QUERY = """
-    SELECT 
+    SELECT
         icao24,
         callsign,
         ROUND(lat::numeric, 4)::REAL AS lat,
@@ -865,4 +865,61 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
         on_ground
     FROM activate_flight
     WHERE on_ground = FALSE AND time_pos >= NOW() - INTERVAL '20 minutes';
+"""
+
+
+# ---------------------------------------------------------------------------
+# electric_transmission_lines
+# ---------------------------------------------------------------------------
+
+TRANSMISSION_LINES_STAGING_DDL = """
+CREATE TEMP TABLE etl_staging (
+    objectid    INTEGER,
+    line_id     INTEGER,
+    type        VARCHAR(100),
+    status      VARCHAR(50),
+    naics_code  INTEGER,
+    naics_desc  VARCHAR(255),
+    source      VARCHAR(255),
+    sourcedate  DATE,
+    val_method  VARCHAR(100),
+    val_date    DATE,
+    owner       VARCHAR(255),
+    voltage     DOUBLE PRECISION,
+    volt_class  VARCHAR(50),
+    inferred    BOOLEAN,
+    sub_1       VARCHAR(255),
+    sub_2       VARCHAR(255),
+    shape_len   DOUBLE PRECISION,
+    global_id   VARCHAR(36),
+    geometry_wkt TEXT,
+    length      DOUBLE PRECISION
+) ON COMMIT DROP
+"""
+
+TRANSMISSION_LINES_STAGING_COLUMNS = [
+    "objectid", "line_id", "type", "status", "naics_code", "naics_desc",
+    "source", "sourcedate", "val_method", "val_date", "owner", "voltage",
+    "volt_class", "inferred", "sub_1", "sub_2", "shape_len", "global_id",
+    "geometry_wkt", "length",
+]
+
+TRANSMISSION_LINES_TRANSFORM_SQL = """
+INSERT INTO electric_transmission_lines
+    (objectid, line_id, type, status, naics_code, naics_desc, source, sourcedate,
+     val_method, val_date, owner, voltage, volt_class, inferred, sub_1, sub_2,
+     shape_len, global_id, geom, length)
+SELECT
+    objectid, line_id, type, status, naics_code, naics_desc, source, sourcedate,
+    val_method, val_date, owner, voltage, volt_class, inferred, sub_1, sub_2,
+    shape_len, global_id,
+    ST_GeomFromText(geometry_wkt, 4326),
+    length
+FROM etl_staging
+ON CONFLICT (objectid) DO UPDATE SET
+    geom       = EXCLUDED.geom,
+    status     = EXCLUDED.status,
+    voltage    = EXCLUDED.voltage,
+    volt_class = EXCLUDED.volt_class,
+    owner      = EXCLUDED.owner
 """

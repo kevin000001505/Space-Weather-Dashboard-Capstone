@@ -15,6 +15,7 @@ from tasks.db import (
     initial_alert_db,
     initial_xray_6hour_db,
     initial_geoelectric_db,
+    initial_transmission_lines_db,
     cleanup_table,
     initial_readonly_grants,
     wait_for_tables_ready,
@@ -23,6 +24,7 @@ from tasks.db import (
 from database.queries import RETENTION_CONFIG
 from flows.kp_index import ingest_kp_index_flow
 from flows.airports_extract import airports_extract_flow
+from flows.transmission_lines_extract import transmission_lines_extract_flow
 
 
 @flow(log_prints=True)
@@ -62,6 +64,7 @@ async def initialize_db_flow():
             await initial_xray_6hour_db(conn)
             await initial_aurora_db(conn)
             await initial_geoelectric_db(conn)
+            await initial_transmission_lines_db(conn)
             await initial_readonly_grants(conn)
             logger.info("Database schema initialization completed successfully!")
 
@@ -79,6 +82,7 @@ async def seed_empty_tables():
     tables_to_seed = [
         ("kp_index", ingest_kp_index_flow),
         ("airports", airports_extract_flow),
+        ("electric_transmission_lines", transmission_lines_extract_flow),
     ]
     async with get_connection() as conn:
         for table_name, seed_flow in tables_to_seed:

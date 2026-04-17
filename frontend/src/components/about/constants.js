@@ -105,8 +105,8 @@ export const DEVELOPERS = [
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Cheng+Hsun+Hsu&background=1976d2&color=fff&size=300",
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
+    github: "https://github.com/kevin000001505",
+    linkedin: "https://www.linkedin.com/in/cheng-hsun-hsu-a24517280/",
   },
   {
     id: 3,
@@ -121,7 +121,7 @@ export const DEVELOPERS = [
   {
     id: 4,
     name: "Rohit Annepu",
-    title: "Developer",
+    title: "Researcher",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Rohit+Annepu&background=1976d2&color=fff&size=300",
@@ -131,7 +131,7 @@ export const DEVELOPERS = [
   {
     id: 5,
     name: "Tarundeep KrishnaKumar",
-    title: "Developer",
+    title: "Researcher",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Tarundeep+KrishnaKumar&background=1976d2&color=fff&size=300",
@@ -141,7 +141,7 @@ export const DEVELOPERS = [
   {
     id: 6,
     name: "Varsha Ponnaganti",
-    title: "Developer",
+    title: "Researcher",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Varsha+Ponnaganti&background=1976d2&color=fff&size=300",

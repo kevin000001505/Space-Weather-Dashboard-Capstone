@@ -24,6 +24,7 @@ from database.queries import (
     AURORA_RANGE_QUERY_V2,
     LOCATION_QUERY,
     LATEST_EVENT_QUERY_V2,
+    TRANSMISSION_LINES_QUERY,
 )
 from config import (
     EventsResponseV2,
@@ -40,6 +41,7 @@ from config import (
     EventType,
     LocationData,
     FlightPathRangeResponse,
+    TransmissionLineResponse,
 )
 from shared.compression import delta_bitpack_compress
 from validator import airports_adapter
@@ -482,6 +484,24 @@ async def get_airport_details(
         raise
     except Exception as e:
         logger.error(f"Error fetching airport details for {ident}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+
+@app.get("/api/v1/transmission-lines", response_model=List[TransmissionLineResponse])
+async def get_transmission_lines(
+    conn: asyncpg.Connection = Depends(get_db_connection),
+):
+    try:
+        rows = await conn.fetch(TRANSMISSION_LINES_QUERY)
+        result = []
+        for row in rows:
+            d = dict(row)
+            if isinstance(d.get("geom"), str):
+                d["geom"] = json.loads(d["geom"])
+            result.append(d)
+        return result
+    except Exception as e:
+        logger.error(f"Error fetching transmission lines: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 

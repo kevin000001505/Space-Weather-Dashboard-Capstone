@@ -17,6 +17,7 @@ from database.create import (
     ALERT_CREATE_TABLE_SQL,
     XRAY_6HOUR_CREATE_TABLE_SQL,
     GEOELECTRIC_CREATE_TABLE_SQL,
+    TRANSMISSION_LINES_CREATE_TABLE_SQL,
     READONLY_GRANTS_SQL,
     EVENTS_LOCATION_INGEST,
     EVENTS_LOCATION_CREATE_TABLE_SQL,
@@ -198,6 +199,23 @@ async def initial_geoelectric_db(conn: Connection):
         logger.info("geoelectric_field table is ready!")
     except Exception as e:
         logger.error(f"Failed to initialize geoelectric_field table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_transmission_lines_db(conn: Connection):
+    """Task to initialize the electric_transmission_lines table."""
+    logger = get_logger(__name__)
+    try:
+        logger.info("Ensuring electric_transmission_lines table exists...")
+        await ensure_table_exists(
+            conn,
+            "electric_transmission_lines",
+            create_sql=TRANSMISSION_LINES_CREATE_TABLE_SQL,
+        )
+        logger.info("electric_transmission_lines table is ready!")
+    except Exception as e:
+        logger.error(f"Failed to initialize electric_transmission_lines table: {e}")
         raise
 
 

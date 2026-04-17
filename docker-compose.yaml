@@ -203,11 +203,12 @@ services:
     volumes:
       - ./prefect_workflows:/opt/prefect-app
       - ./shared:/opt/shared
+      - ./data:/opt/data:ro
       - ${PYOPENSKY_SETTINGS:-/dev/null}:/root/.config/pyopensky/settings.conf
     networks:
       - prefect_network
       - data_network
-  
+
   prefect-worker-flight:
     container_name: prefect-worker-flight
     build:

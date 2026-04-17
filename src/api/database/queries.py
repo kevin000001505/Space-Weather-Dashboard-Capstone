@@ -4,6 +4,16 @@ FLIGHT_PATH_QUERY = """
     WHERE icao24 = $1;
 """
 
+TRANSMISSION_LINES_QUERY = """
+SELECT
+    objectid, line_id, type, status, owner, voltage, volt_class,
+    inferred, sub_1, sub_2, sourcedate, val_date, shape_len, global_id,
+    ST_AsGeoJSON(geom)::jsonb AS geom,
+    length
+FROM electric_transmission_lines
+ORDER BY objectid
+"""
+
 
 ACTIVATE_FLIGHT_STATES_QUERY = """
     SELECT 
