@@ -1,6 +1,18 @@
 import { TOPBAR_HEIGHT, getHelpGroupForTopic } from "../helpers/constants";
 import FlightIcon from "@mui/icons-material/Flight";
-import { Box, Divider, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useSelector } from "react-redux";
 
@@ -120,6 +132,43 @@ const MainContent = ({ article }) => {
     return (
       <Stack spacing={2}>
         {paragraphs.map((paragraph, index) => {
+          if (paragraph && typeof paragraph === "object" && paragraph.divider) {
+            return <Divider key={`${prefix}-p-${index}`} sx={{ my: 1 }} />;
+          }
+          if (paragraph && typeof paragraph === "object" && paragraph.table) {
+            const { headers, rows } = paragraph.table;
+            return (
+              <TableContainer
+                key={`${prefix}-p-${index}`}
+                component={Paper}
+                variant="outlined"
+                sx={{ borderRadius: 2 }}
+              >
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      {headers.map((h) => (
+                        <TableCell key={h} sx={{ fontWeight: 700 }}>
+                          {h}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {rows.map((row, ri) => (
+                      <TableRow key={ri}>
+                        {row.map((cell, ci) => (
+                          <TableCell key={ci} sx={{ color: "text.secondary" }}>
+                            {cell}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            );
+          }
           if (paragraph && typeof paragraph === "object" && paragraph.bullets) {
             return (
               <Stack key={`${prefix}-p-${index}`} spacing={0.5}>

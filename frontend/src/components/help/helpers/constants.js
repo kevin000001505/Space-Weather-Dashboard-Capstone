@@ -82,7 +82,7 @@ const topicContent = {
   "Purpose of the platform": {
     title: "Purpose of the Platform",
     intro:
-      "The Space Weather Dashboard is a real time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
+      "Providing how solar activity affects aviation and power-grid infrastructure, combining with live flight tracking, airport data, and multiple space weather overlays and analytics for showing historical trend.",
     sections: [
       {
         id: "overview",
@@ -120,22 +120,23 @@ const topicContent = {
   "Who should use this platform?": {
     title: "Who Should Use This Platform?",
     intro:
-      "This platform is designed for anyone who needs to understand the impact of space weather on critical infrastructure, including aviation professionals, power grid operators, researchers, and students.",
+      "This platform is built for operational and analytical use cases where space weather directly affects infrastructure, communications, or safety-critical decisions.",
     sections: [
       {
         id: "target-audiences",
-        title: "Target Audiences",
+        title: "Target Stakeholders",
         body: [
-          "Aviation professionals can use the Plane & Events Tracker to see how DRAP absorption zones and aurora ovals overlap with active flight routes, especially over polar regions and sea area where HF-radio blackouts are most disruptive.",
-          "Power-grid operators and engineers can overlay geoelectric field intensity on top of high-voltage transmission lines to assess geomagnetically induced current (GIC) risk during geomagnetic storms.",
-        ],
-        subsections: [
           {
-            id: "target-audiences-researchers",
-            title: "Researchers & Students",
-            body: "Researchers and students studying heliophysics, ionospheric science, or space weather impacts can use the analytics to explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows.",
+            bullets: [
+              "Flight Dispatchers: Monitor geoelectric field and radiation levels to inform routing decisions and flag HF-radio blackout risk on oceanic and polar routes.",
+              "Aviation Researchers: Analyze historical space weather events — flare timing, DRAP extent, proton flux onset — using the playback panel and configurable chart time windows.",
+              "Safety Officers: Assess and mitigate risks associated with HF communication blackouts, elevated proton flux on transpolar routes, and GPS degradation during geomagnetic storms.",
+              "Power Grid Operators: Overlay geoelectric field intensity against high-voltage transmission lines to evaluate geomagnetically induced current (GIC) exposure during storm events.",
+              "Ionospheric & Heliophysics Researchers: Explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows for event characterization and impact studies.",
+            ],
           },
         ],
+        subsections: [],
       },
     ],
   },
@@ -149,7 +150,7 @@ const topicContent = {
         id: "plane-tracker-glance",
         title: "Plane & Events Tracker",
         body: [
-          "The home page presents a full-screen interactive map powered by MapLibre. Flights, airports, and space weather overlays (DRAP, aurora, geoelectric field, power-grid lines) are rendered as toggleable layers.",
+          "The home page presents a full-screen interactive map powered by MapLibre. Flights, airports, and space weather overlays (D-Region Absorption Prediction (DRAP), aurora, geoelectric field, power-grid lines) are rendered as toggleable layers.",
           "Use the search bar in the top-left to find a specific flight or airport. The control buttons in the top-right let you toggle layers, switch units, open settings, and change the theme.",
         ],
         subsections: [
@@ -240,8 +241,29 @@ const topicContent = {
         id: "concepts-units",
         title: "Measurement Units",
         body: [
+          "Metric Reference",
+          {
+            table: {
+              headers: ["Data Layer", "Label (Unit)", "Example Format", "Description"],
+              rows: [
+                [
+                  "X-Ray Flux",
+                  "X-Ray Flux (W/m²)",
+                  "1.2 × 10⁻⁴ W/m²",
+                  "Measure of solar flare intensity measured by GOES satellites on a logarithmic scale.",
+                ],
+                [
+                  "Geoelectric Field",
+                  "Geoelectric Field (mV/km)",
+                  "500 mV/km",
+                  "Electric field at Earth's surface during geomagnetic storms; drives ground-induced currents affecting power grids and navigation aids.",
+                ],
+              ],
+            },
+          },
+          { divider: true },
+          "User Workflows",
           "The platform supports both metric and imperial units for altitude and speed. Metric uses meters (m) and meters per second (m/s). Imperial uses feet (ft) and knots. Toggle between them using the unit button (M/F) in the top-right of the map.",
-          "X-ray flux is measured in watts per square meter (W/m\u00B2) on a logarithmic scale. Proton flux is measured in particle flux units (pfu). The Kp index is a dimensionless value from 0 to 9.",
         ],
         subsections: [
           {
@@ -303,7 +325,7 @@ const topicContent = {
         title: "How to Switch",
         body: [
           "Click the hamburger menu icon in the top-right corner of either page to open the sidebar. Then select 'Dashboard' to go to the map or 'Analytics' to view the charts.",
-          "The sidebar closes automatically after you select a destination. Your settings (dark mode, unit preference, etc.) persist across pages.",
+          "The sidebar closes automatically after you select a destination. Your settings (unit preference, etc.) persist across pages.",
         ],
         subsections: [
           {
@@ -841,11 +863,6 @@ const topicContent = {
           "The legend speed-dial (L icon) lets you independently show or hide the icon legend and altitude color legend.",
         ],
         subsections: [
-          {
-            id: "layers-other-controls-theme",
-            title: "Dark and Light Mode",
-            body: "Dark mode uses a dark basemap ideal for low-light environments. Light mode uses a neutral basemap for daytime use. The theme setting persists across page navigations.",
-          },
         ],
       },
     ],
