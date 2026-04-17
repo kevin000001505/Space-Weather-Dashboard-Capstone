@@ -78,14 +78,18 @@ const GeoElectricOverlay = () => {
 
   const geoElectricMapLayers = useMemo(() => getGeoElectricMapLayers(), []);
 
-  if (!showGeoElectric || featureCollection.features.length === 0) {
+  if (featureCollection.features.length === 0) {
     return null;
   }
 
   return (
     <Source id={SOURCE_ID} type="geojson" data={featureCollection}>
       {geoElectricMapLayers.map((layer) => (
-        <Layer key={layer.id} {...layer} />
+        <Layer
+          key={layer.id}
+          {...layer}
+          layout={{ ...(layer.layout ?? {}), visibility: showGeoElectric ? "visible" : "none" }}
+        />
       ))}
     </Source>
   );

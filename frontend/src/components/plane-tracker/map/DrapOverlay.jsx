@@ -56,14 +56,18 @@ const DrapOverlay = () => {
 
   const drapMapLayers = useMemo(() => getDRAPFilledCellsMapLayers(), []);
 
-  if (!showDRAP || featureCollection.features.length === 0) {
+  if (featureCollection.features.length === 0) {
     return null;
   }
 
   return (
     <Source id={SOURCE_ID} type="geojson" data={featureCollection}>
       {drapMapLayers.map((layer) => (
-        <Layer key={layer.id} {...layer} />
+        <Layer
+          key={layer.id}
+          {...layer}
+          layout={{ ...(layer.layout ?? {}), visibility: showDRAP ? "visible" : "none" }}
+        />
       ))}
     </Source>
   );

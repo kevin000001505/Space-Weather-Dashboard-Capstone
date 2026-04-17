@@ -60,14 +60,18 @@ const AuroraOverlay = () => {
 
   const auroraMapLayers = useMemo(() => getAuroraMapLayers(), []);
 
-  if (!showAurora || featureCollection.features.length === 0) {
+  if (featureCollection.features.length === 0) {
     return null;
   }
 
   return (
     <Source id={SOURCE_ID} type="geojson" data={featureCollection}>
       {auroraMapLayers.map((layer) => (
-        <Layer key={layer.id} {...layer} />
+        <Layer
+          key={layer.id}
+          {...layer}
+          layout={{ ...(layer.layout ?? {}), visibility: showAurora ? "visible" : "none" }}
+        />
       ))}
     </Source>
   );
