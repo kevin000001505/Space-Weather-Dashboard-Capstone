@@ -82,7 +82,7 @@ const topicContent = {
   "Purpose of the platform": {
     title: "Purpose of the Platform",
     intro:
-      "The Space Weather Dashboard is a real-time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space-weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
+      "The Space Weather Dashboard is a real-time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
     sections: [
       {
         id: "overview",

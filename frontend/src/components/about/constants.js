@@ -91,7 +91,7 @@ export const DEVELOPERS = [
   {
     id: 1,
     name: "Akshay Kumar Vengala",
-    title: "Developer",
+    title: "Frontend Developer",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Akshay+Vengala&background=1976d2&color=fff&size=300",
@@ -101,7 +101,7 @@ export const DEVELOPERS = [
   {
     id: 2,
     name: "Cheng Hsun Hsu",
-    title: "Developer",
+    title: "Backend Developer",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Cheng+Hsun+Hsu&background=1976d2&color=fff&size=300",
@@ -111,11 +111,11 @@ export const DEVELOPERS = [
   {
     id: 3,
     name: "Phong Nguyen",
-    title: "Developer",
+    title: "Full-Stack Developer",
     description: "To Be Added.",
     image:
       "https://ui-avatars.com/api/?name=Phong+Nguyen&background=1976d2&color=fff&size=300",
-    github: "https://github.com",
+    github: "https://github.com/Shieroz",
     linkedin: "https://linkedin.com",
   },
   {
