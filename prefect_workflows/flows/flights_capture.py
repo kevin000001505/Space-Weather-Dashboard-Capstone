@@ -7,6 +7,7 @@ from tasks.flights import (
     clean_records,
     insert_batch,
     broadcast_active_flights_to_redis,
+    broadcast_flight_drap_alerts_to_redis,
 )
 
 
@@ -20,4 +21,5 @@ async def ingest_flow():
 
         if records:
             await broadcast_active_flights_to_redis(conn)
+        await broadcast_flight_drap_alerts_to_redis(conn)
         

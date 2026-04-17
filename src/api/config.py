@@ -204,3 +204,25 @@ class FlightPathRangeResponse(BaseModel):
     requested_time: List[datetime]
     time: List[Optional[datetime]]
     points: List[Optional[Dict[str, Any]]]
+
+
+class FlightDRAPAlertItem(BaseModel):
+    time: datetime
+    time_pos: Optional[datetime] = None
+    icao24: str
+    callsign: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    geo_altitude: Optional[float] = None
+    velocity: Optional[float] = None
+    heading: Optional[float] = None
+    vert_rate: Optional[float] = None
+    drap_observed_at: datetime
+    absorption: float
+
+
+class FlightDRAPAlertsResponse(BaseModel):
+    timestamp: datetime
+    threshold: float
+    count: int
+    alerts: List[FlightDRAPAlertItem]

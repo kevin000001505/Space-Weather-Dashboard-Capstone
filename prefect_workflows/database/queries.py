@@ -91,7 +91,7 @@ ON CONFLICT DO NOTHING
 
 FLIGHT_DRAP_EVENTS = """
 INSERT INTO flight_drap_events (
-    time, icao24, time_pos, lat, lon, geo_altitude,
+    time, icao24, callsign, time_pos, lat, lon, geo_altitude,
     velocity, heading, vert_rate, on_ground,
     drap_observed_at, drap_lat, drap_long, absorption
 )
@@ -116,6 +116,7 @@ closest_drap_time AS (
 SELECT
     s.time,
     s.icao24,
+    s.callsign,
     s.time_pos,
     s.lat,
     s.lon,
@@ -140,6 +141,16 @@ INNER JOIN LATERAL (
     LIMIT 1
 ) ld ON true
 ON CONFLICT DO NOTHING
+"""
+
+FLIGHT_DRAP_EVENTS_ALERT = """
+SELECT 
+time, time_pos, icao24, callsign, lat, lon, geo_altitude, 
+velocity, heading, vert_rate, drap_observed_at, absorption
+FROM flight_drap_events
+WHERE on_ground = false
+  AND absorption > $1
+  AND time > NOW() - INTERVAL '1 minutes'
 """
 
 # --- activate_flight ---

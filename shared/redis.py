@@ -17,6 +17,7 @@ PROTONFLUX_CHANNEL = "protonflux_updates_channel"
 KPINDEX_CHANNEL = "kpindex_updates_channel"
 ALERTS_CHANNEL = "alerts_channel"
 GEOELECTRIC_CHANNEL = "geoelectric_updates_channel"
+FLIGHT_DRAP_ALERTS_CHANNEL = "flight_drap_alerts_channel"
 
 # Memory Cache Keys
 AIRPORTS_CACHE_KEY = "latest_airports"
@@ -28,6 +29,11 @@ PROTONFLUX_CACHE_KEY = "latest_protonflux"
 KPINDEX_CACHE_KEY = "latest_kpindex"
 ALERTS_CACHE_KEY = "latest_alerts"
 GEOELECTRIC_CACHE_KEY = "latest_geoelectric"
+FLIGHT_DRAP_ALERTS_CACHE_KEY = "latest_flight_drap_alerts"
+
+# Absorption threshold config key + default
+FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY = "flight_drap_absorption_threshold"
+DEFAULT_ABSORPTION_THRESHOLD = 2.0
 
 # Time-To-Live (TTL) Settings (in seconds)
 DEFAULT_TTL = 300  # 5 minutes

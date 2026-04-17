@@ -12,6 +12,7 @@ from tasks.models import FlightStateRecord
 from database.queries import (
     ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
     FLIGHT_DRAP_EVENTS,
+    FLIGHT_DRAP_EVENTS_ALERT,
     FLIGHT_STATES_STAGING_DDL,
     FLIGHT_STATES_STAGING_COLUMNS,
     FLIGHT_STATES_STAGING_GEOM_SQL,
@@ -27,6 +28,10 @@ from shared.redis import (
     get_redis_client,
     FLIGHTS_CACHE_KEY,
     FLIGHTS_CHANNEL,
+    FLIGHT_DRAP_ALERTS_CACHE_KEY,
+    FLIGHT_DRAP_ALERTS_CHANNEL,
+    FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY,
+    DEFAULT_ABSORPTION_THRESHOLD,
     DEFAULT_TTL,
 )
 
@@ -219,3 +224,47 @@ async def broadcast_active_flights_to_redis(conn: Connection) -> None:
 
     except Exception as e:
         logger.error(f"Failed to broadcast to Redis: {e}")
+
+
+@task(name="Broadcast Flight DRAP Alerts to Redis", cache_policy=NO_CACHE, retries=3)
+async def broadcast_flight_drap_alerts_to_redis(conn: Connection) -> None:
+    """Query flight_drap_events for recent alerts above threshold and push to Redis."""
+    logger = get_logger(__name__)
+
+    client = get_redis_client()
+    raw = await client.get(FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY)
+    threshold = float(raw) if raw is not None else DEFAULT_ABSORPTION_THRESHOLD
+
+    rows = await conn.fetch(FLIGHT_DRAP_EVENTS_ALERT, threshold)
+    alerts = [
+        {
+            "time": r["time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "time_pos": r["time_pos"].strftime("%Y-%m-%dT%H:%M:%SZ") if r["time_pos"] else None,
+            "icao24": r["icao24"],
+            "callsign": r["callsign"],
+            "lat": r["lat"],
+            "lon": r["lon"],
+            "geo_altitude": r["geo_altitude"],
+            "velocity": r["velocity"],
+            "heading": r["heading"],
+            "vert_rate": r["vert_rate"],
+            "drap_observed_at": r["drap_observed_at"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "absorption": r["absorption"],
+        }
+        for r in rows
+    ]
+
+    payload = {
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "threshold": threshold,
+        "count": len(alerts),
+        "alerts": alerts,
+    }
+
+    try:
+        await client.set(FLIGHT_DRAP_ALERTS_CACHE_KEY, json.dumps(payload), ex=DEFAULT_TTL)
+        await client.publish(FLIGHT_DRAP_ALERTS_CHANNEL, "new_data")
+        await client.aclose()
+        logger.info(f"Broadcasted {len(alerts)} flight DRAP alerts to Redis (threshold={threshold}).")
+    except Exception as e:
+        logger.error(f"Failed to broadcast flight DRAP alerts to Redis: {e}")

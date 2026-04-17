@@ -276,6 +276,7 @@ CREATE_FLIGHT_DRAP_EVENTS = """
 CREATE TABLE IF NOT EXISTS flight_drap_events (
     time             TIMESTAMPTZ      NOT NULL,
     icao24           CHAR(6)          NOT NULL,
+    callsign         VARCHAR(8),
     time_pos         TIMESTAMPTZ,
     lat              DOUBLE PRECISION,
     lon              DOUBLE PRECISION,
@@ -289,6 +290,11 @@ CREATE TABLE IF NOT EXISTS flight_drap_events (
     drap_long        DOUBLE PRECISION,
     absorption       REAL
 );
+
+DO $$ BEGIN
+    ALTER TABLE flight_drap_events ADD COLUMN callsign VARCHAR(8);
+EXCEPTION WHEN duplicate_column THEN NULL;
+END $$;
 
 SELECT create_hypertable(
     'flight_drap_events', 'time',

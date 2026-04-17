@@ -228,6 +228,7 @@ async def live_dashboard_stream(request: Request):
             redis_config.KPINDEX_CHANNEL,
             redis_config.ALERTS_CHANNEL,
             redis_config.GEOELECTRIC_CHANNEL,
+            redis_config.FLIGHT_DRAP_ALERTS_CHANNEL,
             redis_config.HEARTBEAT_CHANNEL,  # For keeping the connection alive
         )
 
@@ -301,6 +302,13 @@ async def live_dashboard_stream(request: Request):
                         if latest_geoelectric:
                             yield f"event: geoelectric\ndata: {latest_geoelectric}\n\n"
 
+                    case redis_config.FLIGHT_DRAP_ALERTS_CHANNEL:
+                        latest_alerts = await redis_client.get(
+                            redis_config.FLIGHT_DRAP_ALERTS_CACHE_KEY
+                        )
+                        if latest_alerts:
+                            yield f"event: flight_drap_alerts\ndata: {latest_alerts}\n\n"
+
                     case _:
                         yield ": heartbeat\n\n"
 
@@ -318,6 +326,23 @@ async def live_dashboard_stream(request: Request):
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@app.get("/api/v1/flight-drap-alerts/threshold")
+async def get_absorption_threshold():
+    client = redis_config.get_redis_client()
+    raw = await client.get(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY)
+    await client.aclose()
+    threshold = float(raw) if raw is not None else redis_config.DEFAULT_ABSORPTION_THRESHOLD
+    return {"threshold": threshold}
+
+
+@app.put("/api/v1/flight-drap-alerts/threshold")
+async def set_absorption_threshold(threshold: float = Query(..., gt=0)):
+    client = redis_config.get_redis_client()
+    await client.set(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY, str(threshold))
+    await client.aclose()
+    return {"threshold": threshold}
 
 
 @app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)
