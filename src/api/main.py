@@ -5,6 +5,7 @@ import asyncpg
 
 from fastapi import FastAPI, HTTPException, Query, Response, Request, Depends, Path
 from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from shared.db_utils import create_db_pool
@@ -169,6 +170,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -215,7 +233,12 @@ async def health_check():
 
 @app.get("/api/v1/stream/live")
 async def live_dashboard_stream(request: Request):
-    redis_client = redis_config.get_redis_client()
+    try:
+        redis_client = redis_config.get_redis_client()
+        redis_client.ping()
+    except Exception as e:
+        logger.error("Redis unavailable for SSE stream: %s", e)
+        raise HTTPException(status_code=503, detail="Stream service unavailable")
 
     async def event_generator():
         pubsub = redis_client.pubsub()
@@ -330,19 +353,27 @@ async def live_dashboard_stream(request: Request):
 
 @app.get("/api/v1/flight-drap-alerts/threshold")
 async def get_absorption_threshold():
-    client = redis_config.get_redis_client()
-    raw = await client.get(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY)
-    await client.aclose()
-    threshold = float(raw) if raw is not None else redis_config.DEFAULT_ABSORPTION_THRESHOLD
-    return {"threshold": threshold}
+    try:
+        client = redis_config.get_redis_client()
+        raw = await client.get(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY)
+        await client.aclose()
+        threshold = float(raw) if raw is not None else redis_config.DEFAULT_ABSORPTION_THRESHOLD
+        return {"threshold": threshold}
+    except Exception as e:
+        logger.error("Failed to read absorption threshold: %s", e)
+        raise HTTPException(status_code=503, detail="Cache service unavailable")
 
 
 @app.put("/api/v1/flight-drap-alerts/threshold")
-async def set_absorption_threshold(threshold: float = Query(..., gt=0)):
-    client = redis_config.get_redis_client()
-    await client.set(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY, str(threshold))
-    await client.aclose()
-    return {"threshold": threshold}
+async def set_absorption_threshold(threshold: float = Query(..., gt=0, le=100)):
+    try:
+        client = redis_config.get_redis_client()
+        await client.set(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY, str(threshold))
+        await client.aclose()
+        return {"threshold": threshold}
+    except Exception as e:
+        logger.error("Failed to set absorption threshold: %s", e)
+        raise HTTPException(status_code=503, detail="Cache service unavailable")
 
 
 @app.get("/api/v1/airports", response_model=List[Airport], response_class=Response)
@@ -605,6 +636,7 @@ async def latest_events(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error("Error fetching latest %s event: %s", events, e)
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
@@ -771,29 +803,36 @@ async def range_data_values_retrieve(
     interval: int = Query(default=5, description="The time range for each data gap."),
 ):
     t_start = time.perf_counter()
-    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
-    start_utc = start_utc.replace(second=0, microsecond=0)
-    end_utc = end_utc.replace(second=0, microsecond=0)
-    query = query_dict_v2[event]
+    try:
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
+        start_utc = start_utc.replace(second=0, microsecond=0)
+        end_utc = end_utc.replace(second=0, microsecond=0)
+        query = query_dict_v2[event]
 
-    t_query_start = time.perf_counter()
-    rows = await conn.fetch(query, start_utc, end_utc, interval)
-    t_query_end = time.perf_counter()
+        t_query_start = time.perf_counter()
+        rows = await conn.fetch(query, start_utc, end_utc, interval)
+        t_query_end = time.perf_counter()
 
-    if not rows:
-        raise HTTPException(
-            status_code=404, detail=f"No {event} data available for the given range"
-        )
+        if not rows:
+            raise HTTPException(
+                status_code=404, detail=f"No {event} data available for the given range"
+            )
 
-    result = []
-    for row in rows:
-        row_dict = dict(row)
-        raw_points = row_dict.get("points")
-        row_dict["points"] = json.loads(raw_points) if raw_points is not None else None
-        result.append(SnapshotResponseV2.model_validate(row_dict))
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            raw_points = row_dict.get("points")
+            row_dict["points"] = json.loads(raw_points) if raw_points is not None else None
+            result.append(SnapshotResponseV2.model_validate(row_dict))
 
-    add_timing_headers(response, t_start, t_query_start, t_query_end)
-    return result
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return result
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching %s snapshot range: %s", event, e)
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @app.get("/api/v2/kermit/flight-path", response_model=FlightPathRangeResponse)
@@ -819,48 +858,56 @@ async def retrieve_flight_paths(
     ),
 ):
     t_start = time.perf_counter()
-    start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
-    start_utc = start_utc.replace(second=0, microsecond=0)
-    end_utc = end_utc.replace(second=0, microsecond=0)
+    try:
+        start_utc, end_utc = _resolve_time_window(start, end, default_hours=2)
+        start_utc = start_utc.replace(second=0, microsecond=0)
+        end_utc = end_utc.replace(second=0, microsecond=0)
 
-    if icao24 is None and callsign is None:
-        raise HTTPException(
-            status_code=400, detail="Either provide both icao24 or callsign"
+        if icao24 is None and callsign is None:
+            raise HTTPException(
+                status_code=400, detail="At least one of 'icao24' or 'callsign' is required"
+            )
+
+        t_query_start = time.perf_counter()
+        rows = await conn.fetch(FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24)
+        t_query_end = time.perf_counter()
+
+        if not rows:
+            identifier = icao24 or callsign
+            raise HTTPException(
+                status_code=404, detail=f"No flight path data found for '{identifier}' in the given range"
+            )
+
+        requested_times, times, points = [], [], []
+        for row in rows:
+            row_dict = dict(row)
+            requested_times.append(row_dict.get("requested_time"))
+            times.append(row_dict.get("time"))
+            points.append(
+                {
+                    "time_pos": row_dict.get("time_pos"),
+                    "icao24": row_dict.get("icao24"),
+                    "callsign": row_dict.get("callsign"),
+                    "lat": row_dict.get("lat"),
+                    "lon": row_dict.get("lon"),
+                    "geo_altitude": row_dict.get("geo_altitude"),
+                    "on_ground": row_dict.get("on_ground"),
+                }
+            )
+
+        result = FlightPathRangeResponse(
+            requested_time=requested_times,
+            time=times,
+            points=points,
         )
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return result
 
-    t_query_start = time.perf_counter()
-    rows = await conn.fetch(FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24)
-    t_query_end = time.perf_counter()
-
-    if not rows:
-        raise HTTPException(
-            status_code=404, detail=f"No {icao24} data available for the given range"
-        )
-
-    requested_times, times, points = [], [], []
-    for row in rows:
-        row_dict = dict(row)
-        requested_times.append(row_dict.get("requested_time"))
-        times.append(row_dict.get("time"))
-        points.append(
-            {
-                "time_pos": row_dict.get("time_pos"),
-                "icao24": row_dict.get("icao24"),
-                "callsign": row_dict.get("callsign"),
-                "lat": row_dict.get("lat"),
-                "lon": row_dict.get("lon"),
-                "geo_altitude": row_dict.get("geo_altitude"),
-                "on_ground": row_dict.get("on_ground"),
-            }
-        )
-
-    result = FlightPathRangeResponse(
-        requested_time=requested_times,
-        time=times,
-        points=points,
-    )
-    add_timing_headers(response, t_start, t_query_start, t_query_end)
-    return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching flight path range for icao24=%s: %s", icao24, e)
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @app.get("/api/v2/location", response_model=LocationData)
@@ -868,27 +915,33 @@ async def retrieve_events_locations(
     response: Response, conn: asyncpg.Connection = Depends(get_db_connection)
 ):
     t_start = time.perf_counter()
-    t_query_start = time.perf_counter()
-    rows = await conn.fetch(LOCATION_QUERY)
-    t_query_end = time.perf_counter()
+    try:
+        t_query_start = time.perf_counter()
+        rows = await conn.fetch(LOCATION_QUERY)
+        t_query_end = time.perf_counter()
 
-    if not rows:
-        raise HTTPException(status_code=404, detail="No location data available")
+        if not rows:
+            raise HTTPException(status_code=404, detail="No location data available")
 
-    event_name_map = {
-        "drap_region": "drap",
-        "aurora_forecast": "aurora",
-        "geoelectric_field": "geoelectric",
-    }
-    result = {}
-    for row in rows:
-        row_dict = dict(row)
-        key = event_name_map.get(row_dict["events"], row_dict["events"])
-        result[key] = row_dict["locations"]
+        event_name_map = {
+            "drap_region": "drap",
+            "aurora_forecast": "aurora",
+            "geoelectric_field": "geoelectric",
+        }
+        result = {}
+        for row in rows:
+            row_dict = dict(row)
+            key = event_name_map.get(row_dict["events"], row_dict["events"])
+            result[key] = row_dict["locations"]
 
-    add_timing_headers(response, t_start, t_query_start, t_query_end)
+        add_timing_headers(response, t_start, t_query_start, t_query_end)
+        return LocationData(**result)
 
-    return LocationData(**result)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Error fetching event locations: %s", e)
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @app.get("/api/kermit")
