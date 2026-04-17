@@ -8,21 +8,21 @@ export const helpNav = [
   {
     label: "Overview",
     items: [
-      "Purpose of the platform",
-      "Who should use this platform?",
-      "Main dashboards at a glance",
-      "Supported workflows",
-      "Key concepts and terminology",
+      "Purpose of the Platform",
+      "Who should use this Platform?",
+      "Main Dashboards at a Glance",
+      "Supported Workflows",
+      "Key Concepts and Terminology",
     ],
   },
   {
     label: "Quick Start",
     items: [
-      "Understanding the main layout",
-      "Switching between dashboards",
-      "Choosing time range and timezone",
-      "Using search, filters, and toggles",
-      "Reading legends, labels, and values",
+      "Understanding the Main Layout",
+      "Switching between Dashboards",
+      "Choosing Time Range and Timezone",
+      "Using Search, Filters, and Toggles",
+      "Reading Legends, Labels, and Values",
     ],
   },
   {
@@ -32,43 +32,42 @@ export const helpNav = [
   {
     label: "Plane & Events Tracker",
     items: [
-      "What the tracker shows",
-      "Flights on the map",
-      "Airports on the map",
-      "Space weather event overlays",
-      "Searching for flights or airports",
-      "Filtering visible data",
-      "Interpreting marker colors and symbols",
-      "Using layer controls",
-      "Contact Support",
+      "What the Tracker Shows",
+      "Flights on the Map",
+      "Airports on the Map",
+      "Space Weather Event Overlays",
+      "Searching for Flights or Airports",
+      "Filtering Visible Data",
+      "Interpreting Marker Colors and Symbols",
+      "Using Layer Controls",
     ],
   },
   {
     label: "Analytics",
     items: [
-      "Dashboard purpose",
-      "Available chart categories",
-      "KP Index",
-      "X-Ray Flux",
-      "Proton Flux",
-      "Time-window controls",
-      "Comparing multiple plots",
-      "Interpreting peaks, spikes, and trends",
-      "Exporting or downloading chart views",
+      "Dashboard Purpose",
+      "Available Chart Categories",
+      "KP Index Chart",
+      "X-Ray Flux Chart",
+      "Proton Flux Chart",
+      "Time-Window Controls",
+      "Comparing Multiple Plots",
+      "Interpreting Peaks, Spikes, and Trends",
+      "Exporting or Downloading Chart Views",
     ],
   },
   {
     label: "Space Weather Terms",
     items: [
-      "Solar flares",
-      "Coronal mass ejections",
-      "X-Ray Flux (Glossary)",
-      "Proton Flux (Glossary)",
-      "Kp Index (Glossary)",
-      "Geomagnetic storms",
-      "Aurora activity",
-      "DRAP absorption",
-      "Geoelectric field activity",
+      "Solar Flares",
+      "Coronal Mass Ejections",
+      "X-Ray Flux",
+      "Proton Flux",
+      "Kp Index",
+      "Geomagnetic Storms",
+      "Aurora Activity",
+      "DRAP Absorption",
+      "Geoelectric Field Activity",
     ],
   },
 ];
@@ -79,7 +78,7 @@ export const helpNav = [
 
 const topicContent = {
   // ── Overview ──────────────────────────────────────────────────────────
-  "Purpose of the platform": {
+  "Purpose of the Platform": {
     title: "Purpose of the Platform",
     intro:
       "Providing how solar activity affects aviation and power-grid infrastructure, combining with live flight tracking, airport data, and multiple space weather overlays and analytics for showing historical trend.",
@@ -117,8 +116,8 @@ const topicContent = {
     ],
   },
 
-  "Who should use this platform?": {
-    title: "Who Should Use This Platform?",
+  "Who should use this Platform?": {
+    title: "Who should use this Platform?",
     intro:
       "This platform is built for operational and analytical use cases where space weather directly affects infrastructure, communications, or safety-critical decisions.",
     sections: [
@@ -141,7 +140,7 @@ const topicContent = {
     ],
   },
 
-  "Main dashboards at a glance": {
+  "Main Dashboards at a Glance": {
     title: "Main Dashboards at a Glance",
     intro:
       "The platform has two primary views: the Plane & Events Tracker (the home page map) and the analytics (charts). You can switch between them from the sidebar.",
@@ -157,7 +156,7 @@ const topicContent = {
           {
             id: "plane-tracker-glance-playback",
             title: "Playback Mode",
-            body: "When live-stream mode is off, a playback panel appears at the bottom of the map. You can scrub through past DRAP snapshots to see how radio absorption changed throughout the day.",
+            body: "When live stream mode is off, a playback panel appears at the bottom of the map. You can scrub through past DRAP snapshots to see how radio absorption changed throughout the day.",
           },
         ],
       },
@@ -173,21 +172,23 @@ const topicContent = {
             id: "analytics-glance-scales",
             title: "NOAA Scale Indicators",
             body: "The sidebar also displays current NOAA space weather scale levels (G for geomagnetic storms, R for radio blackouts, S for solar radiation) so you can see the current alert status at a glance.",
+            body: "The sidebar also displays current NOAA space weather scale levels (G for geomagnetic storms, R for radio blackouts, S for solar radiation) so you can see the current alert status at a glance.",
           },
         ],
       },
     ],
   },
 
-  "Supported workflows": {
+  "Supported Workflows": {
     title: "Supported Workflows",
     intro:
       "The platform supports several common operational and analytical workflows out of the box.",
     sections: [
       {
         id: "workflow-monitoring",
-        title: "Real-Time Monitoring",
+        title: "Live Data Monitoring",
         body: [
+          "Open the Plane & Events Tracker to monitor live flight positions alongside space weather overlays. Enable DRAP and aurora layers to see which regions are currently experiencing HF-radio absorption or elevated aurora activity.",
           "Open the Plane & Events Tracker to monitor live flight positions alongside space weather overlays. Enable DRAP and aurora layers to see which regions are currently experiencing HF-radio absorption or elevated aurora activity.",
           "Click on any flight to open a details panel showing callsign, ICAO24 code, altitude, speed, heading, and position. Click on any airport to see its metadata and runway information.",
         ],
@@ -204,7 +205,7 @@ const topicContent = {
         title: "Historical Analysis",
         body: [
           "Switch to the Analytics to explore historical trends. Select a time range (6 hours, 1 day, 3 days, 7 days, or custom) and view how Kp index, X-ray flux, or proton flux evolved.",
-          "Charts include color-coded NOAA-scale background bands (G0-G5, R0-R5, S0-S5) so you can quickly see when conditions reached storm thresholds.",
+          "Charts include color coded NOAA scale background bands (G0-G5, R0-R5, S0-S5) so you can quickly see when conditions reached storm thresholds.",
         ],
         subsections: [
           {
@@ -217,7 +218,7 @@ const topicContent = {
     ],
   },
 
-  "Key concepts and terminology": {
+  "Key Concepts and Terminology": {
     title: "Key Concepts and Terminology",
     intro:
       "Understanding a few key concepts will help you get the most out of this platform. This section covers the most important terms used throughout the interface.",
@@ -226,6 +227,7 @@ const topicContent = {
         id: "concepts-noaa-scales",
         title: "NOAA Space Weather Scales",
         body: [
+          "NOAA uses three scales to communicate space weather severity: G (Geomagnetic Storms, G1-G5), R (Radio Blackouts, R1-R5), and S (Solar Radiation Storms, S1-S5). G0, R0, and S0 indicate quiet conditions. Higher numbers indicate more severe events.",
           "NOAA uses three scales to communicate space weather severity: G (Geomagnetic Storms, G1-G5), R (Radio Blackouts, R1-R5), and S (Solar Radiation Storms, S1-S5). G0, R0, and S0 indicate quiet conditions. Higher numbers indicate more severe events.",
           "On charts, these levels are shown as colored background bands. On the sidebar, the current levels are displayed as badges.",
         ],
@@ -277,16 +279,17 @@ const topicContent = {
   },
 
   // ── Quick Start ───────────────────────────────────────────────────────
-  "Understanding the main layout": {
+  "Understanding the Main Layout": {
     title: "Understanding the Main Layout",
     intro:
-      "The application uses a simple layout with a sidebar for navigation and a full-screen content area for either the map or the analytics charts.",
+      "The application uses a simple layout with a sidebar for navigation and a full screen content area for either the map or the analytics charts.",
     sections: [
       {
         id: "layout-sidebar",
         title: "Sidebar Navigation",
         body: [
           "The sidebar slides in from the right when you click the menu icon. It contains links to the Dashboard (map), Analytics (charts), Help, and About pages.",
+          "The sidebar also displays the current NOAA space weather scale levels and a link to the Tutorial.",
           "The sidebar also displays the current NOAA space weather scale levels and a link to the Tutorial.",
         ],
         subsections: [
@@ -301,22 +304,22 @@ const topicContent = {
         id: "layout-map",
         title: "Map Area",
         body: [
-          "On the Dashboard page, the full-screen map occupies the entire viewport. A search bar sits in the top-left corner, and control buttons are in the top-right. A date/time viewer shows the current timestamp at the top center.",
+          "On the Dashboard page, the full screen map occupies the entire viewport. A search bar sits in the top-left corner, and control buttons are in the top-right. A date/time viewer shows the current timestamp at the top center.",
           "Panels for selected flights or airports appear as draggable cards overlaid on the map. A playback bar and legends appear at the bottom when enabled.",
         ],
         subsections: [
           {
             id: "layout-map-controls",
             title: "Map Interaction",
-            body: "Pan by clicking and dragging. Zoom with the scroll wheel or pinch gesture. Click on a flight or airport icon to select it and see its popup. Double-click a flight to open its detail panel.",
+            body: "Pan by clicking and dragging. Zoom with the scroll wheel or pinch gesture. Click on a flight or airport icon to select it and see its popup. Double click a flight to open its detail panel.",
           },
         ],
       },
     ],
   },
 
-  "Switching between dashboards": {
-    title: "Switching Between Dashboards",
+  "Switching between Dashboards": {
+    title: "Switching between Dashboards",
     intro:
       "Use the sidebar to move between the Plane & Events Tracker and the Analytics.",
     sections: [
@@ -338,7 +341,7 @@ const topicContent = {
     ],
   },
 
-  "Choosing time range and timezone": {
+  "Choosing Time Range and Timezone": {
     title: "Choosing Time Range and Timezone",
     intro:
       "The Analytics lets you control the time window and timezone used for all charts.",
@@ -347,7 +350,7 @@ const topicContent = {
         id: "time-range",
         title: "Time Range Selector",
         body: [
-          "In the tab bar at the top of the Analytics page, you will find a time-range dropdown on the right side. Preset options include 6 hours, 1 day, 3 days, and 7 days. The default is 3 days.",
+          "In the tab bar at the top of the Analytics page, you will find a time range dropdown on the right side. Preset options include 6 hours, 1 day, 3 days, and 7 days. The default is 3 days.",
           "When you change the time range, all visible charts re-fetch data for the new window. The charts also poll for updates every 60 seconds, so new data points appear automatically.",
         ],
         subsections: [
@@ -375,7 +378,7 @@ const topicContent = {
     ],
   },
 
-  "Using search, filters, and toggles": {
+  "Using Search, Filters, and Toggles": {
     title: "Using Search, Filters, and Toggles",
     intro:
       "The map provides a search bar, layer toggles, and a settings panel to help you find and focus on the data you need.",
@@ -420,14 +423,14 @@ const topicContent = {
           {
             id: "layer-toggles-legend",
             title: "Legend Toggles",
-            body: "The 'L' speed-dial button lets you toggle the icon legend and altitude color legend independently. These legends appear at the bottom of the map.",
+            body: "The 'L' speed dial button lets you toggle the icon legend and altitude color legend independently. These legends appear at the bottom of the map.",
           },
         ],
       },
     ],
   },
 
-  "Reading legends, labels, and values": {
+  "Reading Legends, Labels, and Values": {
     title: "Reading Legends, Labels, and Values",
     intro:
       "Legends and labels throughout the interface help you interpret the data shown on the map and charts.",
@@ -436,7 +439,7 @@ const topicContent = {
         id: "map-legends",
         title: "Map Legends",
         body: [
-          "The altitude color legend shows a gradient bar mapping flight altitude to color. Low-altitude flights appear in cool colors (blue/green) and high-altitude flights in warm colors (orange/red).",
+          "The altitude color legend shows a gradient bar mapping flight altitude to color. Low altitude flights appear in cool colors (blue/green) and high altitude flights in warm colors (orange/red).",
           "The icon legend (stats panel) shows the count of currently visible flights and airports, along with icon explanations.",
         ],
         subsections: [
@@ -497,7 +500,7 @@ const topicContent = {
           {
             id: "dashboard-controls-settings",
             title: "Settings Panel",
-            body: "The settings panel is a draggable, resizable window with tabs for filtering flights, airports, DRAP, aurora, geoelectric, and power-grid data by various attributes like altitude range, airport type, absorption intensity, voltage level, and more.",
+            body: "The settings panel is a draggable, resizable window with tabs for filtering flights, airports, DRAP, aurora, geoelectric, and power grid data by various attributes like altitude range, airport type, absorption intensity, voltage level, and more.",
           },
         ],
       },
@@ -538,6 +541,8 @@ const topicContent = {
         body: [
           "NOAA publishes three space weather scales that indicate event severity: G (Geomagnetic Storms), R (Radio Blackouts), and S (Solar Radiation Storms). Each scale runs from 1 (minor) to 5 (extreme), with 0 indicating quiet conditions.",
           "The sidebar displays the current level for each scale. These values update automatically and give you an at-a-glance status of current space weather conditions.",
+          "NOAA publishes three space weather scales that indicate event severity: G (Geomagnetic Storms), R (Radio Blackouts), and S (Solar Radiation Storms). Each scale runs from 1 (minor) to 5 (extreme), with 0 indicating quiet conditions.",
+          "The sidebar displays the current level for each scale. These values update automatically and give you an at-a-glance status of current space weather conditions.",
         ],
         subsections: [
           {
@@ -551,7 +556,7 @@ const topicContent = {
   },
 
   // ── Plane & Events Tracker ────────────────────────────────────────────
-  "What the tracker shows": {
+  "What the Tracker Shows": {
     title: "What the Tracker Shows",
     intro:
       "The Plane & Events Tracker is a real time interactive map that combines live aviation data with space weather event overlays to show how solar activity affects the airspace and power infrastructure.",
@@ -574,7 +579,7 @@ const topicContent = {
     ],
   },
 
-  "Flights on the map": {
+  "Flights on the Map": {
     title: "Flights on the Map",
     intro:
       "Aircraft are displayed as icons on the map, rotated to match their heading and colored based on altitude.",
@@ -612,7 +617,7 @@ const topicContent = {
     ],
   },
 
-  "Airports on the map": {
+  "Airports on the Map": {
     title: "Airports on the Map",
     intro:
       "Airports are displayed as icons on the map and can be filtered by type and elevation.",
@@ -649,7 +654,7 @@ const topicContent = {
     ],
   },
 
-  "Space weather event overlays": {
+  "Space Weather Event Overlays": {
     title: "Space Weather Event Overlays",
     intro:
       "The map supports four space weather overlay layers: DRAP absorption, aurora probability, geoelectric field intensity, and power-grid transmission lines.",
@@ -695,7 +700,7 @@ const topicContent = {
           {
             id: "overlay-geoelectric-risk",
             title: "Power Grid Risk",
-            body: "When the geoelectric field intensity is high, the risk of GIC damage to transformers and other grid equipment increases. Overlay this layer with the power-grid transmission lines layer to assess which lines are most exposed.",
+            body: "When the geoelectric field intensity is high, the risk of GIC damage to transformers and other grid equipment increases. Overlay this layer with the power grid transmission lines layer to assess which lines are most exposed.",
           },
         ],
       },
@@ -717,7 +722,7 @@ const topicContent = {
     ],
   },
 
-  "Searching for flights or airports": {
+  "Searching for Flights or Airports": {
     title: "Searching for Flights or Airports",
     intro:
       "The search bar in the top-left corner of the map lets you quickly find and zoom to any flight or airport.",
@@ -740,7 +745,7 @@ const topicContent = {
     ],
   },
 
-  "Filtering visible data": {
+  "Filtering Visible Data": {
     title: "Filtering Visible Data",
     intro:
       "The settings panel offers granular filtering controls for every data layer on the map.",
@@ -770,7 +775,7 @@ const topicContent = {
         title: "Overlay Filters",
         body: [
           "DRAP regions can be filtered by absorption intensity (dB). Aurora regions can be filtered by probability percentage. Geoelectric field regions can be filtered by field magnitude on a logarithmic scale.",
-          "Power-grid transmission lines can be filtered by voltage range, service status, voltage source (reported vs. inferred), current type (AC/DC), and construction type (overhead/underground).",
+          "power grid transmission lines can be filtered by voltage range, service status, voltage source (reported vs. inferred), current type (AC/DC), and construction type (overhead/underground).",
         ],
         subsections: [
           {
@@ -783,7 +788,7 @@ const topicContent = {
     ],
   },
 
-  "Interpreting marker colors and symbols": {
+  "Interpreting Marker Colors and Symbols": {
     title: "Interpreting Marker Colors and Symbols",
     intro:
       "Colors and symbols on the map encode important information about each data layer.",
@@ -794,8 +799,7 @@ const topicContent = {
         image: {
           src: "/help/flight-color-legend.png",
           alt: "A preview of the flight altitude color gradient",
-          caption:
-            "",
+          caption: "",
           align: "left",
           maxWidth: 620,
         },
@@ -828,14 +832,14 @@ const topicContent = {
           {
             id: "markers-overlays-hover",
             title: "Hover Details",
-            body: "Hovering over power-grid lines shows a popup with detailed information. Other overlays display their values through the color intensity -- use the corresponding legends to interpret the scale.",
+            body: "Hovering over power grid lines shows a popup with detailed information. Other overlays display their values through the color intensity -- use the corresponding legends to interpret the scale.",
           },
         ],
       },
     ],
   },
 
-  "Using layer controls": {
+  "Using Layer Controls": {
     title: "Using Layer Controls",
     intro:
       "Layer controls let you show or hide individual data layers and switch between normal and isolate mode.",
@@ -844,13 +848,14 @@ const topicContent = {
         id: "layers-visibility",
         title: "Visibility Speed Dial",
         body: [
-          "The eye icon in the top-right opens a speed-dial menu with six layer toggles: Airplanes, Airports, DRAP, Aurora, GeoElectric, and Power Grids. Each has a green (visible) or red (hidden) border indicator.",
+          "The eye icon in the top-right opens a speed-dial menu with six layer toggles: Airplanes, Airports, DRAP, Aurora, GeoElectric, and Electric Transmission Lines. Each has a green (visible) or red (hidden) border indicator.",
           "Clicking the main eye icon toggles isolate mode. In isolate mode, only explicitly selected flights and airports are visible, regardless of the individual layer toggles.",
         ],
         subsections: [
           {
             id: "layers-visibility-isolate",
             title: "Isolate Mode",
+            body: "Isolate mode is useful when you want to focus on specific flights you have pinned. All other flights and airports are hidden, and only space weather overlays remain visible in the background.",
             body: "Isolate mode is useful when you want to focus on specific flights you have pinned. All other flights and airports are hidden, and only space weather overlays remain visible in the background.",
           },
         ],
@@ -892,7 +897,7 @@ const topicContent = {
   },
 
   // ── Analytics ───────────────────────────────────────────────
-  "Dashboard purpose": {
+  "Dashboard Purpose": {
     title: "Dashboard Purpose",
     intro:
       "The Analytics provides time-series charts for key space weather indices, enabling historical analysis and real time monitoring of solar activity.",
@@ -915,7 +920,7 @@ const topicContent = {
     ],
   },
 
-  "Available chart categories": {
+  "Available Chart Categories": {
     title: "Available Chart Categories",
     intro:
       "The Analytics offers three chart categories, viewable individually or all at once.",
@@ -938,7 +943,7 @@ const topicContent = {
     ],
   },
 
-  "KP Index": {
+  "KP Index Chart": {
     title: "Kp Index Chart",
     intro:
       "The Kp index chart displays the planetary K-index, a measure of geomagnetic disturbance on a scale from 0 to 9.",
@@ -969,14 +974,14 @@ const topicContent = {
           {
             id: "kp-reading-impacts",
             title: "Operational Impacts",
-            body: "Kp >= 5 (G1+) can affect power grids and high-latitude navigation. Kp >= 7 (G3+) may cause widespread voltage regulation problems and HF radio propagation issues. Kp = 9 (G5) indicates an extreme geomagnetic storm with possible grid collapse risk.",
+            body: "Kp >= 5 (G1+) can affect electric transmission lines and high latitude navigation. Kp >= 7 (G3+) may cause widespread voltage regulation problems and HF radio propagation issues. Kp = 9 (G5) indicates an extreme geomagnetic storm with possible grid collapse risk.",
           },
         ],
       },
     ],
   },
 
-  "X-Ray Flux": {
+  "X-Ray Flux Chart": {
     title: "X-Ray Flux Chart",
     intro:
       "The X-ray flux chart shows solar X-ray emissions measured by the GOES satellite, indicating solar flare activity.",
@@ -1000,7 +1005,7 @@ const topicContent = {
         id: "xray-reading",
         title: "Reading the Chart",
         body: [
-          "The chart shows two lines: the short-wavelength (0.05-0.4 nm) and long-wavelength (0.1-0.8 nm) X-ray flux channels. Spikes in these lines indicate solar flare events.",
+          "The chart shows two lines: the short wavelength (0.05-0.4 nm) and long wavelength (0.1-0.8 nm) X-ray flux channels. Spikes in these lines indicate solar flare events.",
           "Hover over the chart to see the exact flux value and timestamp. The flare class (A, B, C, M, or X) is typically indicated on the tooltip or label.",
         ],
         subsections: [
@@ -1014,7 +1019,7 @@ const topicContent = {
     ],
   },
 
-  "Proton Flux": {
+  "Proton Flux Chart": {
     title: "Proton Flux Chart",
     intro:
       "The proton flux chart shows energetic proton levels measured by the GOES satellite, indicating solar radiation storm intensity.",
@@ -1045,14 +1050,14 @@ const topicContent = {
           {
             id: "proton-reading-impacts",
             title: "Operational Impacts",
-            body: "S1+ events pose radiation risks for high-altitude and polar flights. S3+ events can cause single-event upsets in satellite electronics and elevated radiation doses for passengers on transpolar routes. S5 events are rare but can be dangerous for astronauts and may damage satellite hardware.",
+            body: "S1+ events pose radiation risks for high altitude and polar flights. S3+ events can cause single event upsets in satellite electronics and elevated radiation doses for passengers on transpolar routes. S5 events are rare but can be dangerous for astronauts and may damage satellite hardware.",
           },
         ],
       },
     ],
   },
 
-  "Time-window controls": {
+  "Time-Window Controls": {
     title: "Time-Window Controls",
     intro:
       "The time-window controls on the Analytics let you select the period of data displayed on all charts.",
@@ -1075,7 +1080,7 @@ const topicContent = {
     ],
   },
 
-  "Comparing multiple plots": {
+  "Comparing Multiple Plots": {
     title: "Comparing Multiple Plots",
     intro:
       "The 'All Plots' tab displays Kp Index, X-ray Flux, and Proton Flux charts stacked vertically for easy comparison.",
@@ -1098,7 +1103,7 @@ const topicContent = {
     ],
   },
 
-  "Interpreting peaks, spikes, and trends": {
+  "Interpreting Peaks, Spikes, and Trends": {
     title: "Interpreting Peaks, Spikes, and Trends",
     intro:
       "Understanding chart patterns helps you identify space weather events and their potential impacts.",
@@ -1107,14 +1112,14 @@ const topicContent = {
         id: "interpreting-xray",
         title: "X-Ray Flux Patterns",
         body: [
-          "A sudden sharp spike in X-ray flux indicates a solar flare. The spike's peak determines the flare class (C, M, or X). Impulsive flares rise and fall quickly (minutes), while long-duration events can last hours and are more likely to be associated with CMEs.",
+          "A sudden sharp spike in X-ray flux indicates a solar flare. The spike's peak determines the flare class (C, M, or X). Impulsive flares rise and fall quickly (minutes), while long duration events can last hours and are more likely to be associated with CMEs.",
           "Multiple successive spikes indicate active regions on the Sun producing a series of flares.",
         ],
         subsections: [
           {
             id: "interpreting-xray-tips",
             title: "What to Watch For",
-            body: "Pay attention to M- and X-class flares (entering R1+ bands). Long-duration M-class flares are particularly important as they often drive CMEs that cause geomagnetic storms days later.",
+            body: "Pay attention to M- and X-class flares (entering R1+ bands). Long duration M-class flares are particularly important as they often drive CMEs that cause geomagnetic storms days later.",
           },
         ],
       },
@@ -1123,13 +1128,13 @@ const topicContent = {
         title: "Proton Flux Patterns",
         body: [
           "A gradual rise in proton flux following a solar flare indicates a solar energetic particle (SEP) event. The rise time is typically 30 minutes to several hours. The flux may remain elevated for days.",
-          "A sharp initial rise suggests a well-connected flare site (magnetically connected to Earth), while a slower rise may indicate particles arriving by a CME shock.",
+          "A sharp initial rise suggests a well-connected flare site (magnetically connected to Earth), while a slower rise may indicate particles arriving via a CME shock.",
         ],
         subsections: [
           {
             id: "interpreting-proton-tips",
             title: "What to Watch For",
-            body: "Watch for the >=10 MeV channel crossing the 10 pfu threshold (S1 level). Also monitor the higher-energy channels (>=50 MeV, >=100 MeV) as these are more biologically hazardous.",
+            body: "Watch for the >=10 MeV channel crossing the 10 pfu threshold (S1 level). Also monitor the higher energy channels (>=50 MeV, >=100 MeV) as these are more biologically hazardous.",
           },
         ],
       },
@@ -1137,8 +1142,8 @@ const topicContent = {
         id: "interpreting-kp",
         title: "Kp Index Patterns",
         body: [
-          "A rising Kp index indicates increasing geomagnetic activity. Sudden jumps often correspond to the arrival of a CME or a high-speed solar wind stream. Kp tends to stay elevated for 12-48 hours during a geomagnetic storm.",
-          "Recurrent patterns at ~27-day intervals suggest high-speed streams from persistent coronal holes.",
+          "A rising Kp index indicates increasing geomagnetic activity. Sudden jumps often correspond to the arrival of a CME or a high speed solar wind stream. Kp tends to stay elevated for 12-48 hours during a geomagnetic storm.",
+          "Recurrent patterns at ~27-day intervals suggest high speed streams from persistent coronal holes.",
         ],
         subsections: [
           {
@@ -1151,7 +1156,7 @@ const topicContent = {
     ],
   },
 
-  "Exporting or downloading chart views": {
+  "Exporting or Downloading Chart Views": {
     title: "Exporting or Downloading Chart Views",
     intro:
       "The Analytics provides multiple options for exporting chart data and images.",
@@ -1190,7 +1195,7 @@ const topicContent = {
   },
 
   // ── Space Weather Terms ───────────────────────────────────────────────
-  "Solar flares": {
+  "Solar Flares": {
     title: "Solar Flares",
     intro:
       "A solar flare is a sudden, intense burst of electromagnetic radiation from the Sun's atmosphere, typically associated with active regions and sunspots.",
@@ -1199,14 +1204,14 @@ const topicContent = {
         id: "flare-basics",
         title: "What Is a Solar Flare",
         body: [
-          "Solar flares occur when built-up magnetic energy in the solar atmosphere is suddenly released. They emit radiation across the entire electromagnetic spectrum, from radio waves to gamma rays, with the most significant impacts coming from X-ray and extreme ultraviolet (EUV) emissions.",
+          "Solar flares occur when built up magnetic energy in the solar atmosphere is suddenly released. They emit radiation across the entire electromagnetic spectrum, from radio waves to gamma rays, with the most significant impacts coming from X-ray and extreme ultraviolet (EUV) emissions.",
           "Flares are classified by their peak X-ray flux measured by GOES satellites: A-class (weakest), B-class, C-class, M-class, and X-class (strongest). Each class is ten times more powerful than the previous one.",
         ],
         subsections: [
           {
             id: "flare-basics-duration",
             title: "Duration",
-            body: "Flares typically last from minutes to hours. The impulsive phase (rapid rise) may last 5-15 minutes, followed by a gradual decay phase. Long-duration flares (lasting over an hour) are more likely to produce coronal mass ejections.",
+            body: "Flares typically last from minutes to hours. The impulsive phase (rapid rise) may last 5-15 minutes, followed by a gradual decay phase. Long duration flares (lasting over an hour) are more likely to produce coronal mass ejections.",
           },
         ],
       },
@@ -1228,16 +1233,16 @@ const topicContent = {
     ],
   },
 
-  "Coronal mass ejections": {
+  "Coronal Mass Ejections": {
     title: "Coronal Mass Ejections (CMEs)",
     intro:
       "A coronal mass ejection (CME) is a large expulsion of magnetized plasma from the Sun's corona into the solar wind.",
     sections: [
       {
         id: "cme-basics",
-        title: "What Is a CME",
+        title: "What Exactly are Coronal Mass Ejections?",
         body: [
-          "CMEs are massive clouds of solar plasma threaded with magnetic field lines that are ejected from the Sun. They can contain billions of tons of matter and travel at speeds ranging from 250 to over 3,000 km/s. When directed toward Earth, they typically arrive in 1-3 days.",
+          "Coronal mass ejections (CMEs) are massive clouds of solar plasma threaded with magnetic field lines that are ejected from the Sun. They can contain billions of tons of matter and travel at speeds ranging from 250 to over 3,000 km/s. When directed toward Earth, they typically arrive in 1-3 days.",
           "CMEs are often associated with solar flares and filament eruptions, but they are distinct phenomena. Not all flares produce CMEs, and not all CMEs are associated with flares.",
         ],
         subsections: [
@@ -1253,7 +1258,7 @@ const topicContent = {
         title: "Impacts on Earth",
         body: [
           "When a CME's magnetic field has a strong southward component, it can reconnect with Earth's magnetic field and trigger a geomagnetic storm. This is the primary cause of G-level (Kp index) elevations seen on this platform.",
-          "CME impacts include: geomagnetic storms (affecting power grids and navigation), enhanced aurora activity, radiation belt enhancements (affecting satellites), and ionospheric disturbances (affecting GPS and communications).",
+          "CME impacts include: geomagnetic storms (affecting electric transmission lines and navigation), enhanced aurora activity, radiation belt enhancements (affecting satellites), and ionospheric disturbances (affecting GPS and communications).",
         ],
         subsections: [
           {
@@ -1266,7 +1271,7 @@ const topicContent = {
     ],
   },
 
-  "X-Ray Flux (Glossary)": {
+  "X-Ray Flux": {
     title: "X-Ray Flux",
     intro:
       "X-ray flux is the intensity of X-ray radiation from the Sun, measured in watts per square meter by the GOES satellite series.",
@@ -1296,30 +1301,30 @@ const topicContent = {
           {
             id: "xray-noaa-scale-impacts",
             title: "R-Scale Impacts",
-            body: "R1: minor HF radio degradation. R2: limited HF blackout. R3: wide-area HF blackout for ~1 hour. R4: HF blackout for 1-2 hours, GPS degradation. R5: complete HF blackout for several hours on the sunlit side.",
+            body: "R1: minor HF radio degradation. R2: limited HF blackout. R3: wide area HF blackout for ~1 hour. R4: HF blackout for 1-2 hours, GPS degradation. R5: complete HF blackout for several hours on the sunlit side.",
           },
         ],
       },
     ],
   },
 
-  "Proton Flux (Glossary)": {
+  "Proton Flux": {
     title: "Proton Flux",
     intro:
-      "Proton flux measures the intensity of high-energy protons from the Sun reaching Earth, measured in particle flux units (pfu) by the GOES satellites.",
+      "Proton flux measures the intensity of high energy protons from the Sun reaching Earth, measured in particle flux units (pfu) by the GOES satellites.",
     sections: [
       {
         id: "proton-definition",
         title: "Definition",
         body: [
-          "Solar energetic protons are accelerated during solar flares and CME-driven shocks. The GOES satellites measure proton flux at several energy thresholds: >=10 MeV, >=50 MeV, and >=100 MeV. Higher-energy protons are less common but more penetrating and hazardous.",
+          "Solar energetic protons are accelerated during solar flares and CME driven shocks. The GOES satellites measure proton flux at several energy thresholds: >=10 MeV, >=50 MeV, and >=100 MeV. Higher energy protons are less common but more penetrating and hazardous.",
           "A solar proton event (SPE) is declared when the >=10 MeV proton flux exceeds 10 particle flux units (pfu). SPEs can last from hours to several days.",
         ],
         subsections: [
           {
             id: "proton-definition-onset",
             title: "Event Onset",
-            body: "Protons from flare-accelerated events can arrive at Earth within 15-60 minutes. CME shock-accelerated events produce a more gradual onset, with proton flux building over hours as the shock approaches Earth.",
+            body: "Protons from flare accelerated events can arrive at Earth within 15-60 minutes. CME shock accelerated events produce a more gradual onset, with proton flux building over hours as the shock approaches Earth.",
           },
         ],
       },
@@ -1333,14 +1338,14 @@ const topicContent = {
           {
             id: "proton-noaa-scale-impacts",
             title: "S-Scale Impacts",
-            body: "S1: minor impacts on HF radio in polar regions. S2: infrequent satellite single-event upsets. S3: elevated radiation risk for high-altitude flights, satellite anomalies. S4: significant radiation hazard. S5: unavoidable radiation hazard for astronauts, multiple satellite problems.",
+            body: "S1: minor impacts on HF radio in polar regions. S2: infrequent satellite single event upsets. S3: elevated radiation risk for high altitude flights, satellite anomalies. S4: significant radiation hazard. S5: unavoidable radiation hazard for astronauts, multiple satellite problems.",
           },
         ],
       },
     ],
   },
 
-  "Kp Index (Glossary)": {
+  "Kp Index": {
     title: "Kp Index",
     intro:
       "The Kp index is a global measure of geomagnetic disturbance, ranging from 0 (quiet) to 9 (extreme storm).",
@@ -1349,7 +1354,7 @@ const topicContent = {
         id: "kp-definition",
         title: "Definition",
         body: [
-          "The planetary K-index (Kp) is derived from 3-hour measurements at 13 ground-based magnetometer stations distributed around the world. Each station measures local magnetic field variations, which are standardized and averaged to produce the global Kp value.",
+          "The planetary K-index (Kp) is derived from 3-hour measurements at 13 ground based magnetometer stations distributed around the world. Each station measures local magnetic field variations, which are standardized and averaged to produce the global Kp value.",
           "Kp is quasi-logarithmic: each unit represents a roughly doubling of geomagnetic disturbance amplitude. The scale runs from 0 to 9 in thirds (0o, 0+, 1-, 1o, 1+, ... 9-, 9o).",
         ],
         subsections: [
@@ -1377,17 +1382,17 @@ const topicContent = {
     ],
   },
 
-  "Geomagnetic storms": {
+  "Geomagnetic Storms": {
     title: "Geomagnetic Storms",
     intro:
-      "A geomagnetic storm is a temporary disturbance of Earth's magnetic field caused by a CME or high-speed solar wind stream interacting with the magnetosphere.",
+      "A geomagnetic storm is a temporary disturbance of Earth's magnetic field caused by a CME or high speed solar wind stream interacting with the magnetosphere.",
     sections: [
       {
         id: "geomag-basics",
         title: "What Causes Geomagnetic Storms",
         body: [
           "Geomagnetic storms occur when the interplanetary magnetic field (IMF) carried by the solar wind has a sustained southward component. This allows magnetic reconnection at Earth's dayside magnetopause, injecting energy and particles into the magnetosphere.",
-          "The main drivers are: coronal mass ejections (CMEs), which produce the most intense storms, and co-rotating interaction regions (CIRs) from high-speed solar wind streams emanating from coronal holes.",
+          "The main drivers are: coronal mass ejections (CMEs), which produce the most intense storms, and co-rotating interaction regions (CIRs) from high speed solar wind streams emanating from coronal holes.",
         ],
         subsections: [
           {
@@ -1415,7 +1420,7 @@ const topicContent = {
     ],
   },
 
-  "Aurora activity": {
+  "Aurora Activity": {
     title: "Aurora Activity",
     intro:
       "Aurora (northern lights / southern lights) are luminous displays caused by charged particles from the magnetosphere colliding with atmospheric gases.",
@@ -1431,7 +1436,7 @@ const topicContent = {
           {
             id: "aurora-basics-oval",
             title: "The Aurora Oval",
-            body: "Aurora typically occurs in an oval-shaped band around the geomagnetic poles. During quiet conditions, the oval sits at ~65-70\u00B0 geomagnetic latitude. During strong storms, it expands equatorward and aurora can be visible at much lower latitudes.",
+            body: "Aurora typically occurs in an oval shaped band around the geomagnetic poles. During quiet conditions, the oval sits at ~65-70\u00B0 geomagnetic latitude. During strong storms, it expands equatorward and aurora can be visible at much lower latitudes.",
           },
         ],
       },
@@ -1453,7 +1458,7 @@ const topicContent = {
     ],
   },
 
-  "DRAP absorption": {
+  "DRAP Absorption": {
     title: "DRAP Absorption",
     intro:
       "DRAP (D-Region Absorption Prediction) estimates the absorption of high-frequency (HF) radio signals caused by enhanced ionization in the lowest layer of the ionosphere.",
@@ -1491,7 +1496,7 @@ const topicContent = {
     ],
   },
 
-  "Geoelectric field activity": {
+  "Geoelectric Field Activity": {
     title: "Geoelectric Field Activity",
     intro:
       "The geoelectric field is the electric field induced at Earth's surface by geomagnetic disturbances, measured in millivolts per kilometer (mV/km).",
@@ -1507,7 +1512,7 @@ const topicContent = {
           {
             id: "geoelectric-basics-gic",
             title: "Geomagnetically Induced Currents (GIC)",
-            body: "Geoelectric fields drive currents through grounded conductors like power lines, pipelines, and railway tracks. In power grids, these geomagnetically induced currents (GIC) flow through transformer windings, potentially causing half-cycle saturation, overheating, and reactive power surges.",
+            body: "Geoelectric fields drive currents through grounded conductors like power lines, pipelines, and railway tracks. In electric transmission lines, these geomagnetically induced currents (GIC) flow through transformer windings, potentially causing half cycle saturation, overheating, and reactive power surges.",
           },
         ],
       },
@@ -1516,7 +1521,7 @@ const topicContent = {
         title: "Geoelectric Field on the Map",
         body: [
           "The geoelectric field overlay displays field magnitude on a logarithmic color scale from blue (weak) to red (intense). The data comes from NOAA's geoelectric field model.",
-          "Overlay this layer with the power-grid transmission lines to visualize which high-voltage lines are in regions of elevated geoelectric field. This combination helps assess GIC risk for specific grid infrastructure.",
+          "Overlay this layer with the power grid transmission lines to visualize which high voltage lines are in regions of elevated geoelectric field. This combination helps assess GIC risk for specific grid infrastructure.",
         ],
         subsections: [
           {
@@ -1566,8 +1571,7 @@ export const getHelpGroupForTopic = (topic) =>
 
 export const getHelpGroupSlug = (groupLabel) => slugify(groupLabel);
 
-export const getHelpTopicSlug = (topic) =>
-  slugify(topic);
+export const getHelpTopicSlug = (topic) => slugify(topic);
 
 export const getHelpTopicPath = (topic) => {
   const groupLabel = getHelpGroupForTopic(topic);

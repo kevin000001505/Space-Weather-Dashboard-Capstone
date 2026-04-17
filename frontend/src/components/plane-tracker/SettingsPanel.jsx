@@ -333,7 +333,7 @@ const SettingsPanel = () => {
                 sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
               />
               <Tab
-                label="Power Grids"
+                label="Electric Transmission Lines"
                 sx={{ fontSize: "0.92rem", minHeight: "32px", py: 0 }}
               />
               <Tab

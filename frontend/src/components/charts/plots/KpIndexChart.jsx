@@ -168,7 +168,7 @@ const KpIndexChart = ({ chartRef }) => {
       }}
     >
       <CardHeader
-        title="PLANETARY K-INDEX"
+        title="PLANETARY K-INDEX (Kp Index)"
         disableTypography
         sx={{
           color: darkMode ? "#e0e0e0" : "#333",

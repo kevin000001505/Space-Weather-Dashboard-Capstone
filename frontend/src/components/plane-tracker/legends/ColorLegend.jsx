@@ -113,7 +113,7 @@ const LegendTicks = ({ stops, formatter }) => {
 
 const LegendSection = ({ section, index }) => {
   const gradient = buildGradient(section.stops);
-  const width = 160;
+  const width = 180;
   const height = 210;
   return (
     <div
@@ -208,7 +208,7 @@ const ColorLegend = React.forwardRef(function ColorLegend(props, ref) {
       },
       {
         key: "electricTransmissionLines",
-        title: "Power Grids",
+        title: "Electric Transmission Lines",
         subtitle: "Voltage Level (kV)",
         stops: electricTransmissionLines_STOPS,
         available: false,

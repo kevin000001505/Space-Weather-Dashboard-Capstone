@@ -173,7 +173,7 @@ const MainContent = ({ article }) => {
             return (
               <Stack key={`${prefix}-p-${index}`} spacing={0.5}>
                 {paragraph.text && (
-                  <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: "72ch" }}>
+                  <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: "90ch" }}>
                     {paragraph.text}
                   </Typography>
                 )}
@@ -182,7 +182,7 @@ const MainContent = ({ article }) => {
                     <Box
                       component="li"
                       key={bi}
-                      sx={{ color: "text.secondary", typography: "body1", maxWidth: "72ch" }}
+                      sx={{ color: "text.secondary", typography: "body1", maxWidth: "90ch" }}
                     >
                       {bullet}
                     </Box>
@@ -195,7 +195,7 @@ const MainContent = ({ article }) => {
             <Typography
               key={`${prefix}-p-${index}`}
               variant="body1"
-              sx={{ color: "text.secondary", maxWidth: "72ch" }}
+              sx={{ color: "text.secondary", maxWidth: "90ch" }}
             >
               {paragraph}
             </Typography>
@@ -290,7 +290,7 @@ const MainContent = ({ article }) => {
         </Typography>
         <Typography
           variant="body1"
-          sx={{ color: "text.secondary", maxWidth: "72ch", mb: 4.5 }}
+          sx={{ color: "text.secondary", maxWidth: "90ch", mb: 4.5 }}
         >
           {article.intro}
         </Typography>
@@ -316,7 +316,7 @@ const MainContent = ({ article }) => {
                     pl: 2.75,
                     mt: 2.25,
                     color: "text.secondary",
-                    "& li": { mb: 1.15, maxWidth: "68ch" },
+                    "& li": { mb: 1.15, maxWidth: "90ch" },
                   }}
                 >
                   {section.list.map((item) => (

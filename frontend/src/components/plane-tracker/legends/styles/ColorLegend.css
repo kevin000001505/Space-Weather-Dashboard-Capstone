@@ -3,7 +3,7 @@
   position: absolute;
   right: 20px;
   bottom: 45px;
-  width: 160px;
+  width: 180px;
   height: 210px;
   z-index: 1;
   pointer-events: auto;
@@ -13,7 +13,7 @@
 
 .colorLegend-section {
   position: absolute;
-  width: 160px;
+  width: 180px;
   min-height: 210px;
   left: 0;
   bottom: 0;
@@ -48,13 +48,13 @@
 }
 
 .colorLegend-root:hover .colorLegend-section.stack-1 {
-  transform: translate(calc(-160px - 8px), 0px);
+  transform: translate(calc(-180px - 8px), 0px);
 }
 .colorLegend-root:hover .colorLegend-section.stack-2 {
   transform: translate(0px, calc(-210px - 8px));
 }
 .colorLegend-root:hover .colorLegend-section.stack-3 {
-  transform: translate(calc(-160px - 8px), calc(-210px - 8px));
+  transform: translate(calc(-180px - 8px), calc(-210px - 8px));
 }
 .colorLegend-root:hover .colorLegend-section.stack-4 {
   transform: translate(0px, calc(-420px - 16px));
@@ -97,6 +97,7 @@
 
 .colorLegend-title {
   font-size: 1.125rem;
+  padding-left: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.1;
@@ -115,6 +116,7 @@
   display: grid;
   grid-template-columns: 1fr 18px;
   align-items: stretch;
+  padding-top: 6px;
   gap: 12px;
   min-height: 124px;
 }

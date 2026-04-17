@@ -90,7 +90,7 @@ const ButtonsControl = React.forwardRef(function ButtonsControl(
     },
     {
       icon: <SsidChartIcon sx={{ fontSize: 28 }} />,
-      tooltip: `${showElectricTransmissionLines ? "Hide" : "Show"} Power Grids`,
+      tooltip: `${showElectricTransmissionLines ? "Hide" : "Show"} Electric Transmission Lines`,
       onClick: () =>
         dispatch(
           setShowElectricTransmissionLines(!showElectricTransmissionLines),

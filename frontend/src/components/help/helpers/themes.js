@@ -40,14 +40,14 @@ export const paletteLightMode = {
 
 export const typographyTheme = {
   fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-  h1: { fontSize: "3rem", fontWeight: 700, letterSpacing: "+0.01em" },
+  h1: { fontSize: "2rem", fontWeight: 700, letterSpacing: "+0.01em" },
   h2: {
-    fontSize: "2.5rem",
+    fontSize: "1.75rem",
     fontWeight: 700,
     letterSpacing: "-0.00em",
   },
-  h3: { fontSize: "2rem", fontWeight: 700, letterSpacing: "-0.01em" },
-  body1: { fontSize: "1.75rem", lineHeight: 1.8 },
-  body2: { fontSize: "1.75rem", lineHeight: 1.7 },
+  h3: { fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.01em" },
+  body1: { fontSize: "1.25rem", lineHeight: 1.8 },
+  body2: { fontSize: "1.5rem", lineHeight: 1.7 },
   overline: { fontSize: "1.25rem", lineHeight: 1.7 },
 };
