@@ -181,7 +181,7 @@ export function MissionSection() {
             }}
           >
             Current space weather products show raw measurements instead of
-            aviation- and infrastructure ready risk insights. We convert real
+            aviation and infrastructure ready risk insights. We convert real
             time space weather data into operational risk indicators and
             operational alerts.
           </Typography>

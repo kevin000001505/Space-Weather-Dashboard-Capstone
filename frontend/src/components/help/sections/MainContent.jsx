@@ -119,15 +119,39 @@ const MainContent = ({ article }) => {
 
     return (
       <Stack spacing={2}>
-        {paragraphs.map((paragraph, index) => (
-          <Typography
-            key={`${prefix}-p-${index}`}
-            variant="body1"
-            sx={{ color: "text.secondary", maxWidth: "72ch" }}
-          >
-            {paragraph}
-          </Typography>
-        ))}
+        {paragraphs.map((paragraph, index) => {
+          if (paragraph && typeof paragraph === "object" && paragraph.bullets) {
+            return (
+              <Stack key={`${prefix}-p-${index}`} spacing={0.5}>
+                {paragraph.text && (
+                  <Typography variant="body1" sx={{ color: "text.secondary", maxWidth: "72ch" }}>
+                    {paragraph.text}
+                  </Typography>
+                )}
+                <Box component="ul" sx={{ m: 0, pl: 3 }}>
+                  {paragraph.bullets.map((bullet, bi) => (
+                    <Box
+                      component="li"
+                      key={bi}
+                      sx={{ color: "text.secondary", typography: "body1", maxWidth: "72ch" }}
+                    >
+                      {bullet}
+                    </Box>
+                  ))}
+                </Box>
+              </Stack>
+            );
+          }
+          return (
+            <Typography
+              key={`${prefix}-p-${index}`}
+              variant="body1"
+              sx={{ color: "text.secondary", maxWidth: "72ch" }}
+            >
+              {paragraph}
+            </Typography>
+          );
+        })}
       </Stack>
     );
   };

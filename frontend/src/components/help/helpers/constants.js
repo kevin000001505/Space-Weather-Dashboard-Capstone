@@ -44,7 +44,7 @@ export const helpNav = [
     ],
   },
   {
-    label: "Analytics Dashboard",
+    label: "Analytics",
     items: [
       "Dashboard purpose",
       "Available chart categories",
@@ -82,20 +82,20 @@ const topicContent = {
   "Purpose of the platform": {
     title: "Purpose of the Platform",
     intro:
-      "The Space Weather Dashboard is a real-time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
+      "The Space Weather Dashboard is a real time monitoring platform that visualizes how solar activity affects aviation and power-grid infrastructure. It combines live flight tracking, airport data, and multiple space weather overlays into a single interactive map, alongside a analytics for showing historical trend.",
     sections: [
       {
         id: "overview",
         title: "Overview",
         body: [
-          "Space weather events such as solar flares, geoelectric field activity, and radiation storms can disrupt high-frequency radio communications, satellite navigation, and power grids. This platform brings together data from NOAA's Space Weather Prediction Center, OpenSky Network, and other authoritative sources so that operators can see impacts at a glance.",
-          "Whether you are an air-traffic controller checking HF-radio absorption along polar routes, or a grid operator monitoring geoelectric field intensity near transmission lines, this tool provides the situational awareness you need.",
+          "Space weather events such as solar flares, radiation storms, and geoelectric field activity can disrupt high-frequency radio communications, satellite navigation, and power grids. This platform brings together data from NOAA's Space Weather Prediction Center, OpenSky Network, and other authoritative sources so that operators can see impacts at a glance.",
+          "Whether you are an air-traffic controller checking HF-radio absorption, or a grid operator monitoring geoelectric field intensity near transmission lines, this tool provides the situational awareness you need.",
         ],
         subsections: [
           {
             id: "overview-mission",
             title: "Mission",
-            body: "Our mission is to make space-weather data accessible and actionable by combining it with real-world infrastructure data in an intuitive visual interface.",
+            body: "Our mission is to make space weather data easy to monitor by combining it with real world infrastructure data in an intuitive visual interface.",
           },
         ],
       },
@@ -103,14 +103,14 @@ const topicContent = {
         id: "data-sources",
         title: "Data Sources",
         body: [
-          "All space-weather data is sourced from NOAA's Space Weather Prediction Center (SWPC), including Kp index, X-ray flux, proton flux, DRAP absorption, aurora forecasts, and geoelectric field estimates.",
-          "Flight positions are provided by the OpenSky Network. Airport metadata and power-grid transmission line data come from publicly available government datasets.",
+          "All space weather data is sourced from NOAA's Space Weather Prediction Center (SWPC), including Kp index, X-ray flux, proton flux, DRAP absorption, aurora forecasts, and geoelectric field estimates.",
+          "Flight positions are provided by the OpenSky Network. Airport metadata and power grid transmission line data come from publicly available government datasets.",
         ],
         subsections: [
           {
             id: "data-sources-refresh",
             title: "Data Refresh",
-            body: "Map overlays update automatically via server-sent events (SSE). The analytics charts poll for new data every 60 seconds.",
+            body: "Map overlays update automatically by server-sent events (SSE). The analytics charts poll for new data every 60 seconds.",
           },
         ],
       },
@@ -120,20 +120,20 @@ const topicContent = {
   "Who should use this platform?": {
     title: "Who Should Use This Platform?",
     intro:
-      "This platform is designed for anyone who needs to understand the impact of space weather on critical infrastructure, including aviation professionals, power-grid operators, researchers, and students.",
+      "This platform is designed for anyone who needs to understand the impact of space weather on critical infrastructure, including aviation professionals, power grid operators, researchers, and students.",
     sections: [
       {
         id: "target-audiences",
         title: "Target Audiences",
         body: [
-          "Aviation professionals -- dispatchers, flight planners, and air-traffic controllers -- can use the Plane & Events Tracker to see how DRAP absorption zones and aurora ovals overlap with active flight routes, especially over polar regions where HF-radio blackouts are most disruptive.",
+          "Aviation professionals can use the Plane & Events Tracker to see how DRAP absorption zones and aurora ovals overlap with active flight routes, especially over polar regions and sea area where HF-radio blackouts are most disruptive.",
           "Power-grid operators and engineers can overlay geoelectric field intensity on top of high-voltage transmission lines to assess geomagnetically induced current (GIC) risk during geomagnetic storms.",
         ],
         subsections: [
           {
             id: "target-audiences-researchers",
             title: "Researchers & Students",
-            body: "Researchers and students studying heliophysics, ionospheric science, or space-weather impacts can use the analytics to explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows.",
+            body: "Researchers and students studying heliophysics, ionospheric science, or space weather impacts can use the analytics to explore historical Kp index, X-ray flux, and proton flux trends across configurable time windows.",
           },
         ],
       },
@@ -149,7 +149,7 @@ const topicContent = {
         id: "plane-tracker-glance",
         title: "Plane & Events Tracker",
         body: [
-          "The home page presents a full-screen interactive map powered by MapLibre. Flights, airports, and space-weather overlays (DRAP, aurora, geoelectric field, power-grid lines) are rendered as toggleable layers.",
+          "The home page presents a full-screen interactive map powered by MapLibre. Flights, airports, and space weather overlays (DRAP, aurora, geoelectric field, power-grid lines) are rendered as toggleable layers.",
           "Use the search bar in the top-left to find a specific flight or airport. The control buttons in the top-right let you toggle layers, switch units, open settings, and change the theme.",
         ],
         subsections: [
@@ -164,14 +164,14 @@ const topicContent = {
         id: "analytics-glance",
         title: "Analytics",
         body: [
-          "Navigate to the Analytics page via the sidebar. It presents Kp Index, X-ray Flux, and Proton Flux charts. Tabs at the top let you view all plots at once or focus on a single metric.",
+          "Navigate to the Analytics page by the sidebar. It presents Kp Index, X-ray Flux, and Proton Flux charts. Tabs at the top let you view all plots at once or focus on a single metric.",
           "A time-range selector and settings gear icon provide control over the date window, timezone, axis sizes, and chart styling. You can also download chart data or images.",
         ],
         subsections: [
           {
             id: "analytics-glance-scales",
             title: "NOAA Scale Indicators",
-            body: "The sidebar also displays current NOAA space-weather scale levels (G for geomagnetic storms, R for radio blackouts, S for solar radiation) so you can see the current alert status at a glance.",
+            body: "The sidebar also displays current NOAA space weather scale levels (G for geomagnetic storms, R for radio blackouts, S for solar radiation) so you can see the current alert status at a glance.",
           },
         ],
       },
@@ -187,7 +187,7 @@ const topicContent = {
         id: "workflow-monitoring",
         title: "Real-Time Monitoring",
         body: [
-          "Open the Plane & Events Tracker to monitor live flight positions alongside space-weather overlays. Enable DRAP and aurora layers to see which regions are currently experiencing HF-radio absorption or elevated aurora activity.",
+          "Open the Plane & Events Tracker to monitor live flight positions alongside space weather overlays. Enable DRAP and aurora layers to see which regions are currently experiencing HF-radio absorption or elevated aurora activity.",
           "Click on any flight to open a details panel showing callsign, ICAO24 code, altitude, speed, heading, and position. Click on any airport to see its metadata and runway information.",
         ],
         subsections: [
@@ -225,7 +225,7 @@ const topicContent = {
         id: "concepts-noaa-scales",
         title: "NOAA Space Weather Scales",
         body: [
-          "NOAA uses three scales to communicate space-weather severity: G (Geomagnetic Storms, G1-G5), R (Radio Blackouts, R1-R5), and S (Solar Radiation Storms, S1-S5). G0, R0, and S0 indicate quiet conditions. Higher numbers indicate more severe events.",
+          "NOAA uses three scales to communicate space weather severity: G (Geomagnetic Storms, G1-G5), R (Radio Blackouts, R1-R5), and S (Solar Radiation Storms, S1-S5). G0, R0, and S0 indicate quiet conditions. Higher numbers indicate more severe events.",
           "On charts, these levels are shown as colored background bands. On the sidebar, the current levels are displayed as badges.",
         ],
         subsections: [
@@ -265,7 +265,7 @@ const topicContent = {
         title: "Sidebar Navigation",
         body: [
           "The sidebar slides in from the right when you click the menu icon. It contains links to the Dashboard (map), Analytics (charts), Help, and About pages.",
-          "The sidebar also displays the current NOAA space-weather scale levels and a link to the Tutorial.",
+          "The sidebar also displays the current NOAA space weather scale levels and a link to the Tutorial.",
         ],
         subsections: [
           {
@@ -296,7 +296,7 @@ const topicContent = {
   "Switching between dashboards": {
     title: "Switching Between Dashboards",
     intro:
-      "Use the sidebar to move between the Plane & Events Tracker and the Analytics Dashboard.",
+      "Use the sidebar to move between the Plane & Events Tracker and the Analytics.",
     sections: [
       {
         id: "switching-how",
@@ -309,7 +309,7 @@ const topicContent = {
           {
             id: "switching-how-url",
             title: "Direct URLs",
-            body: "You can also navigate directly: the landing page is at '/', the map dashboard at '/map-dashboard', the analytics dashboard at '/charts', this help page at '/help', and the about page at '/about'.",
+            body: "You can also navigate directly: the landing page is at '/', the map dashboard at '/map-dashboard', the Analytics at '/charts', this help page at '/help', and the about page at '/about'.",
           },
         ],
       },
@@ -319,7 +319,7 @@ const topicContent = {
   "Choosing time range and timezone": {
     title: "Choosing Time Range and Timezone",
     intro:
-      "The Analytics Dashboard lets you control the time window and timezone used for all charts.",
+      "The Analytics lets you control the time window and timezone used for all charts.",
     sections: [
       {
         id: "time-range",
@@ -332,7 +332,7 @@ const topicContent = {
           {
             id: "time-range-custom",
             title: "Custom Date Range",
-            body: "Select the 'Custom' option in the time-range dropdown to enter specific start and end dates and times. This is useful for investigating a particular space-weather event.",
+            body: "Select the 'Custom' option in the time-range dropdown to enter specific start and end dates and times. This is useful for investigating a particular space weather event.",
           },
         ],
       },
@@ -346,7 +346,7 @@ const topicContent = {
           {
             id: "timezone-default",
             title: "Default Timezone",
-            body: "By default, chart times are displayed in UTC. You can change this in the settings panel accessible via the gear icon on the Analytics tab bar.",
+            body: "By default, chart times are displayed in UTC. You can change this in the settings panel accessible by the gear icon on the Analytics tab bar.",
           },
         ],
       },
@@ -377,8 +377,22 @@ const topicContent = {
         id: "layer-toggles",
         title: "Layer Toggles",
         body: [
-          "The visibility speed-dial button (eye icon) in the top-right expands to reveal individual layer toggles for: Airplanes, Airports, DRAP Regions, Aurora, GeoElectric Field, and Power Grid lines.",
-          "Green borders indicate a layer is visible; red borders indicate it is hidden. Click the main eye icon to enter isolate mode, which hides all layers except those with selected/pinned items.",
+          {
+            text: "The left eye speed-dial button (top-right) toggles individual ground layers:",
+            bullets: ["Airplanes", "Airports", "Power Grid Lines"],
+          },
+          {
+            text: "The right eye speed-dial button (top-right) toggles individual event layers:",
+            bullets: ["DRAP Regions", "Aurora", "GeoElectric Field"],
+          },
+          {
+            text: "Border colors indicate layer visibility:",
+            bullets: [
+              "Green border — layer is visible",
+              "Red border — layer is hidden",
+              "Click the main eye icon to enter isolate mode, which hides all layers except those with selected/pinned items",
+            ],
+          },
         ],
         subsections: [
           {
@@ -415,7 +429,7 @@ const topicContent = {
         id: "chart-labels",
         title: "Chart Labels and Bands",
         body: [
-          "On the Analytics Dashboard, each chart has color-coded background bands corresponding to NOAA scale levels. For the Kp Index chart, bands show G0 through G5. For X-ray Flux, bands show R0 through R5. For Proton Flux, bands show S0 through S5.",
+          "On the Analytics, each chart has color-coded background bands corresponding to NOAA scale levels. For the Kp Index chart, bands show G0 through G5. For X-ray Flux, bands show R0 through R5. For Proton Flux, bands show S0 through S5.",
           "Hover over any data point on a chart to see its exact value and timestamp in a tooltip.",
         ],
         subsections: [
@@ -433,13 +447,13 @@ const topicContent = {
   Dashboard: {
     title: "Dashboard",
     intro:
-      "The Dashboard is the home page of the platform. It shows a full-screen interactive map with live flight positions, airport locations, and space-weather overlays.",
+      "The Dashboard is the home page of the platform. It shows a full-screen interactive map with live flight positions, airport locations, and space weather overlays.",
     sections: [
       {
         id: "dashboard-overview",
         title: "Overview",
         body: [
-          "The Dashboard (Plane & Events Tracker) is designed for real-time situational awareness. It displays live aircraft positions from the OpenSky Network overlaid with space-weather data from NOAA.",
+          "The Dashboard (Plane & Events Tracker) is designed for real time situational awareness. It displays live aircraft positions from the OpenSky Network overlaid with space weather data from NOAA.",
           "You can toggle individual data layers on or off, search for specific flights or airports, filter by altitude or airport type, and view detailed information panels for any selected object.",
         ],
         subsections: [
@@ -471,14 +485,14 @@ const topicContent = {
   Reports: {
     title: "Reports",
     intro:
-      "The Analytics Dashboard serves as the reporting interface. It provides time-series charts for key space-weather indices that you can analyze and export.",
+      "The Analytics serves as the reporting interface. It provides time-series charts for key space weather indices that you can analyze and export.",
     sections: [
       {
         id: "reports-overview",
         title: "Overview",
         body: [
-          "Reports are generated through the Analytics Dashboard's charting system. Three primary metrics are tracked: Kp Index (geomagnetic activity), X-ray Flux (solar flare intensity), and Proton Flux (solar radiation).",
-          "Each chart can be viewed individually or all three together. Charts update in real-time and include NOAA-scale background bands for quick severity assessment.",
+          "Reports are generated through the Analytics charting system. Three primary metrics are tracked: Kp Index (geomagnetic activity), X-ray Flux (solar flare intensity), and Proton Flux (solar radiation).",
+          "Each chart can be viewed individually or all three together. Charts update in real time and include NOAA-scale background bands for quick severity assessment.",
         ],
         subsections: [
           {
@@ -494,20 +508,20 @@ const topicContent = {
   Alerts: {
     title: "Alerts",
     intro:
-      "The platform displays current NOAA space-weather alert levels in the sidebar and through visual indicators on charts.",
+      "The platform displays current NOAA space weather alert levels in the sidebar and through visual indicators on charts.",
     sections: [
       {
         id: "alerts-overview",
         title: "Overview",
         body: [
-          "NOAA publishes three space-weather scales that indicate event severity: G (Geomagnetic Storms), R (Radio Blackouts), and S (Solar Radiation Storms). Each scale runs from 1 (minor) to 5 (extreme), with 0 indicating quiet conditions.",
-          "The sidebar displays the current level for each scale. These values update automatically and give you an at-a-glance status of current space-weather conditions.",
+          "NOAA publishes three space weather scales that indicate event severity: G (Geomagnetic Storms), R (Radio Blackouts), and S (Solar Radiation Storms). Each scale runs from 1 (minor) to 5 (extreme), with 0 indicating quiet conditions.",
+          "The sidebar displays the current level for each scale. These values update automatically and give you an at-a-glance status of current space weather conditions.",
         ],
         subsections: [
           {
             id: "alerts-overview-chart-bands",
             title: "Chart-Level Indicators",
-            body: "On the Analytics Dashboard, colored background bands on each chart correspond to NOAA scale thresholds. When the plotted data enters a colored band, it means conditions have reached that severity level.",
+            body: "On the Analytics, colored background bands on each chart correspond to NOAA scale thresholds. When the plotted data enters a colored band, it means conditions have reached that severity level.",
           },
         ],
       },
@@ -518,14 +532,14 @@ const topicContent = {
   "What the tracker shows": {
     title: "What the Tracker Shows",
     intro:
-      "The Plane & Events Tracker is a real-time interactive map that combines live aviation data with space-weather event overlays to show how solar activity affects the airspace and power infrastructure.",
+      "The Plane & Events Tracker is a real time interactive map that combines live aviation data with space weather event overlays to show how solar activity affects the airspace and power infrastructure.",
     sections: [
       {
         id: "tracker-data",
         title: "Data on the Map",
         body: [
           "The map displays live aircraft positions with altitude-based color coding, airports with type-based icons, DRAP radio-absorption regions, aurora probability zones, geoelectric field intensity, and high-voltage electric transmission lines.",
-          "All data layers update in real-time via server-sent events (SSE) when in live-stream mode, or can be explored historically using the playback panel.",
+          "All data layers update in real time by server-sent events (SSE) when in live-stream mode, or can be explored historically using the playback panel.",
         ],
         subsections: [
           {
@@ -563,7 +577,7 @@ const topicContent = {
         title: "Filtering Flights",
         body: [
           "Use the settings panel to filter flights by altitude range. The altitude slider lets you set a minimum and maximum altitude so you can focus on specific flight levels.",
-          "In isolate mode, only flights that you have explicitly selected (via double-click) are shown on the map. This is useful for tracking specific flights without visual clutter.",
+          "In isolate mode, only flights that you have explicitly selected (by double-click) are shown on the map. This is useful for tracking specific flights without visual clutter.",
         ],
         subsections: [
           {
@@ -616,11 +630,11 @@ const topicContent = {
   "Space weather event overlays": {
     title: "Space Weather Event Overlays",
     intro:
-      "The map supports four space-weather overlay layers: DRAP absorption, aurora probability, geoelectric field intensity, and power-grid transmission lines.",
+      "The map supports four space weather overlay layers: DRAP absorption, aurora probability, geoelectric field intensity, and power-grid transmission lines.",
     sections: [
       {
         id: "overlay-drap",
-        title: "DRAP (D-Region Absorption Prediction)",
+        title: "DRAP (D Region Absorption Prediction)",
         body: [
           "The DRAP overlay shows regions of high-frequency (HF) radio absorption caused by solar X-ray and proton events. It displays as a colored grid where yellow indicates light absorption and red indicates severe absorption, measured in decibels (dB).",
           "You can filter the displayed DRAP cells by absorption intensity range using the slider in the settings panel.",
@@ -815,7 +829,7 @@ const topicContent = {
           {
             id: "layers-visibility-isolate",
             title: "Isolate Mode",
-            body: "Isolate mode is useful when you want to focus on specific flights you have pinned. All other flights and airports are hidden, and only space-weather overlays remain visible in the background.",
+            body: "Isolate mode is useful when you want to focus on specific flights you have pinned. All other flights and airports are hidden, and only space weather overlays remain visible in the background.",
           },
         ],
       },
@@ -847,7 +861,7 @@ const topicContent = {
         title: "Getting Help",
         body: [
           "This platform was developed as a GMU DAEN Capstone Project by Team Space Weather. For questions about the platform, please contact the project team or program coordinator.",
-          "For space-weather data questions, refer to NOAA's Space Weather Prediction Center (SWPC) at swpc.noaa.gov.",
+          "For space weather data questions, refer to NOAA's Space Weather Prediction Center (SWPC) at swpc.noaa.gov.",
         ],
         subsections: [
           {
@@ -860,17 +874,17 @@ const topicContent = {
     ],
   },
 
-  // ── Analytics Dashboard ───────────────────────────────────────────────
+  // ── Analytics ───────────────────────────────────────────────
   "Dashboard purpose": {
     title: "Dashboard Purpose",
     intro:
-      "The Analytics Dashboard provides time-series charts for key space-weather indices, enabling historical analysis and real-time monitoring of solar activity.",
+      "The Analytics provides time-series charts for key space weather indices, enabling historical analysis and real time monitoring of solar activity.",
     sections: [
       {
         id: "analytics-purpose",
-        title: "Why Use the Analytics Dashboard",
+        title: "Why Use the Analytics",
         body: [
-          "While the map shows current conditions spatially, the Analytics Dashboard shows how conditions evolve over time. This is essential for understanding the progression of space-weather events and predicting near-term impacts.",
+          "While the map shows current conditions spatially, the Analytics shows how conditions evolve over time. This is essential for understanding the progression of space weather events and predicting near-term impacts.",
           "Charts are color-coded with NOAA scale bands so you can immediately see when a metric crosses from normal into storm-level territory.",
         ],
         subsections: [
@@ -887,7 +901,7 @@ const topicContent = {
   "Available chart categories": {
     title: "Available Chart Categories",
     intro:
-      "The Analytics Dashboard offers three chart categories, viewable individually or all at once.",
+      "The Analytics offers three chart categories, viewable individually or all at once.",
     sections: [
       {
         id: "categories-tabs",
@@ -900,7 +914,7 @@ const topicContent = {
           {
             id: "categories-tabs-zoom",
             title: "Chart Zoom",
-            body: "Each chart supports zoom via scroll wheel and pan via click-and-drag. Use the reset/refresh button to return to the default view.",
+            body: "Each chart supports zoom by scroll wheel and pan by click-and-drag. Use the reset/refresh button to return to the default view.",
           },
         ],
       },
@@ -1024,7 +1038,7 @@ const topicContent = {
   "Time-window controls": {
     title: "Time-Window Controls",
     intro:
-      "The time-window controls on the Analytics Dashboard let you select the period of data displayed on all charts.",
+      "The time-window controls on the Analytics let you select the period of data displayed on all charts.",
     sections: [
       {
         id: "time-controls",
@@ -1070,7 +1084,7 @@ const topicContent = {
   "Interpreting peaks, spikes, and trends": {
     title: "Interpreting Peaks, Spikes, and Trends",
     intro:
-      "Understanding chart patterns helps you identify space-weather events and their potential impacts.",
+      "Understanding chart patterns helps you identify space weather events and their potential impacts.",
     sections: [
       {
         id: "interpreting-xray",
@@ -1092,7 +1106,7 @@ const topicContent = {
         title: "Proton Flux Patterns",
         body: [
           "A gradual rise in proton flux following a solar flare indicates a solar energetic particle (SEP) event. The rise time is typically 30 minutes to several hours. The flux may remain elevated for days.",
-          "A sharp initial rise suggests a well-connected flare site (magnetically connected to Earth), while a slower rise may indicate particles arriving via a CME shock.",
+          "A sharp initial rise suggests a well-connected flare site (magnetically connected to Earth), while a slower rise may indicate particles arriving by a CME shock.",
         ],
         subsections: [
           {
@@ -1123,7 +1137,7 @@ const topicContent = {
   "Exporting or downloading chart views": {
     title: "Exporting or Downloading Chart Views",
     intro:
-      "The Analytics Dashboard provides multiple options for exporting chart data and images.",
+      "The Analytics provides multiple options for exporting chart data and images.",
     sections: [
       {
         id: "export-how",
@@ -1144,7 +1158,7 @@ const topicContent = {
         id: "export-settings",
         title: "Chart Settings for Export",
         body: [
-          "Before exporting, you can adjust chart appearance via the settings panel (gear icon). Available options include: background band opacity, label box size, axis label size, and line border width.",
+          "Before exporting, you can adjust chart appearance by the settings panel (gear icon). Available options include: background band opacity, label box size, axis label size, and line border width.",
           "These visual settings affect both the on-screen display and exported images, so you can fine-tune the look of your charts before generating a report.",
         ],
         subsections: [
@@ -1190,7 +1204,7 @@ const topicContent = {
           {
             id: "flare-impacts-platform",
             title: "How This Platform Shows Flares",
-            body: "Solar flares appear as spikes on the X-ray Flux chart in the Analytics Dashboard. The DRAP overlay on the map shows the resulting radio absorption pattern. The R-level indicators in the sidebar show the current radio blackout severity.",
+            body: "Solar flares appear as spikes on the X-ray Flux chart in the Analytics. The DRAP overlay on the map shows the resulting radio absorption pattern. The R-level indicators in the sidebar show the current radio blackout severity.",
           },
         ],
       },
@@ -1228,7 +1242,7 @@ const topicContent = {
           {
             id: "cme-impacts-platform",
             title: "How This Platform Shows CME Effects",
-            body: "CME effects appear as elevated Kp index values on the Analytics Dashboard, expanded aurora ovals on the map, and potentially enhanced geoelectric field intensity in the geoelectric overlay.",
+            body: "CME effects appear as elevated Kp index values on the Analytics, expanded aurora ovals on the map, and potentially enhanced geoelectric field intensity in the geoelectric overlay.",
           },
         ],
       },
@@ -1325,7 +1339,7 @@ const topicContent = {
           {
             id: "kp-definition-estimated",
             title: "Estimated vs. Observed Kp",
-            body: "NOAA provides both estimated real-time Kp and definitive (final) Kp values. Estimated values are available within minutes; definitive values are calculated days later from full station data. This platform uses estimated values for real-time monitoring.",
+            body: "NOAA provides both estimated real time Kp and definitive (final) Kp values. Estimated values are available within minutes; definitive values are calculated days later from full station data. This platform uses estimated values for real time monitoring.",
           },
         ],
       },
@@ -1377,7 +1391,7 @@ const topicContent = {
           {
             id: "geomag-impacts-platform",
             title: "How This Platform Shows Storms",
-            body: "Geomagnetic storm impacts are visible through elevated Kp index values on the Analytics Dashboard, expanded aurora regions on the map, increased geoelectric field intensity in the geoelectric overlay, and their overlap with power-grid transmission lines.",
+            body: "Geomagnetic storm impacts are visible through elevated Kp index values on the Analytics, expanded aurora regions on the map, increased geoelectric field intensity in the geoelectric overlay, and their overlap with power-grid transmission lines.",
           },
         ],
       },
@@ -1432,7 +1446,7 @@ const topicContent = {
         title: "How DRAP Works",
         body: [
           "When solar X-rays or energetic protons hit the atmosphere, they ionize the D-region of the ionosphere (60-90 km altitude). This increased electron density absorbs HF radio waves (3-30 MHz) passing through the region, reducing or eliminating long-range HF communication.",
-          "The DRAP model, produced by NOAA/SWPC, takes real-time X-ray and proton flux data as input and outputs a global map of predicted HF absorption in decibels (dB) at a reference frequency.",
+          "The DRAP model, produced by NOAA/SWPC, takes real time X-ray and proton flux data as input and outputs a global map of predicted HF absorption in decibels (dB) at a reference frequency.",
         ],
         subsections: [
           {
@@ -1491,7 +1505,7 @@ const topicContent = {
           {
             id: "geoelectric-map-filtering",
             title: "Filtering",
-            body: "The settings panel provides a logarithmic magnitude slider to focus on specific field intensity ranges. The count of visible grid cells is shown in real-time as you adjust the filter.",
+            body: "The settings panel provides a logarithmic magnitude slider to focus on specific field intensity ranges. The count of visible grid cells is shown in real time as you adjust the filter.",
           },
         ],
       },
