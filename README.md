@@ -1,8 +1,38 @@
-# GMU DAEN Capstone Project - Space Weather
+# Space Weather Dashboard — GMU DAEN Capstone
 
-## Overview
+A real-time space weather and flight-tracking dashboard that overlays NOAA space weather data (aurora, D-RAP, geoelectric fields, Kp index, X-ray flux, proton flux, alerts) with live OpenSky flight data on an interactive 3D map. Built for the George Mason University DAEN Capstone Program.
 
-This repository provides a standardized directory structure for **George Mason University (GMU) College of Engineering and Computing (CEC) Data Analytics Engineering (DAEN) Program Capstone Projects**. This structure has been designed to accommodate the typical requirements of DAEN capstone projects, which are generally Python-based, include graphical user interfaces (GUIs), utilize Docker containerization.
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        NGINX (port 80)                          │
+│  /          →  frontend   /api/  →  fastapi   /prefect/  →  UI  │
+│  /pgadmin/  →  pgadmin    /dozzle/ →  dozzle                    │
+└────────────┬────────────────────────────────────────────────────┘
+             │
+   ┌─────────┴──────────────────────────────────────┐
+   │  React/Vite Frontend                           │
+   │  deck.gl map  |  Chart.js analytics  |  Redux  │
+   └────────────────────────┬───────────────────────┘
+                            │ SSE + REST
+   ┌────────────────────────▼───────────────────────┐
+   │  FastAPI  (/api/v1, /api/v2)                   │
+   │  asyncpg pool  |  Redis cache  |  Pydantic     │
+   └──────────┬──────────────────┬──────────────────┘
+              │                  │
+   ┌──────────▼──────┐  ┌────────▼──────────────────┐
+   │  TimescaleDB    │  │  Redis (pub/sub + cache)   │
+   │  (PostGIS/pg18) │  └────────▲──────────────────┘
+   │  2 databases:   │           │ broadcast
+   │  prefect + app  │  ┌────────┴──────────────────┐
+   └─────────────────┘  │  Prefect Workers           │
+                        │  NOAA-pool + flight-pool   │
+                        │  → NOAA APIs + OpenSky     │
+                        └───────────────────────────┘
+```
 
 ---
 
@@ -10,275 +40,279 @@ This repository provides a standardized directory structure for **George Mason U
 
 ```
 .
-├── docker/                   # Store all the dockerfile for each implementation.
-│   ├── api/                  # Dockerfile to run the fastapi.
-│   ├── db-init-scripts/      # Initial for setting up postgis and db.
-│   ├── flows_package/        # Dockerfile for prefect.
-│   └── nginx/                # Nginx configuration file.
-├── prefect/                  # Prefect main folder.
-│   └── flows/                # Store all the pipeline flows.
-│   └── tasks/                # Store all the pipeline tasks.
-├── src/                  # Backend main code.
-│   └── api/                  # FastAPI implementation.
-├── shared/                   # Shared function for all the code.
-├── secrets/                  # Store all the credentials and secrets.
-├── .gitignore                # Git ignore file.
-├── docker-compose.yaml       # Docker compose file for prefect and fastapi.
-├── LICENSE                   # MIT License
-└── README.md                 # This file - project documentation.
+├── frontend/                 # React 19 + Vite application
+│   └── src/
+│       ├── components/       # UI components (map, charts, help, about)
+│       ├── hooks/            # useLiveStream, useLayerZoomDim, etc.
+│       ├── store/slices/     # Redux slices per data domain
+│       └── api/              # Async thunks + compression support
+├── src/
+│   └── api/                  # FastAPI backend
+│       ├── main.py           # All route definitions
+│       ├── config.py         # Pydantic response models
+│       ├── validator.py      # TypeAdapter validators
+│       └── database/
+│           └── queries.py    # Raw SQL strings
+├── prefect_workflows/        # Prefect ETL pipelines
+│   ├── flows/                # @flow definitions
+│   ├── tasks/                # @task definitions + Pydantic models
+│   ├── database/             # Table DDL, functions, query templates
+│   └── prefect.yaml          # Deployment + schedule config
+├── shared/                   # Mounted into FastAPI + Prefect workers
+│   ├── db_utils.py           # asyncpg singleton pool
+│   ├── redis.py              # Redis client, channel names, TTLs
+│   ├── compression.py        # Delta-bitpack encode/decode
+│   ├── logger.py             # Structured logger factory
+│   └── prefect_utils.py      # Prefect variable helper
+├── docker/                   # Dockerfiles + init scripts
+│   ├── api/                  # FastAPI image (python:3.12-slim)
+│   ├── flows_package/        # Prefect worker image
+│   ├── db-init-scripts/      # PostGIS + schema init
+│   └── nginx/                # Reverse proxy config
+├── tests/                    # Pytest test suites
+│   ├── test_api_responses/   # API endpoint integration tests
+│   ├── test_flows/           # Prefect flow unit tests
+│   └── test_api_health/      # External API availability checks
+├── .github/workflows/        # CI/CD GitHub Actions
+├── docker-compose.yaml       # All services wired together
+└── .env.example              # Required environment variable template
 ```
 
 ---
 
-## Detailed Directory Descriptions
+## Services
 
-### `docker/`
-**Purpose:** Contains all Docker-related configurations for containerizing the application.
-
-- **`api/`**: Dockerfile, configuration and packages for the FastAPI application container.
-- **`db-init-scripts/`**: Initialization scripts for setting up PostGIS database, creating users, databases, and schemas.
-- **`flows_package/`**: Dockerfile for the Prefect worker container that runs data pipeline flows.
-- **`nginx/`**: Configuration files for NGINX reverse proxy.
-
-**Common Files:**
-- `Dockerfile`: Instructions for building Docker images
-- `.dockerignore`: Files to exclude from Docker context
-- Initialization scripts and startup commands
-
-**Key Services:**
-- **postgis**: PostgreSQL database with PostGIS extension (user: `prefect`/`developer`, database: `prefect`/`app`)
-- **redis**: Message broker for Prefect
-- **prefect-server**: Prefect orchestration server
-- **prefect-init**: Executes Prefect init commands
-- **prefect-worker-noaa**: Executes Prefect flows (NOAA-pool)
-- **prefect-worker-flight**: Executes Prefect flows (flight-pool)
-- **fastapi**: REST API server
-- **nginx**: Reverse proxy on port 4200
-
----
-
-### `prefect/`
-**Purpose:** Contains Prefect workflow orchestration code.
-
-- **`flows/`**: Prefect flow definitions for data pipelines (e.g., NOAA weather data, flight data ingestion).
-- **`tasks/`**: Prefect task definitions for data pipelines (e.g., NOAA weather data, flight data ingestion).
-
-**Environment Variables:**
-- `PREFECT_API_URL`: Connection to Prefect server
-- `DATABASE_URL`: PostgreSQL connection for application data (uses `developer` user and `app` database)
-
-**Work Pools:**
-- `NOAA-pool`: Process pool for weather data workflows
-- `flight-pool`: Process pool for flight data workflows
-
----
-
-### `src/`
-**Purpose:** Backend application code.
-
-- **`api/`**: FastAPI application with REST endpoints, route definitions, and request handlers.
-
-**Database Connection:**
-- Host: `postgis` container
-- Database: `${DEVELOPER_DB}`
-- User: `${DEVELOPER_USER}`
-- Password: `${DEVELOPER_PASSWORD}` (from environment)
-- Port: 8000 (exposed)
-
----
-
-### `shared/`
-**Purpose:** Reusable utility functions and helper modules shared across services (Prefect flows, FastAPI, etc.).
-
-**Common Use Cases:**
-- Data validation functions
-- Format converters
-- Database utilities
-- Common constants and configurations
-
----
-
-### `secrets/`
-**Purpose:** Stores credentials and sensitive configuration files.
-
-**Security Note:** 
-- **NEVER** commit this folder to version control
-- Add `secrets/` to `.gitignore`
-- Use environment variables for sensitive data
-- Consider using secret management tools (Docker secrets, AWS Secrets Manager, etc.)
-
-**Common Files:**
-- Database credentials
-- SSL certificates
-- PyOpenSky settings: `${PYOPENSKY_SETTINGS}` mounted to `/root/.config/pyopensky/settings.conf`
-
----
-
-## Root-Level Files
-
-### `.gitignore`
-Specifies files and directories that Git should ignore (e.g., `__pycache__/`, `*.pyc`, `data/`, `logs/`, `.env`, `secrets/`, virtual environments).
-
-### `LICENSE`
-Apache License - This project is open source software licensed under the Apache License.
-
-### `README.md`
-This file. Provides an overview of the project, setup instructions, and directory structure documentation.
-
-### `docker-compose.yaml`
-Defines multi-container Docker applications with the following services:
-- PostGIS database with two databases (`prefect` for Prefect metadata, `app` for application data)
-- Redis for message brokering
-- Prefect server, services, and workers
-- FastAPI application
-- NGINX reverse proxy
+| Service | Description | Exposed |
+|---|---|---|
+| `nginx` | Reverse proxy — routes all traffic | port 80 |
+| `frontend` | React/Vite app | via nginx `/` |
+| `fastapi` | REST API + SSE stream | via nginx `/api/` |
+| `postgis` | TimescaleDB (pg18) — `prefect` + `app` databases | localhost:5432 |
+| `redis` | Pub/sub broker + data cache | internal |
+| `prefect-server` | Prefect orchestration UI + API | via nginx `/prefect/` |
+| `prefect-init` | One-shot container: creates pools, deploys flows, inits DB | — |
+| `prefect-worker-noaa` | Runs NOAA-pool scheduled flows | — |
+| `prefect-worker-flight` | Runs flight-pool scheduled flows | — |
+| `pgadmin` | Database admin UI | via nginx `/pgadmin/` |
+| `dozzle` | Container log viewer | via nginx `/dozzle/` |
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
+
 - Docker and Docker Compose
 - Git
-- Environment variables configured in `.env` file
-- Opensky crediential
+- OpenSky credentials (for flight ingestion)
 
-### Required Environment Variables
-
-Create a `.env` file in the project root with:
+### Environment Setup
 
 ```bash
-DEVELOPER_PASSWORD=your_developer_password
-READONLY_PASSWORD=your_readonly_password
-PYOPENSKY_SETTINGS=/path/to/pyopensky/settings.conf
+cp .env.example .env
 ```
 
-### Initial Setup
+Required variables in `.env`:
 
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd capstone
-   ```
+| Variable | Description |
+|---|---|
+| `DEVELOPER_PASSWORD` | PostgreSQL `developer` user password |
+| `READONLY_PASSWORD` | PostgreSQL read-only user password |
+| `PYOPENSKY_SETTINGS` | Path to pyopensky settings file (default: `./secrets/pyopensky-settings`) |
 
-2. **Set up environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+The defaults `DEVELOPER_DB=app` and `DEVELOPER_USER=developer` from `.env.example` are correct for local dev.
 
-3. **Start all services with Docker Compose:**
-   ```bash
-   docker compose up -d --build
-   ```
+### Start Everything
 
-4. **Access the services:**
-   - Prefect UI: ip/prefect
-   - Prefect FastAPI docs: ip/prefect/docs
-   - FastAPI: ip/api
-   - FastAPI Docs: ip/api/docs
+```bash
+docker compose up -d --build
+```
+
+`prefect-init` runs automatically on first start to create work pools, deploy flows, and initialize DB tables.
+
+### Access Points
+
+| Service | URL |
+|---|---|
+| Dashboard | `http://localhost/` |
+| API docs | `http://localhost/api/docs` |
+| Prefect UI | `http://localhost/prefect/` |
+| pgAdmin | `http://localhost/pgadmin/` |
+| Dozzle logs | `http://localhost/dozzle/` |
 
 ---
 
-## Database Configuration
+## Frontend
 
-### PostgreSQL Databases
+**Stack:** React 19 · Redux Toolkit · React Router 7 · deck.gl 9 · MapLibre GL 5 · Chart.js 4 · Material-UI 7
 
-**Prefect Metadata Database:**
-- Database: `prefect`
-- User: `prefect`
-- Password: `prefect`
-- Connection String: `postgresql+asyncpg://prefect:prefect@postgis:5432/prefect`
+### Routes
 
-**Application Database:**
-- Database: `${DEVELOPER_DB}`
-- User: `${DEVELOPER_USER}`
-- Password: `${DEVELOPER_PASSWORD}`
-- Connection String: `postgresql://${DEVELOPER_USER}:${DEVELOPER_PASSWORD}@postgis:5432/${DEVELOPER_DB}`
+| Path | Component | Description |
+|---|---|---|
+| `/` | Landing | Cinematic welcome screen with particle animation |
+| `/map-dashboard` | PlaneTracker | Interactive map with all overlays + flight info |
+| `/analytics` | Charts | Time-series charts for solar indices |
+| `/help` | Help | Searchable help documentation |
+| `/about` | About | Team and project information |
+
+### Map Overlays (`/map-dashboard`)
+
+- **Flights** — Live aircraft positions from OpenSky, colored by altitude
+- **D-RAP** — HF radio absorption grid (polar coverage map)
+- **Aurora** — Auroral forecast overlay
+- **Geoelectric** — Surface electric field measurements
+- **Transmission Lines** — US power grid infrastructure layer
+
+### Real-Time Data Flow
+
+```
+Prefect → TimescaleDB → Redis pub/sub → FastAPI SSE → useLiveStream.js → Redux
+```
+
+The `useLiveStream` hook connects to `/api/v1/stream/live` and dispatches named events (`planes`, `aurora`, `drap`, `xray`, `protonflux`, `kpindex`, `alerts`, `geoelectric`, `flight_drap_alerts`) to the appropriate Redux slices.
+
+### Redux Slices
+
+| Slice | Data |
+|---|---|
+| `planesSlice` | Active flight states |
+| `drapSlice` | D-RAP absorption grid |
+| `auroraSlice` | Aurora forecast grid |
+| `geoElectricSlice` | Geoelectric field grid |
+| `chartsSlice` | Chart state and settings |
+| `flightPathSlice` | Individual aircraft path histories |
+| `airportsSlice` | Airport reference data |
+| `electricTransmissionLinesSlice` | Power infrastructure geometries |
+| `playbackSlice` | Historical playback controls |
+| `uiSlice` | UI preferences |
+
+---
+
+## API Reference
+
+Base paths: `/api/v1` and `/api/v2`. Full documentation at `/api/docs`.
+
+### SSE Stream
+
+```
+GET /api/v1/stream/live
+```
+
+Pushes named events every ~15 seconds: `planes`, `aurora`, `drap`, `xray`, `protonflux`, `kpindex`, `alerts`, `geoelectric`, `flight_drap_alerts`.
+
+### Key Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/v1/active-flight-states/latest` | Current non-ground flights (20-min recency) |
+| `GET` | `/api/v1/flight-path/{icao24}` | Historical path for one aircraft |
+| `GET` | `/api/v1/airports` | Airport list (paginated, Redis cached) |
+| `GET` | `/api/v1/airport/{ident}` | Airport details with runways, frequencies, navaids |
+| `GET` | `/api/v1/kp-index` | Kp index time series (default: last 3 hours) |
+| `GET` | `/api/v1/xray` | X-ray flux time series |
+| `GET` | `/api/v1/proton-flux` | Proton flux time series |
+| `GET` | `/api/v1/alert` | Space weather alerts |
+| `GET` | `/api/v2/{event}/latest` | Latest snapshot — `drap`, `aurora`, `geoelectric` |
+| `GET` | `/api/v2/kermit` | Historical snapshots with time bucketing + gap-fill |
+| `GET` | `/api/v2/location` | Grid coordinate reference data |
+| `GET` | `/api/v1/transmission-lines` | Power line geometries |
+| `GET/PUT` | `/api/v1/flight-drap-alerts/threshold` | D-RAP absorption alert threshold |
+
+V2 endpoints support optional delta-bitpack compression: append `?encoding=delta-bitpack`.
+
+---
+
+## Data Pipelines
+
+See [prefect_workflows/README.md](prefect_workflows/README.md) for full pipeline documentation.
+
+**Scheduled flows:**
+
+| Flow | Schedule | Source |
+|---|---|---|
+| DRAP, Aurora, Geoelectric, Alert, X-ray | Every minute | NOAA |
+| OpenSky flight ingestion | Every 2 minutes | OpenSky API |
+| Proton flux | Every 5 minutes | NOAA |
+| Kp index | Hourly | NOAA |
+| Airport data refresh, DB retention cleanup | Daily (00:00 UTC) | OurAirports / internal |
+
+---
+
+## Database
+
+**TimescaleDB** (PostgreSQL 18 + PostGIS) with two databases:
+
+| Database | User | Purpose |
+|---|---|---|
+| `prefect` | `prefect` | Prefect server metadata |
+| `app` | `developer` | All application data |
+
+Key tables use TimescaleDB hypertables for time-series queries. Data retention is enforced per-table via `RETENTION_DAYS_*` environment variables (managed by the `daily-retention-cleanup` flow).
 
 ---
 
 ## Development Workflow
 
-1. **Create a new branch:**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+```bash
+# Rebuild and restart a single service after code changes
+docker compose up -d --build fastapi
 
-2. **Make changes and test locally:**
-   - Add Prefect flows in `prefect/flows/`
-   - Add Prefect tasks in `prefect/tasks/`
-   - Add Data type in `prefect/tasks/models`
-   - Add SQL queries in `prefect/tasks/queries`
-   - Add API endpoints in `backend/api/`
-   - Add shared utilities in `shared/`
+# Hot-reload for prefect workers (shared volume is live-mounted)
+docker compose restart prefect-worker-noaa
 
-3. **Rebuild and restart containers:**
-   ```bash
-   docker-compose down
-   docker-compose up --build
-   ```
+# View logs
+docker compose logs -f fastapi
+docker compose logs -f prefect-worker-noaa
 
-4. **View logs:**
-   ```bash
-   docker-compose logs -f [service_name]
-   ```
+# Run backend tests
+source .venv/bin/activate
+pytest
 
-5. **Commit and push:**
-   ```bash
-   git add .
-   git commit -m "Description of changes"
-   git push origin feature/your-feature-name
-   ```
+# Run frontend dev server
+cd frontend
+npm install
+npm run dev
+
+# Lint frontend
+npm run lint
+```
+
+---
+
+## CI/CD
+
+GitHub Actions workflows in `.github/workflows/`:
+
+| Workflow | Trigger | Purpose |
+|---|---|---|
+| `deploy-api.yml` | Push/PR on `src/**`, `docker/api/**` | Test + deploy API |
+| `deploy-frontend.yml` | Push/PR on `frontend/**` | Build + deploy frontend |
+| `deploy-prefect.yml` | Push/PR on `prefect_workflows/**` | Test + deploy Prefect workers |
+| `deploy.yml` | Manual (type "DEPLOY") | Deploy any/all services |
+| `api-health.yml` | Scheduled | API health monitoring |
+| `sync-flows.yml` | Automatic | Sync Prefect flow deployments |
+
+CI runs `tests/test_folder_structure.py` and `tests/test_coverage_enforcement.py` on all pipelines, then service-specific integration tests before deploying.
 
 ---
 
 ## Contributing
 
-Please follow these guidelines:
-- Follow PEP 8 style guidelines for Python code(package black can solve it)
+- Follow PEP 8 for Python (`black` for formatting)
+- Every new Prefect flow must have a corresponding test file (enforced by `test_coverage_enforcement.py`)
+- Never commit secrets or credentials — add to `.gitignore` and use environment variables
 - Write meaningful commit messages
-- Add documentation for new features
-- Test changes before submitting pull requests
-- Never commit secrets or credentials
+- Test changes locally before opening a pull request
 
 ---
-
-## Support and Resources
-
-- **GMU DAEN Program:** https://analyticsengineering.gmu.edu/
-- **Prefect Documentation:** https://docs.prefect.io/
-- **FastAPI Documentation:** https://fastapi.tiangolo.com/
-- **Docker Documentation:** https://docs.docker.com/
-- **PostGIS Documentation:** https://postgis.net/documentation/
-
----
-
-# Apache License
-Version 2.0, January 2004  
-http://www.apache.org/licenses/
-
-Copyright 2026 GMU DAEN Capstone Team
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
 
 ## Contact
 
-For questions about this project or the DAEN Capstone program, contact:
-- Project Team: Space Weather
-- Program Coordinator: Professor Schmidt
+**Project Team:** Space Weather  
+**Program:** GMU DAEN Capstone 2026  
+**Coordinator:** Professor Schmidt
 
 ---
 
-**Last Updated:** February 2026
-
+*Licensed under the Apache License 2.0*
