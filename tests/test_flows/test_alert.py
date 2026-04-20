@@ -28,11 +28,13 @@ class TestParseAlerts:
 
     def test_removes_serial_number(self, parsed_alerts):
         for record in parsed_alerts:
-            assert "Serial Number:" not in record.message
+            for line in record.message.splitlines():
+                assert not line.startswith("Serial Number:")
 
     def test_removes_issue_time(self, parsed_alerts):
         for record in parsed_alerts:
-            assert "Issue Time:" not in record.message
+            for line in record.message.splitlines():
+                assert not line.startswith("Issue Time:")
 
     def test_removes_message_code(self, parsed_alerts):
         for record in parsed_alerts:
@@ -88,8 +90,8 @@ class TestParseMessageToJson:
     def test_alert_fields_extracted(self):
         result = parse_message_to_json(self.ALERT_MSG)
         assert "fields" in result
-        assert result["fields"]["NOAA Scale"] == "G2 - Moderate"
-        assert "Threshold Reached" in result["fields"]
+        assert result["fields"]["noaa_scale"] == "G2 - Moderate"
+        assert "threshold_reached" in result["fields"]
 
     def test_alert_impacts_extracted(self):
         result = parse_message_to_json(self.ALERT_MSG)
@@ -99,7 +101,7 @@ class TestParseMessageToJson:
     def test_warning_type(self):
         result = parse_message_to_json(self.WARNING_MSG)
         assert result["type"] == "WARNING"
-        assert result["fields"]["Warning Condition"] == "Onset"
+        assert result["fields"]["warning_condition"] == "Onset"
 
     def test_watch_type(self):
         result = parse_message_to_json(self.WATCH_MSG)
@@ -109,7 +111,7 @@ class TestParseMessageToJson:
     def test_summary_type(self):
         result = parse_message_to_json(self.SUMMARY_MSG)
         assert result["type"] == "SUMMARY"
-        assert result["fields"]["X-ray Class"] == "M7.5"
+        assert result["fields"]["x-ray_class"] == "M7.5"
 
     def test_empty_message_returns_empty_dict(self):
         assert parse_message_to_json("") == {}

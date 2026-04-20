@@ -5,10 +5,72 @@ on:
     branches: [main]
     paths:
       - 'prefect_workflows/**'
+      - 'tests/test_flows/**'
 
 jobs:
+  test-flows:
+    name: Run Flows Tests
+    needs: test-static
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: timescale/timescaledb-ha:pg18
+        env:
+          POSTGRES_USER: prefect
+          POSTGRES_PASSWORD: prefect
+          POSTGRES_DB: prefect
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+          --health-start-period 30s
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: docker/flows_package/requirements.txt
+      - name: Install Flows Dependencies
+        run: pip install -r docker/flows_package/requirements.txt
+      - name: Run init.sh
+        run: |
+          chmod +x ./docker/db-init-scripts/init.sh
+          ./docker/db-init-scripts/init.sh
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGPASSWORD: prefect
+          POSTGRES_USER: prefect
+          POSTGRES_DB: prefect
+          DEVELOPER_DB: app
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          READONLY_PASSWORD: ${{ secrets.READONLY_PASSWORD }}
+
+      - name: Run db_maintain.py
+        run: python prefect_workflows/flows/db_maintain.py
+        env:
+          PYTHONPATH: "prefect_workflows:."
+          DATABASE_URL: postgresql://developer:${{ secrets.DEVELOPER_PASSWORD }}@localhost:5432/app
+
+      - name: Execute Flows Tests
+        run: pytest tests/test_flows/ -v
+        env:
+          PYTHONPATH: "."
+          DEVELOPER_USER: developer
+          DEVELOPER_PASSWORD: ${{ secrets.DEVELOPER_PASSWORD }}
+          DEVELOPER_DB: app
+          PGHOST: localhost
+          PGPORT: "5432"
+
   sync:
-    name: Pull latest code on VM
+    name: Pull latest prefect-flows code on VM
+    needs: [test-flows]
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v6

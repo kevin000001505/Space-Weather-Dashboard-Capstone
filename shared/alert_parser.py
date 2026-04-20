@@ -28,7 +28,8 @@ def parse_message_to_json(message: str) -> dict[str, Any]:
     for line in field_lines:
         if ":" in line:
             k, _, v = line.partition(":")
-            fields[k.strip()] = v.strip()
+            key = re.sub(r"\s+", "_", k.strip().lower())
+            fields[key] = v.strip()
 
     impacts: list[str] = []
     if impact_lines:
