@@ -3,7 +3,7 @@ from prefect import task
 from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
 from asyncpg import Connection
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List
 from database.queries import (
     ALERTS_STAGING_DDL,
@@ -37,17 +37,13 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
     records: List[AlertRecord] = []
     for alert in raw_alerts:
         try:
-            record = AlertRecord(
-                alert_id=alert.get("product_id", ""),
-                issue_datetime=datetime.fromisoformat(alert.get("issue_datetime", "")),
-                message=alert.get("message", "")
-                .replace(
-                    "NOAA Space Weather Scale descriptions can be found at",
-                    "",
+            if datetime.fromisoformat(alert.get("issue_datetime", "")).date() == datetime.now(timezone.utc).date():         
+                record = AlertRecord(
+                    alert_id=alert.get("product_id", ""),
+                    issue_datetime=datetime.fromisoformat(alert.get("issue_datetime", "")),
+                    message=alert.get("message", "")
                 )
-                .replace("www.swpc.noaa.gov/noaa-scales-explanation", ""),
-            )
-            records.append(record)
+                records.append(record)
         except Exception as e:
             logger.warning(f"Skipping invalid alert record {alert}: {e}")
     logger.info(f"Parsed {len(records)} valid alert records")
