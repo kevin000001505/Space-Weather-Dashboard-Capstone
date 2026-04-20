@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 import asyncpg
 from tasks.kp_index import fetch_kp_index
-from tasks.alert import fetch_alerts, parse_alerts
+from tasks.alert import fetch_alerts
 from tasks.xray_latest import extract_xray_6hour_data, parse_xray_6hour_data
 from tasks.drap import (
     extract_data as drap_extract_data,
@@ -78,16 +78,19 @@ def parsed_alerts(raw_alerts):
     from datetime import datetime
     from tasks.alert import _clean_message
     from tasks.models import AlertRecord
+
     records = []
     for alert in raw_alerts:
         try:
             data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
             cleaned = _clean_message(alert.get("message", ""))
-            records.append(AlertRecord(
-                alert_id=alert.get("product_id", ""),
-                issue_datetime=data_time,
-                message=cleaned,
-            ))
+            records.append(
+                AlertRecord(
+                    alert_id=alert.get("product_id", ""),
+                    issue_datetime=data_time,
+                    message=cleaned,
+                )
+            )
         except Exception:
             pass
     return records

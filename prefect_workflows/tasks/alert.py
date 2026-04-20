@@ -19,9 +19,9 @@ from tasks.models import AlertRecord
 url = "https://services.swpc.noaa.gov/products/alerts.json"
 
 _REDUNDANT_PATTERNS = re.compile(
-    r"^Space Weather Message Code:.*\n?"
-    r"|^Serial Number:.*\n?"
-    r"|^Issue Time:.*\n?"
+    r"^\s*Space Weather Message Code:.*\n?"
+    r"|^\s*Serial Number:.*\n?"
+    r"|^\s*Issue Time:.*\n?"
     r"|NOAA Space Weather Scale descriptions can be found at\s*\nwww\.swpc\.noaa\.gov/noaa-scales-explanation\s*\n?",
     re.MULTILINE,
 )
@@ -32,7 +32,6 @@ def _clean_message(message: str) -> str:
     # Collapse runs of blank lines to a single blank line, strip leading/trailing whitespace
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
-
 
 
 @task(retries=3, retry_delay_seconds=5)
@@ -59,7 +58,7 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
     for alert in raw_alerts:
         try:
             data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
-            if data_time.date() == current_date:         
+            if data_time.date() == current_date:
                 cleaned = _clean_message(alert.get("message", ""))
                 record = AlertRecord(
                     alert_id=alert.get("product_id", ""),

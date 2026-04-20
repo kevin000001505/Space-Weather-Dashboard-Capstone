@@ -173,6 +173,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -360,7 +361,9 @@ async def get_absorption_threshold():
         client = redis_config.get_redis_client()
         raw = await client.get(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY)
         await client.aclose()
-        threshold = float(raw) if raw is not None else redis_config.DEFAULT_ABSORPTION_THRESHOLD
+        threshold = (
+            float(raw) if raw is not None else redis_config.DEFAULT_ABSORPTION_THRESHOLD
+        )
         return {"threshold": threshold}
     except Exception as e:
         logger.error("Failed to read absorption threshold: %s", e)
@@ -371,7 +374,9 @@ async def get_absorption_threshold():
 async def set_absorption_threshold(threshold: float = Query(..., gt=0, le=100)):
     try:
         client = redis_config.get_redis_client()
-        await client.set(redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY, str(threshold))
+        await client.set(
+            redis_config.FLIGHT_DRAP_ABSORPTION_THRESHOLD_KEY, str(threshold)
+        )
         await client.aclose()
         return {"threshold": threshold}
     except Exception as e:
@@ -846,7 +851,9 @@ async def range_data_values_retrieve(
         for row in rows:
             row_dict = dict(row)
             raw_points = row_dict.get("points")
-            row_dict["points"] = json.loads(raw_points) if raw_points is not None else None
+            row_dict["points"] = (
+                json.loads(raw_points) if raw_points is not None else None
+            )
             result.append(SnapshotResponseV2.model_validate(row_dict))
 
         add_timing_headers(response, t_start, t_query_start, t_query_end)
@@ -889,17 +896,21 @@ async def retrieve_flight_paths(
 
         if icao24 is None and callsign is None:
             raise HTTPException(
-                status_code=400, detail="At least one of 'icao24' or 'callsign' is required"
+                status_code=400,
+                detail="At least one of 'icao24' or 'callsign' is required",
             )
 
         t_query_start = time.perf_counter()
-        rows = await conn.fetch(FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24)
+        rows = await conn.fetch(
+            FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24
+        )
         t_query_end = time.perf_counter()
 
         if not rows:
             identifier = icao24 or callsign
             raise HTTPException(
-                status_code=404, detail=f"No flight path data found for '{identifier}' in the given range"
+                status_code=404,
+                detail=f"No flight path data found for '{identifier}' in the given range",
             )
 
         requested_times, times, points = [], [], []

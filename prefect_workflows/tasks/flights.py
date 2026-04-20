@@ -175,7 +175,7 @@ async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> No
     except Exception as e:
         logger.error(f"Insert failed: {e}")
         raise
-    
+
     finally:
         # Always drop — even if second INSERT fails
         await conn.execute("DROP TABLE IF EXISTS flight_states_staging")
@@ -239,7 +239,9 @@ async def broadcast_flight_drap_alerts_to_redis(conn: Connection) -> None:
     alerts = [
         {
             "time": r["time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "time_pos": r["time_pos"].strftime("%Y-%m-%dT%H:%M:%SZ") if r["time_pos"] else None,
+            "time_pos": r["time_pos"].strftime("%Y-%m-%dT%H:%M:%SZ")
+            if r["time_pos"]
+            else None,
             "icao24": r["icao24"],
             "callsign": r["callsign"],
             "lat": r["lat"],
@@ -262,9 +264,13 @@ async def broadcast_flight_drap_alerts_to_redis(conn: Connection) -> None:
     }
 
     try:
-        await client.set(FLIGHT_DRAP_ALERTS_CACHE_KEY, json.dumps(payload), ex=DEFAULT_TTL)
+        await client.set(
+            FLIGHT_DRAP_ALERTS_CACHE_KEY, json.dumps(payload), ex=DEFAULT_TTL
+        )
         await client.publish(FLIGHT_DRAP_ALERTS_CHANNEL, "new_data")
         await client.aclose()
-        logger.info(f"Broadcasted {len(alerts)} flight DRAP alerts to Redis (threshold={threshold}).")
+        logger.info(
+            f"Broadcasted {len(alerts)} flight DRAP alerts to Redis (threshold={threshold})."
+        )
     except Exception as e:
         logger.error(f"Failed to broadcast flight DRAP alerts to Redis: {e}")

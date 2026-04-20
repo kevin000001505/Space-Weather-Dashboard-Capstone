@@ -88,8 +88,7 @@ async def test_transmission_lines_empty_db(client, mock_conn):
 
 async def test_transmission_lines_multiple_rows(client, mock_conn):
     mock_conn.fetch.return_value = [
-        make_transmission_line_row(objectid=i, line_id=i * 100)
-        for i in range(1, 4)
+        make_transmission_line_row(objectid=i, line_id=i * 100) for i in range(1, 4)
     ]
     r = await client.get("/api/v1/transmission-lines")
     assert r.status_code == 200

@@ -109,8 +109,8 @@ class TestTransmissionLineRecord:
     def test_to_tuple_order(self):
         record = TransmissionLineRecord(**SAMPLE_ROW)
         t = record.to_tuple()
-        assert t[0] == 17           # objectid
-        assert t[1] == 140825       # line_id
+        assert t[0] == 17  # objectid
+        assert t[1] == 140825  # line_id
         assert t[18].startswith("LINESTRING")  # geometry_wkt
 
 
@@ -167,19 +167,33 @@ async def test_init_creates_table(conn):
 
 @pytest.mark.asyncio
 async def test_ingest_skips_invalid_row(conn):
+    test_objectid = 999999
+    await conn.execute(
+        "DELETE FROM electric_transmission_lines WHERE objectid = $1",
+        test_objectid,
+    )
+
+    valid_row = {**SAMPLE_ROW, "OBJECTID": str(test_objectid)}
     bad_row = {**SAMPLE_ROW, "OBJECTID": "not_an_int", "geometry": ""}
+
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".csv", delete=False, newline=""
     ) as f:
         tmp_path = f.name
 
     try:
-        make_csv_file([bad_row], tmp_path)
-        # Should not raise; bad row is skipped
+        make_csv_file([valid_row, bad_row], tmp_path)
         await ingest_transmission_lines_csv.fn(conn, tmp_path)
+
         count = await conn.fetchval(
-            "SELECT COUNT(*) FROM electric_transmission_lines"
+            "SELECT COUNT(*) FROM electric_transmission_lines WHERE objectid = $1",
+            test_objectid,
         )
-        assert count == 0
+        assert count == 1
+
+        await conn.execute(
+            "DELETE FROM electric_transmission_lines WHERE objectid = $1",
+            test_objectid,
+        )
     finally:
         os.unlink(tmp_path)

@@ -4,7 +4,12 @@ import pytest
 FLOWS_DIR = Path("prefect_workflows/flows")
 TESTS_DIR = Path("tests/test_flows")
 
-EXCLUDED_FLOWS = {"__init__.py", "airports_extract.py", "flights_capture.py", "config.py"}
+EXCLUDED_FLOWS = {
+    "__init__.py",
+    "airports_extract.py",
+    "flights_capture.py",
+    "config.py",
+}
 
 
 def get_flow_files() -> list[Path]:

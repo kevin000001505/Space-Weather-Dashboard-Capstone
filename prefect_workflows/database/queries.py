@@ -873,6 +873,7 @@ ACTIVATE_FLIGHT_STATES_QUERY = """
 # ---------------------------------------------------------------------------
 
 TRANSMISSION_LINES_STAGING_DDL = """
+DROP TABLE IF EXISTS etl_staging;
 CREATE TEMP TABLE etl_staging (
     objectid    INTEGER,
     line_id     INTEGER,
@@ -898,10 +899,26 @@ CREATE TEMP TABLE etl_staging (
 """
 
 TRANSMISSION_LINES_STAGING_COLUMNS = [
-    "objectid", "line_id", "type", "status", "naics_code", "naics_desc",
-    "source", "sourcedate", "val_method", "val_date", "owner", "voltage",
-    "volt_class", "inferred", "sub_1", "sub_2", "shape_len", "global_id",
-    "geometry_wkt", "length",
+    "objectid",
+    "line_id",
+    "type",
+    "status",
+    "naics_code",
+    "naics_desc",
+    "source",
+    "sourcedate",
+    "val_method",
+    "val_date",
+    "owner",
+    "voltage",
+    "volt_class",
+    "inferred",
+    "sub_1",
+    "sub_2",
+    "shape_len",
+    "global_id",
+    "geometry_wkt",
+    "length",
 ]
 
 TRANSMISSION_LINES_TRANSFORM_SQL = """

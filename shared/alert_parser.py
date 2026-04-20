@@ -11,14 +11,19 @@ def parse_message_to_json(message: str) -> dict[str, Any]:
     type_match = re.match(
         r"^(ALERT|CONTINUED ALERT|WARNING|EXTENDED WARNING|CANCEL WARNING|"
         r"WATCH|CANCEL WATCH|SUMMARY|CANCEL SUMMARY):\s*(.+)?$",
-        first, re.IGNORECASE,
+        first,
+        re.IGNORECASE,
     )
     msg_type = type_match.group(1).upper() if type_match else ""
     subject = (type_match.group(2) or "").strip() if type_match else first
 
     body_lines = lines[1:]
     impact_idx = next(
-        (i for i, l in enumerate(body_lines) if l.lower().startswith("potential impacts:")),
+        (
+            i
+            for i, l in enumerate(body_lines)
+            if l.lower().startswith("potential impacts:")
+        ),
         None,
     )
     field_lines = body_lines[:impact_idx] if impact_idx is not None else body_lines

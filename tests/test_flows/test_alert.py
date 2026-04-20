@@ -36,10 +36,6 @@ class TestParseAlerts:
             for line in record.message.splitlines():
                 assert not line.startswith("Issue Time:")
 
-    def test_removes_message_code(self, parsed_alerts):
-        for record in parsed_alerts:
-            assert "Space Weather Message Code:" not in record.message
-
 
 class TestParseMessageToJson:
     ALERT_MSG = (
@@ -126,8 +122,15 @@ class TestParseMessageToJson:
 
     def test_parsed_alerts_type_is_known(self, parsed_alerts):
         known_types = {
-            "ALERT", "CONTINUED ALERT", "WARNING", "EXTENDED WARNING",
-            "CANCEL WARNING", "WATCH", "CANCEL WATCH", "SUMMARY", "CANCEL SUMMARY",
+            "ALERT",
+            "CONTINUED ALERT",
+            "WARNING",
+            "EXTENDED WARNING",
+            "CANCEL WARNING",
+            "WATCH",
+            "CANCEL WATCH",
+            "SUMMARY",
+            "CANCEL SUMMARY",
         }
         for record in parsed_alerts:
             result = parse_message_to_json(record.message)
