@@ -1,3 +1,4 @@
+import re
 import requests
 from prefect import task
 from prefect.cache_policies import NO_CACHE
@@ -13,6 +14,21 @@ from database.queries import (
 from tasks.models import AlertRecord
 
 url = "https://services.swpc.noaa.gov/products/alerts.json"
+
+_REDUNDANT_PATTERNS = re.compile(
+    r"^Space Weather Message Code:.*\n?"
+    r"|^Serial Number:.*\n?"
+    r"|^Issue Time:.*\n?"
+    r"|NOAA Space Weather Scale descriptions can be found at\s*\nwww\.swpc\.noaa\.gov/noaa-scales-explanation\s*\n?",
+    re.MULTILINE,
+)
+
+
+def _clean_message(message: str) -> str:
+    cleaned = _REDUNDANT_PATTERNS.sub("", message)
+    # Collapse runs of blank lines to a single blank line, strip leading/trailing whitespace
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 @task(retries=3, retry_delay_seconds=5)
@@ -35,13 +51,15 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
     """Parse raw alert data into AlertRecord objects."""
     logger = get_logger(__name__)
     records: List[AlertRecord] = []
+    current_date = datetime.now(timezone.utc).date()
     for alert in raw_alerts:
         try:
-            if datetime.fromisoformat(alert.get("issue_datetime", "")).date() == datetime.now(timezone.utc).date():         
+            data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
+            if data_time.date() == current_date:         
                 record = AlertRecord(
                     alert_id=alert.get("product_id", ""),
-                    issue_datetime=datetime.fromisoformat(alert.get("issue_datetime", "")),
-                    message=alert.get("message", "")
+                    issue_datetime=data_time,
+                    message=_clean_message(alert.get("message", ""))
                 )
                 records.append(record)
         except Exception as e:
