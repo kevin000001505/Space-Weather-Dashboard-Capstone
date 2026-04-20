@@ -9,6 +9,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from shared.db_utils import create_db_pool
+from shared.alert_parser import parse_message_to_json
 from database.queries import (
     ACTIVATE_FLIGHT_STATES_QUERY,
     ALERT_QUERY,
@@ -796,7 +797,10 @@ async def get_alerts(
             return timing_debug_response(t_start, t_query_start, t_query_end)
 
         add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return [dict(row) for row in rows]
+        return [
+            {**dict(row), "parsed_message": parse_message_to_json(row["message"])}
+            for row in rows
+        ]
 
     except HTTPException:
         raise

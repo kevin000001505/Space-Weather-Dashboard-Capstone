@@ -74,8 +74,23 @@ def raw_alerts():
 
 @pytest.fixture(scope="session")
 def parsed_alerts(raw_alerts):
-    """Parse once, reuse for store tests"""
-    return parse_alerts.fn(raw_alerts)
+    """Parse all raw alerts regardless of date — avoids empty results on quiet days."""
+    from datetime import datetime
+    from tasks.alert import _clean_message
+    from tasks.models import AlertRecord
+    records = []
+    for alert in raw_alerts:
+        try:
+            data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
+            cleaned = _clean_message(alert.get("message", ""))
+            records.append(AlertRecord(
+                alert_id=alert.get("product_id", ""),
+                issue_datetime=data_time,
+                message=cleaned,
+            ))
+        except Exception:
+            pass
+    return records
 
 
 # -- Xray 6 hours --

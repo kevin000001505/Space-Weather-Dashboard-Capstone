@@ -489,7 +489,7 @@ class AlertRecord(BaseModel):
 
     alert_id: str = Field(description="Unique alert identifier")
     issue_datetime: datetime = Field(description="Alert timestamp")
-    message: str = Field(description="Alert message")
+    message: str = Field(description="Cleaned alert message")
 
     def to_tuple(self) -> tuple:
         """Convert to tuple for asyncpg executemany."""

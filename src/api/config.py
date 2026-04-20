@@ -173,6 +173,7 @@ class XRayResponse(BaseModel):
 class AlertResponse(BaseModel):
     time: datetime
     message: str
+    parsed_message: Optional[dict] = None
 
 
 class SnapshotResponseV2(BaseModel):

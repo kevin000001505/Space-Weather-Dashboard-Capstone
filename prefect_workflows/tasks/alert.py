@@ -1,8 +1,11 @@
 import re
+import json
 import requests
 from prefect import task
 from prefect.cache_policies import NO_CACHE
 from shared.logger import get_logger
+from shared.redis import get_redis_client, ALERTS_CACHE_KEY, ALERTS_CHANNEL, MEDIUM_TTL
+from shared.alert_parser import parse_message_to_json
 from asyncpg import Connection
 from datetime import datetime, timezone
 from typing import List
@@ -31,6 +34,7 @@ def _clean_message(message: str) -> str:
     return cleaned.strip()
 
 
+
 @task(retries=3, retry_delay_seconds=5)
 def fetch_alerts() -> List[dict]:
     """Fetch space weather alerts from the NOAA API."""
@@ -56,10 +60,11 @@ def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
         try:
             data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
             if data_time.date() == current_date:         
+                cleaned = _clean_message(alert.get("message", ""))
                 record = AlertRecord(
                     alert_id=alert.get("product_id", ""),
                     issue_datetime=data_time,
-                    message=_clean_message(alert.get("message", ""))
+                    message=cleaned,
                 )
                 records.append(record)
         except Exception as e:
@@ -87,3 +92,19 @@ async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> No
         await conn.execute(ALERTS_TRANSFORM_SQL)
 
     logger.info(f"Stored {len(records)} alert records")
+
+    payload = [
+        {
+            "alert_id": r.alert_id,
+            "issue_datetime": r.issue_datetime.isoformat(),
+            "parsed_message": parse_message_to_json(r.message),
+        }
+        for r in alerts_records
+    ]
+    try:
+        client = get_redis_client()
+        await client.set(ALERTS_CACHE_KEY, json.dumps(payload), ex=MEDIUM_TTL)
+        await client.publish(ALERTS_CHANNEL, "new_data")
+        await client.aclose()
+    except Exception as e:
+        logger.error(f"Failed to broadcast alerts to Redis: {e}")
