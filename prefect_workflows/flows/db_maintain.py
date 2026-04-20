@@ -25,7 +25,7 @@ from tasks.db import (
 from database.queries import RETENTION_CONFIG
 from flows.kp_index import ingest_kp_index_flow
 from flows.airports_extract import airports_extract_flow
-from flows.transmission_lines_extract import transmission_lines_extract_flow
+from flows.transmission_lines_extract import transmission_lines_extract_flow, CSV_PATH
 
 
 @flow(log_prints=True)
@@ -85,8 +85,11 @@ async def seed_empty_tables():
     tables_to_seed = [
         ("kp_index", ingest_kp_index_flow),
         ("airports", airports_extract_flow),
-        ("electric_transmission_lines", transmission_lines_extract_flow),
     ]
+    if os.path.exists(CSV_PATH):
+        tables_to_seed.append(("electric_transmission_lines", transmission_lines_extract_flow))
+    else:
+        logger.error(f"Transmission lines CSV not found at {CSV_PATH}, skipping seed.")
     async with get_connection() as conn:
         for table_name, seed_flow in tables_to_seed:
             count = await conn.fetchval(f"SELECT COUNT(*) FROM {table_name}")
