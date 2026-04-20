@@ -8,6 +8,7 @@ from tasks.db import (
     initial_drap_db,
     initial_flight_states_db,
     initial_activate_flight_db,
+    initial_flight_drap_events_db,
     initial_airport_db,
     # initial_partition_function,
     initial_proton_flux_plot_db,
@@ -58,6 +59,7 @@ async def initialize_db_flow():
             await initial_drap_db(conn)
             await initial_airport_db(conn)
             await initial_activate_flight_db(conn)
+            await initial_flight_drap_events_db(conn)
             await initial_proton_flux_plot_db(conn)
             await initial_kp_index_db(conn)
             await initial_alert_db(conn)
@@ -66,6 +68,7 @@ async def initialize_db_flow():
             await initial_geoelectric_db(conn)
             await initial_transmission_lines_db(conn)
             await initial_readonly_grants(conn)
+            await insert_events_location(conn)
             logger.info("Database schema initialization completed successfully!")
 
     except Exception as e:

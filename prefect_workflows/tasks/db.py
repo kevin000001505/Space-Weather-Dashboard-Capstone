@@ -12,6 +12,7 @@ from database.create import (
     AURORA_CREATE_TABLE_SQL,
     DRAP_CREATE_TABLE_SQL,
     FLIGHT_STATES_CREATE_TABLE_SQL,
+    CREATE_FLIGHT_DRAP_EVENTS,
     KP_INDEX_CREATE_TABLE_SQL,
     PROTON_FLUX_CREATE_TABLE_SQL,
     ALERT_CREATE_TABLE_SQL,
@@ -68,6 +69,21 @@ async def initial_activate_flight_db(conn: Connection):
         )
     except Exception as e:
         logger.error(f"Failed to initialize activate_flight table: {e}")
+        raise
+
+
+@task(cache_policy=NO_CACHE)
+async def initial_flight_drap_events_db(conn: Connection):
+    """Task to initialize the flight_drap_events table."""
+    logger = get_logger(__name__)
+    try:
+        logger.info("Ensuring flight_drap_events table exists...")
+        await ensure_table_exists(
+            conn, "flight_drap_events", create_sql=CREATE_FLIGHT_DRAP_EVENTS
+        )
+        logger.info("flight_drap_events table is ready!")
+    except Exception as e:
+        logger.error(f"Failed to initialize flight_drap_events table: {e}")
         raise
 
 
