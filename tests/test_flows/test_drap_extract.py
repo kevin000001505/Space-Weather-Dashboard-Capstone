@@ -25,7 +25,7 @@ class TestLoadDrap:
         )
         await load_data.fn(df, conn)
         count = await conn.fetchval("SELECT COUNT(*) FROM drap_region")
-        assert count == 1
+        assert count == 2
 
     @pytest.mark.asyncio
     async def test_empty_df_does_nothing(self, conn):
