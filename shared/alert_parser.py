@@ -10,7 +10,7 @@ def parse_message_to_json(message: str) -> dict[str, Any]:
     first = lines[0]
     type_match = re.match(
         r"^(ALERT|CONTINUED ALERT|WARNING|EXTENDED WARNING|CANCEL WARNING|"
-        r"WATCH|CANCEL WATCH|SUMMARY|CANCEL SUMMARY):\s*(.+)?$",
+        r"WATCH|CANCEL WATCH|SUMMARY|CANCEL SUMMARY|CANCEL ALERT):\s*(.+)?$",
         first,
         re.IGNORECASE,
     )

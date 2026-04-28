@@ -131,6 +131,7 @@ class TestParseMessageToJson:
             "CANCEL WATCH",
             "SUMMARY",
             "CANCEL SUMMARY",
+            "CANCEL ALERT",
         }
         for record in parsed_alerts:
             result = parse_message_to_json(record.message)
