@@ -12,6 +12,10 @@ services:
       - fastapi
       - frontend
       - pgadmin
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 128M
     networks:
       - web_network
 
@@ -21,6 +25,10 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     restart: always
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
     networks:
       - web_network
     depends_on:
@@ -33,6 +41,7 @@ services:
     stop_grace_period: 60s   # Clean shutdown
     command: >
       postgres
+      -c max_connections=150
       -c shared_buffers=${PG_SHARED_BUFFERS:-256MB}
       -c work_mem=${PG_WORK_MEM:-4MB}
       -c effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-512MB}
@@ -52,6 +61,10 @@ services:
       - ./docker/db-init-scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
     ports:
       - "127.0.0.1:5432:5432" # Bind to localhost for local development
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 2G
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prefect -d prefect -h 127.0.0.1 -p 5432"]
       interval: 10s
@@ -68,6 +81,10 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: mypassword
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 256M
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -81,6 +98,10 @@ services:
     image: redis:7
     container_name: redis
     command: redis-server --appendonly yes
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 256M
     volumes:
       - redis_data:/data
     healthcheck:
@@ -111,6 +132,10 @@ services:
       PREFECT_UI_API_URL: /prefect/api
       PREFECT_UI_SERVE_BASE: /prefect
       PREFECT_API_SERVICES_SCHEDULER_MAX_CATCHUP_SECONDS: "60"
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1G
     command: prefect server start --host 0.0.0.0
     volumes:
       - prefect_home:/root/.prefect
@@ -193,6 +218,10 @@ services:
       RETENTION_DAYS_GOES_XRAY_6HOUR: ${RETENTION_DAYS_GOES_XRAY_6HOUR:-1825}
       RETENTION_DAYS_GOES_PROTON_FLUX: ${RETENTION_DAYS_GOES_PROTON_FLUX:-1825}
       RETENTION_DAYS_KP_INDEX: ${RETENTION_DAYS_KP_INDEX:-1825}
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1G
     command:
       - bash
       - -c
@@ -228,6 +257,10 @@ services:
       DEVELOPER_PASSWORD: ${DEVELOPER_PASSWORD:-zxc123}
       DEVELOPER_DB: ${DEVELOPER_DB:-app}
       PYTHONPATH: /opt/prefect-app:/opt
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 512M
     command:
       - bash
       - -c
@@ -248,6 +281,10 @@ services:
     image: amir20/dozzle:latest
     container_name: dozzle
     restart: unless-stopped
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 128M
     environment:
       DOZZLE_AUTH_PROVIDER: simple
       DOZZLE_BASE: /dozzle
@@ -262,6 +299,10 @@ services:
       context: .
       dockerfile: docker/api/Dockerfile
     container_name: fastapi
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1G
     depends_on:
       postgis:
         condition: service_healthy

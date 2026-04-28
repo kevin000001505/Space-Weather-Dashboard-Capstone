@@ -79,6 +79,12 @@ async def initialize_db_flow():
 
 
 @flow(log_prints=True)
+async def transmission_lines_extract_flow_wrapper():
+    """Wrapper for transmission_lines_extract_flow with no parameters."""
+    await transmission_lines_extract_flow()
+
+
+@flow(log_prints=True)
 async def seed_empty_tables():
     """Trigger immediate data pulls for tables with long schedule intervals if they are empty."""
     logger = get_logger(__name__)
@@ -87,7 +93,9 @@ async def seed_empty_tables():
         ("airports", airports_extract_flow),
     ]
     if os.path.exists(CSV_PATH):
-        tables_to_seed.append(("electric_transmission_lines", transmission_lines_extract_flow))
+        tables_to_seed.append(
+            ("electric_transmission_lines", transmission_lines_extract_flow_wrapper)
+        )
     else:
         logger.error(f"Transmission lines CSV not found at {CSV_PATH}, skipping seed.")
     async with get_connection() as conn:

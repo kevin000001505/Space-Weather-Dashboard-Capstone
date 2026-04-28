@@ -55,7 +55,8 @@ class TestCoverageEnforcement:
         initial_tasks = [
             name
             for name in dir(db_tasks)
-            if name.startswith("initial_") and name.endswith("_db")
+            if name.startswith("initial_")
+            and name.endswith("_db")
             and name not in EXCLUDED_INITIAL_TASKS
         ]
 

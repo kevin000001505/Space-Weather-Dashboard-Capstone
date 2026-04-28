@@ -21,8 +21,9 @@ RETENTION_CONFIG = {
 # ---------------------------------------------------------------------------
 
 # --- flight_states ---
-FLIGHT_STATES_STAGING_DDL = """
-CREATE TEMP TABLE flight_states_staging (
+# --- Unified flight staging (populated once per ingest, reused by all flight inserts) ---
+FLIGHT_STAGING_DDL = """
+CREATE TEMP TABLE IF NOT EXISTS flight_staging (
     time            TIMESTAMPTZ,
     icao24          CHAR(6),
     callsign        VARCHAR(8),
@@ -42,11 +43,12 @@ CREATE TEMP TABLE flight_states_staging (
     sensors         INTEGER[],
     geom_lon        DOUBLE PRECISION,
     geom_lat        DOUBLE PRECISION,
-    geom            GEOMETRY(Point, 4326)
+    geom            GEOMETRY(Point, 4326),
+    epoch_time_pos  DOUBLE PRECISION
 ) ON COMMIT PRESERVE ROWS
 """
 
-FLIGHT_STATES_STAGING_COLUMNS = [
+FLIGHT_STAGING_COLUMNS = [
     "time",
     "icao24",
     "callsign",
@@ -68,10 +70,11 @@ FLIGHT_STATES_STAGING_COLUMNS = [
     "geom_lat",
 ]
 
-FLIGHT_STATES_STAGING_GEOM_SQL = """
-UPDATE flight_states_staging
+FLIGHT_STAGING_GEOM_SQL = """
+UPDATE flight_staging
 SET
-    geom           = ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326)
+    geom           = ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326),
+    epoch_time_pos = EXTRACT(EPOCH FROM time_pos)
 WHERE geom_lon IS NOT NULL AND geom_lat IS NOT NULL
 """
 
@@ -85,7 +88,7 @@ SELECT
     lat, lon, geo_altitude, baro_altitude, velocity,
     heading, vert_rate, on_ground, squawk, spi, source, sensors,
     geom
-FROM flight_states_staging
+FROM flight_staging
 ON CONFLICT DO NOTHING
 """
 
@@ -108,7 +111,7 @@ closest_drap_time AS (
     SELECT DISTINCT ON (s.time)
         s.time        AS flight_time,
         ds.observed_at
-    FROM flight_states_staging s
+    FROM flight_staging s
     CROSS JOIN drap_snapshots ds
     WHERE s.geom IS NOT NULL
     ORDER BY s.time, ABS(EXTRACT(EPOCH FROM (ds.observed_at - s.time)))
@@ -129,7 +132,7 @@ SELECT
     ld.lat,
     ld.long,
     ld.absorption
-FROM flight_states_staging s
+FROM flight_staging s
 INNER JOIN closest_drap_time cdt ON cdt.flight_time = s.time
 INNER JOIN LATERAL (
     SELECT dr.lat, dr.long, dr.absorption, dr.observed_at
@@ -154,62 +157,6 @@ WHERE on_ground = false
 """
 
 # --- activate_flight ---
-ACTIVATE_FLIGHT_STAGING_DDL = """
-CREATE TEMP TABLE activate_flight_staging (
-    time            TIMESTAMPTZ,
-    icao24          CHAR(6),
-    callsign        VARCHAR(8),
-    origin_country  VARCHAR(100),
-    time_pos        TIMESTAMPTZ,
-    lat             DOUBLE PRECISION,
-    lon             DOUBLE PRECISION,
-    geo_altitude    REAL,
-    baro_altitude   REAL,
-    velocity        REAL,
-    heading         REAL,
-    vert_rate       REAL,
-    on_ground       BOOLEAN,
-    squawk          VARCHAR(8),
-    spi             BOOLEAN,
-    source          SMALLINT,
-    sensors         INTEGER[],
-    geom_lon        DOUBLE PRECISION,
-    geom_lat        DOUBLE PRECISION,
-    geom            GEOMETRY(Point, 4326),
-    epoch_time_pos  DOUBLE PRECISION
-) ON COMMIT DROP
-"""
-
-ACTIVATE_FLIGHT_STAGING_COLUMNS = [
-    "time",
-    "icao24",
-    "callsign",
-    "origin_country",
-    "time_pos",
-    "lat",
-    "lon",
-    "geo_altitude",
-    "baro_altitude",
-    "velocity",
-    "heading",
-    "vert_rate",
-    "on_ground",
-    "squawk",
-    "spi",
-    "source",
-    "sensors",
-    "geom_lon",
-    "geom_lat",
-]
-
-ACTIVATE_FLIGHT_STAGING_GEOM_SQL = """
-UPDATE activate_flight_staging
-SET
-    geom           = ST_SetSRID(ST_MakePoint(geom_lon, geom_lat), 4326),
-    epoch_time_pos = EXTRACT(EPOCH FROM time_pos)
-WHERE geom_lon IS NOT NULL AND geom_lat IS NOT NULL
-"""
-
 ACTIVATE_FLIGHT_TRANSFORM_SQL = """
 INSERT INTO activate_flight
     (time, icao24, callsign, origin_country, time_pos,
@@ -227,7 +174,7 @@ SELECT
         THEN ARRAY[ARRAY[s.geom_lon, s.geom_lat, s.epoch_time_pos]]
         ELSE ARRAY[]::DOUBLE PRECISION[][]
     END
-FROM activate_flight_staging s
+FROM flight_staging s
 ON CONFLICT (icao24)
 DO UPDATE SET
     path_points = CASE

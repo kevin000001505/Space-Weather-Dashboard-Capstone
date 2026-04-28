@@ -52,7 +52,7 @@ bin/
 
 # frontend/src/dummy_data/
 frontend/src/dummy_data/
-src/api/core.8
+src/api/core.*
 
 # Agent context files
 CLAUDE.md

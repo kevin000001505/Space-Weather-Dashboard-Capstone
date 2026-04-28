@@ -10,15 +10,12 @@ from shared.logger import get_logger
 from pyopensky.rest import REST
 from tasks.models import FlightStateRecord
 from database.queries import (
-    ACTIVATE_FLIGHT_STAGING_GEOM_SQL,
     FLIGHT_DRAP_EVENTS,
     FLIGHT_DRAP_EVENTS_ALERT,
-    FLIGHT_STATES_STAGING_DDL,
-    FLIGHT_STATES_STAGING_COLUMNS,
-    FLIGHT_STATES_STAGING_GEOM_SQL,
+    FLIGHT_STAGING_DDL,
+    FLIGHT_STAGING_COLUMNS,
+    FLIGHT_STAGING_GEOM_SQL,
     FLIGHT_STATES_TRANSFORM_SQL,
-    ACTIVATE_FLIGHT_STAGING_DDL,
-    ACTIVATE_FLIGHT_STAGING_COLUMNS,
     ACTIVATE_FLIGHT_TRANSFORM_SQL,
     ACTIVATE_FLIGHT_STATES_QUERY,
 )
@@ -130,55 +127,81 @@ def fetch_flights() -> pd.DataFrame:
         raise
 
 
-@task(name="Insert Flight States", cache_policy=NO_CACHE)
-async def insert_batch(records: list[FlightStateRecord], conn: Connection) -> None:
-    """Insert flight records into both tables using COPY + server-side transform."""
+@task(
+    name="Stage Flight Records",
+    cache_policy=NO_CACHE,
+    retries=2,
+    retry_delay_seconds=5,
+)
+async def stage_flight_records(
+    records: list[FlightStateRecord], conn: Connection
+) -> int:
+    """Create the unified flight_staging temp table and bulk-load records via COPY."""
     logger = get_logger(__name__)
-    logger.info(f"Inserting {len(records)} records.")
+    tuples = [r.to_tuple() for r in records]
 
-    tuples = [r.to_tuple() for r in records]  # convert once, not per batch
+    async with conn.transaction():
+        # Reset to a clean staging table for this run (PRESERVE ROWS keeps it
+        # alive across the downstream tasks' transactions on this connection).
+        await conn.execute("DROP TABLE IF EXISTS flight_staging")
+        await conn.execute(FLIGHT_STAGING_DDL)
+        await conn.copy_records_to_table(
+            "flight_staging",
+            records=tuples,
+            columns=FLIGHT_STAGING_COLUMNS,
+        )
+        await conn.execute(FLIGHT_STAGING_GEOM_SQL)
 
-    try:
-        async with conn.transaction():
-            # flight_states
-            await conn.execute(FLIGHT_STATES_STAGING_DDL)
+    logger.info(f"Staged {len(tuples)} flight records into flight_staging.")
+    return len(tuples)
 
-            await conn.copy_records_to_table(
-                "flight_states_staging",
-                records=tuples,
-                columns=FLIGHT_STATES_STAGING_COLUMNS,
-            )
 
-            await conn.execute(FLIGHT_STATES_STAGING_GEOM_SQL)
+@task(
+    name="Insert Flight States",
+    cache_policy=NO_CACHE,
+    retries=2,
+    retry_delay_seconds=5,
+)
+async def insert_flight_states(conn: Connection) -> None:
+    """Append staged rows to the flight_states hypertable."""
+    logger = get_logger(__name__)
+    async with conn.transaction():
+        await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
+    logger.info("flight_states transform complete.")
 
-            await conn.execute(FLIGHT_STATES_TRANSFORM_SQL)
 
-            # activate_flight
-            await conn.execute(ACTIVATE_FLIGHT_STAGING_DDL)
+@task(
+    name="Upsert Activate Flight",
+    cache_policy=NO_CACHE,
+    retries=2,
+    retry_delay_seconds=5,
+)
+async def upsert_activate_flight(conn: Connection) -> None:
+    """Upsert per-aircraft live state into activate_flight (path_points logic)."""
+    logger = get_logger(__name__)
+    async with conn.transaction():
+        await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
+    logger.info("activate_flight upsert complete.")
 
-            await conn.copy_records_to_table(
-                "activate_flight_staging",
-                records=tuples,
-                columns=ACTIVATE_FLIGHT_STAGING_COLUMNS,
-            )
 
-            await conn.execute(ACTIVATE_FLIGHT_STAGING_GEOM_SQL)
+@task(
+    name="Insert Flight DRAP Events",
+    cache_policy=NO_CACHE,
+    retries=2,
+    retry_delay_seconds=5,
+)
+async def insert_flight_drap_events(conn: Connection) -> None:
+    """Join staged flights with recent DRAP snapshots and append to flight_drap_events."""
+    logger = get_logger(__name__)
+    async with conn.transaction():
+        await conn.execute(FLIGHT_DRAP_EVENTS)
+    logger.info("flight_drap_events insert complete.")
 
-            await conn.execute(ACTIVATE_FLIGHT_TRANSFORM_SQL)
 
-            await conn.execute(FLIGHT_DRAP_EVENTS)
-
-        logger.info(f"Finished inserting {len(records)} records.")
-
-    except TimeoutError:
-        logger.warning("Transaction timed out, lock released via rollback.")
-    except Exception as e:
-        logger.error(f"Insert failed: {e}")
-        raise
-
-    finally:
-        # Always drop — even if second INSERT fails
-        await conn.execute("DROP TABLE IF EXISTS flight_states_staging")
+@task(name="Drop Flight Staging", cache_policy=NO_CACHE)
+async def drop_flight_staging(conn: Connection) -> None:
+    """Tear down the staging temp table at the end of the run."""
+    await conn.execute("DROP TABLE IF EXISTS flight_staging")
 
 
 @task(name="Broadcast Active Flights to Redis", cache_policy=NO_CACHE, retries=3)

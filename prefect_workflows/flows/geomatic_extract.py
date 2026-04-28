@@ -28,7 +28,7 @@ async def geomatic_extract_flow():
         logger.error("Could not determine latest geoelectric file. Aborting.")
         return
 
-    last_seen = await Variable.get("geoelectric_last_file", default=None)
+    last_seen = Variable.get("geoelectric_last_file", default=None)
     logger.info(f"Last seen: '{last_seen}' | Current: '{file_name}'")
 
     if last_seen == file_name:
