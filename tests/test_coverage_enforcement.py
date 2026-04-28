@@ -7,7 +7,6 @@ TESTS_DIR = Path("tests/test_flows")
 EXCLUDED_FLOWS = {
     "__init__.py",
     "airports_extract.py",
-    "flights_capture.py",
     "config.py",
 }
 
