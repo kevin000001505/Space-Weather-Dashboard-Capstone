@@ -213,9 +213,14 @@ SELECT create_hypertable(
 
 ALERT_CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS alerts (
-    alert_id VARCHAR(50) PRIMARY KEY,
-    issue_datetime TIMESTAMPTZ NOT NULL,
-    alert_messages TEXT NOT NULL
+    alert_id          VARCHAR(50)  NOT NULL,
+    issue_datetime    TIMESTAMPTZ  NOT NULL,
+    alert_messages    TEXT         NOT NULL,
+    type              VARCHAR(50),
+    subject           TEXT,
+    fields            JSONB,
+    potential_impacts TEXT[],
+    PRIMARY KEY (alert_id, issue_datetime)
 );
 """
 

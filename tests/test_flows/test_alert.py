@@ -155,3 +155,58 @@ class TestStoreAlert:
 
         after = await conn.fetchval("SELECT COUNT(*) FROM alerts")
         assert after == before
+
+    @pytest.mark.asyncio
+    async def test_duplicate_insert_is_noop(self, conn, parsed_alerts):
+        """Re-running with the same payload must not produce duplicate rows
+        — (alert_id, issue_datetime) PK with ON CONFLICT DO NOTHING."""
+        await store_alert.fn(parsed_alerts, conn)
+        first = await conn.fetchval("SELECT COUNT(*) FROM alerts")
+
+        # The staging DDL uses ON COMMIT DROP, which fires on the outermost
+        # transaction. The test fixture wraps everything in one rolled-back
+        # transaction, so nested calls reuse the same temp table — drop it
+        # manually between runs to mimic production's per-call lifecycle.
+        await conn.execute("DROP TABLE IF EXISTS alerts_staging")
+
+        await store_alert.fn(parsed_alerts, conn)
+        second = await conn.fetchval("SELECT COUNT(*) FROM alerts")
+
+        assert first == second
+
+    @pytest.mark.asyncio
+    async def test_parsed_columns_populated(self, conn, parsed_alerts):
+        """Parsed type/subject should land in the table for well-formed messages."""
+        await store_alert.fn(parsed_alerts, conn)
+        rows = await conn.fetch(
+            "SELECT type, subject, alert_messages FROM alerts WHERE type IS NOT NULL LIMIT 1"
+        )
+        if not rows:
+            pytest.skip("No parseable alerts in this fetch window")
+        row = rows[0]
+        assert row["type"]
+        assert row["alert_messages"]  # original cleaned message preserved
+
+    @pytest.mark.asyncio
+    async def test_original_message_preserved_when_parsing_yields_nothing(self, conn):
+        """Even when parser returns empty, the raw message is still stored."""
+        from datetime import datetime, timezone
+        from tasks.models import AlertRecord
+
+        record = AlertRecord(
+            alert_id="TEST-UNPARSEABLE",
+            issue_datetime=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            message="some opaque message that does not match any known shape",
+        )
+        await store_alert.fn([record], conn)
+        row = await conn.fetchrow(
+            "SELECT alert_messages, type, subject, fields, potential_impacts "
+            "FROM alerts WHERE alert_id = $1",
+            "TEST-UNPARSEABLE",
+        )
+        assert row is not None
+        assert row["alert_messages"] == record.message
+        assert row["type"] is None
+        assert row["subject"] is None
+        assert row["fields"] is None
+        assert row["potential_impacts"] is None

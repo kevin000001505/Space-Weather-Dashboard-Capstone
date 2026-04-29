@@ -7,7 +7,7 @@ from shared.logger import get_logger
 from shared.redis import get_redis_client, ALERTS_CACHE_KEY, ALERTS_CHANNEL, MEDIUM_TTL
 from shared.alert_parser import parse_message_to_json
 from asyncpg import Connection
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List
 from database.queries import (
     ALERTS_STAGING_DDL,
@@ -51,24 +51,38 @@ def fetch_alerts() -> List[dict]:
 
 @task(retries=3, retry_delay_seconds=5)
 def parse_alerts(raw_alerts: List[dict]) -> List[AlertRecord]:
-    """Parse raw alert data into AlertRecord objects."""
+    """Parse raw alert data into AlertRecord objects.
+
+    Date-based dedup is no longer done here — the (alert_id, issue_datetime)
+    primary key handles it at ingest time. Parsing failures still produce a
+    record so the original message is preserved with NULL parsed columns.
+    """
     logger = get_logger(__name__)
     records: List[AlertRecord] = []
-    current_date = datetime.now(timezone.utc).date()
     for alert in raw_alerts:
         try:
             data_time = datetime.fromisoformat(alert.get("issue_datetime", ""))
-            if data_time.date() == current_date:
-                cleaned = _clean_message(alert.get("message", ""))
-                record = AlertRecord(
-                    alert_id=alert.get("product_id", ""),
-                    issue_datetime=data_time,
-                    message=cleaned,
+            cleaned = _clean_message(alert.get("message", ""))
+            parsed: dict = {}
+            try:
+                parsed = parse_message_to_json(cleaned)
+            except Exception as parse_err:
+                logger.warning(
+                    f"Failed to parse alert {alert.get('product_id')}: {parse_err}"
                 )
-                records.append(record)
+            record = AlertRecord(
+                alert_id=alert.get("product_id", ""),
+                issue_datetime=data_time,
+                message=cleaned,
+                type=parsed.get("type") or None,
+                subject=parsed.get("subject") or None,
+                fields=parsed.get("fields") or None,
+                potential_impacts=parsed.get("potential_impacts") or None,
+            )
+            records.append(record)
         except Exception as e:
             logger.warning(f"Skipping invalid alert record {alert}: {e}")
-    logger.info(f"Parsed {len(records)} valid alert records")
+    logger.info(f"Parsed {len(records)} alert records")
     return records
 
 
@@ -95,8 +109,9 @@ async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> No
     payload = [
         {
             "alert_id": r.alert_id,
-            "issue_datetime": r.issue_datetime.isoformat(),
-            "parsed_message": parse_message_to_json(r.message),
+            "time": r.issue_datetime.isoformat(),
+            "message": r.message,
+            "parsed_message": r.parsed_payload(),
         }
         for r in alerts_records
     ]

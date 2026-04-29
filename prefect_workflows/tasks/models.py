@@ -1,6 +1,7 @@
+import json
 from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 from datetime import datetime, date
-from typing import Optional, Any
+from typing import Optional, Any, List, Dict
 
 
 class FlightStateRecord(BaseModel):
@@ -490,6 +491,14 @@ class AlertRecord(BaseModel):
     alert_id: str = Field(description="Unique alert identifier")
     issue_datetime: datetime = Field(description="Alert timestamp")
     message: str = Field(description="Cleaned alert message")
+    type: Optional[str] = Field(default=None, description="Parsed alert type")
+    subject: Optional[str] = Field(default=None, description="Parsed alert subject")
+    fields: Optional[Dict[str, Any]] = Field(
+        default=None, description="Parsed key/value fields"
+    )
+    potential_impacts: Optional[List[str]] = Field(
+        default=None, description="Parsed potential impact lines"
+    )
 
     def to_tuple(self) -> tuple:
         """Convert to tuple for asyncpg executemany."""
@@ -497,7 +506,20 @@ class AlertRecord(BaseModel):
             self.alert_id,
             self.issue_datetime,
             self.message,
+            self.type,
+            self.subject,
+            json.dumps(self.fields) if self.fields else None,
+            self.potential_impacts,
         )
+
+    def parsed_payload(self) -> dict:
+        """Pre-parsed message dict for SSE/Redis broadcast."""
+        return {
+            "type": self.type,
+            "subject": self.subject,
+            "fields": self.fields,
+            "potential_impacts": self.potential_impacts,
+        }
 
     model_config = ConfigDict(validate_assignment=True, extra="forbid")
 

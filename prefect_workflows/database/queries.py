@@ -740,19 +740,38 @@ ON CONFLICT (time_tag) DO NOTHING
 # --- alerts ---
 ALERTS_STAGING_DDL = """
 CREATE TEMP TABLE alerts_staging (
-    alert_id        VARCHAR(50) NOT NULL,
-    issue_datetime  TIMESTAMPTZ NOT NULL,
-    alert_messages  TEXT        NOT NULL
+    alert_id          VARCHAR(50) NOT NULL,
+    issue_datetime    TIMESTAMPTZ NOT NULL,
+    alert_messages    TEXT        NOT NULL,
+    type              VARCHAR(50),
+    subject           TEXT,
+    fields            TEXT,
+    potential_impacts TEXT[]
 ) ON COMMIT DROP
 """
 
-ALERTS_STAGING_COLUMNS = ["alert_id", "issue_datetime", "alert_messages"]
+ALERTS_STAGING_COLUMNS = [
+    "alert_id",
+    "issue_datetime",
+    "alert_messages",
+    "type",
+    "subject",
+    "fields",
+    "potential_impacts",
+]
 
 ALERTS_TRANSFORM_SQL = """
-INSERT INTO alerts (alert_id, issue_datetime, alert_messages)
-SELECT alert_id, issue_datetime, alert_messages
+INSERT INTO alerts (alert_id, issue_datetime, alert_messages, type, subject, fields, potential_impacts)
+SELECT
+    alert_id,
+    issue_datetime,
+    alert_messages,
+    type,
+    subject,
+    fields::jsonb,
+    potential_impacts
 FROM alerts_staging
-ON CONFLICT (alert_id) DO NOTHING
+ON CONFLICT (alert_id, issue_datetime) DO NOTHING
 """
 
 

@@ -802,10 +802,35 @@ async def get_alerts(
             return timing_debug_response(t_start, t_query_start, t_query_end)
 
         add_timing_headers(response, t_start, t_query_start, t_query_end)
-        return [
-            {**dict(row), "parsed_message": parse_message_to_json(row["message"])}
-            for row in rows
-        ]
+        result = []
+        for row in rows:
+            row_dict = dict(row)
+            fields = row_dict.get("fields")
+            if isinstance(fields, str):
+                try:
+                    fields = json.loads(fields)
+                except (TypeError, ValueError):
+                    fields = None
+            if row_dict.get("type"):
+                parsed_message = {
+                    "type": row_dict["type"],
+                    "subject": row_dict.get("subject"),
+                }
+                if fields:
+                    parsed_message["fields"] = fields
+                if row_dict.get("potential_impacts"):
+                    parsed_message["potential_impacts"] = row_dict["potential_impacts"]
+            else:
+                # Legacy rows without parsed columns — parse on the fly.
+                parsed_message = parse_message_to_json(row_dict["message"])
+            result.append(
+                {
+                    "time": row_dict["time"],
+                    "message": row_dict["message"],
+                    "parsed_message": parsed_message,
+                }
+            )
+        return result
 
     except HTTPException:
         raise

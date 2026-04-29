@@ -55,8 +55,13 @@ ORDER BY time_tag DESC
 
 ALERT_QUERY = """
 SELECT
+    alert_id,
     issue_datetime AS time,
-    alert_messages AS message
+    alert_messages AS message,
+    type,
+    subject,
+    fields,
+    potential_impacts
 FROM alerts
 WHERE issue_datetime >= date_trunc('day', NOW()) - (($1 - 1) * INTERVAL '1 day')
 ORDER BY issue_datetime DESC
