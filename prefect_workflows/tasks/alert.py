@@ -102,9 +102,21 @@ async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> No
             records=records,
             columns=ALERTS_STAGING_COLUMNS,
         )
-        await conn.execute(ALERTS_TRANSFORM_SQL)
+        # RETURNING gives us only the rows actually inserted — i.e. genuinely
+        # new alerts. Conflicts (duplicates) are silently dropped.
+        inserted_rows = await conn.fetch(ALERTS_TRANSFORM_SQL)
 
-    logger.info(f"Stored {len(records)} alert records")
+    inserted_keys = {(r["alert_id"], r["issue_datetime"]) for r in inserted_rows}
+    new_records = [
+        r for r in alerts_records if (r.alert_id, r.issue_datetime) in inserted_keys
+    ]
+    logger.info(
+        f"Stored {len(new_records)} new alert records "
+        f"({len(records) - len(new_records)} duplicates skipped)"
+    )
+
+    if not new_records:
+        return
 
     payload = [
         {
@@ -113,7 +125,7 @@ async def store_alert(alerts_records: List[AlertRecord], conn: Connection) -> No
             "message": r.message,
             "parsed_message": r.parsed_payload(),
         }
-        for r in alerts_records
+        for r in new_records
     ]
     try:
         client = get_redis_client()

@@ -772,6 +772,7 @@ SELECT
     potential_impacts
 FROM alerts_staging
 ON CONFLICT (alert_id, issue_datetime) DO NOTHING
+RETURNING alert_id, issue_datetime
 """
 
 
