@@ -16,7 +16,9 @@ import {
   fetchGeoelectric,
   fetchElectricTransmissionLines,
   fetchLocations,
+  fetchInitialAlerts,
 } from "../../api/api";
+import { useLiveStream } from "../../hooks/useLiveStream";
 
 // Component imports
 import SettingsPanel from "./SettingsPanel";
@@ -28,6 +30,9 @@ import SearchBar from "./SearchBar";
 import PlaybackPanel from "./playback/PlaybackPanel";
 import ColorLegend from "./legends/ColorLegend";
 import EventGridOverlay from "./EventGridOverlay";
+import AlertTrayButton from "./alerts/AlertTrayButton";
+import AlertHistoryPanel from "./alerts/AlertHistoryPanel";
+import AlertToastManager from "./alerts/AlertToastManager";
 import { alpha, Slide } from "@mui/material";
 
 // Redux action imports
@@ -105,7 +110,10 @@ const PlaneTracker = () => {
 
   useEffect(() => {
     dispatch(fetchLocations());
+    dispatch(fetchInitialAlerts());
   }, [dispatch]);
+
+  useLiveStream(liveStreamMode);
 
   useEffect(() => {
     if(!liveStreamMode)return;
@@ -457,6 +465,10 @@ const PlaneTracker = () => {
       >
         <SearchBar />
       </Slide>
+
+      <AlertTrayButton />
+      <AlertHistoryPanel />
+      <AlertToastManager />
     </div>
   );
 };
