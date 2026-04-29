@@ -12,6 +12,7 @@ import helpReducer from './slices/helpSlice';
 import playbackReducer from './slices/playbackSlice';
 import electricTransmissionLinesReducer from './slices/electricTransmissionLinesSlice';
 import locationsReducer from './slices/locationSlice';
+import alertsReducer from './slices/alertsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -28,5 +29,6 @@ export const store = configureStore({
     playback: playbackReducer,
     electricTransmissionLines : electricTransmissionLinesReducer,
     locations: locationsReducer,
+    alerts: alertsReducer,
   },
 });

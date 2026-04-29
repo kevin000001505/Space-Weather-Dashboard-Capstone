@@ -4,6 +4,7 @@ import { injectLivePlanes } from '../store/slices/planesSlice';
 import { injectLiveDRAP } from '../store/slices/drapSlice';
 import { injectLiveAurora } from '../store/slices/auroraSlice';
 import { injectLiveGeoElectric } from '../store/slices/geoElectricSlice';
+import { injectLiveAlert } from '../store/slices/alertsSlice';
 import { decodeDeltaBitpack, mergeCoordinatesAndValues } from '../utils/compression';
 import { getLocations } from '../api/api';
 
@@ -55,6 +56,15 @@ export const useLiveStream = (isLiveMode = true) => {
       decodeSSEPayload(raw, 'geoelectric').then((decoded) => {
         dispatch(injectLiveGeoElectric(decoded));
       });
+    });
+
+    sse.addEventListener('alerts', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        dispatch(injectLiveAlert(data));
+      } catch (err) {
+        console.error('Failed to parse alerts SSE payload', err);
+      }
     });
 
     // Handle connection drops

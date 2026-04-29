@@ -292,6 +292,50 @@ export const fetchNoAAScales = createAsyncThunk(
   },
 );
 
+const ALERT_DAY_TIERS = [1, 7, 14, 30];
+const MIN_INITIAL_ALERTS = 5;
+
+async function fetchAlertsForDays(days) {
+  const response = await fetch(`${API_V1_URL}/alert?days=${days}`);
+  if (!response.ok) throw new Error(`Failed to fetch alerts (days=${days})`);
+  return await response.json();
+}
+
+export const fetchInitialAlerts = createAsyncThunk(
+  "alerts/fetchInitial",
+  async (_, { rejectWithValue }) => {
+    try {
+      let alerts = [];
+      let chosenDays = ALERT_DAY_TIERS[ALERT_DAY_TIERS.length - 1];
+      for (const days of ALERT_DAY_TIERS) {
+        alerts = await fetchAlertsForDays(days);
+        chosenDays = days;
+        if (alerts.length >= MIN_INITIAL_ALERTS) break;
+      }
+      return { alerts, days: chosenDays };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
+export const fetchMoreAlerts = createAsyncThunk(
+  "alerts/fetchMore",
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { currentDays } = getState().alerts;
+      const nextTier = ALERT_DAY_TIERS.find((d) => d > currentDays);
+      if (!nextTier) {
+        return { alerts: [], days: currentDays };
+      }
+      const alerts = await fetchAlertsForDays(nextTier);
+      return { alerts, days: nextTier };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 export const fetchElectricTransmissionLines = createAsyncThunk(
   "transmissionLines/fetchElectricTransmissionLines",
   async (utc_time = null, { rejectWithValue }) => {
