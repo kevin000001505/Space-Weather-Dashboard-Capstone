@@ -352,3 +352,24 @@ export const fetchElectricTransmissionLines = createAsyncThunk(
     }
   },
 );
+
+export const fetchPlaybackFlightPath = createAsyncThunk(
+  "playbackFlightPaths/fetchPlaybackFlightPath",
+  async ({ identifier, type, start, end, interval }, { rejectWithValue }) => {
+    try {
+      const apiValue = (identifier || "").toLowerCase();
+      const param = type === "icao24"
+        ? `icao24=${encodeURIComponent(apiValue)}`
+        : `callsign=${encodeURIComponent(apiValue)}`;
+      const url = `${API_BASE_URL}/kermit/flight-path?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&interval=${interval}&${param}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch flight path for ${identifier}`);
+      }
+      const data = await response.json();
+      return { identifier, type, data };
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  },
+);

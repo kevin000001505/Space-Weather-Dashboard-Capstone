@@ -28,12 +28,13 @@ import FlightDetailsPanel from "./FlightDetailsPanel";
 import AirportDetailsPanel from "./AirporDetailsPanel";
 import SearchBar from "./SearchBar";
 import PlaybackPanel from "./playback/PlaybackPanel";
+import PlaybackPlaneTracker from "./PlaybackPlaneTracker";
 import ColorLegend from "./legends/ColorLegend";
 import EventGridOverlay from "./EventGridOverlay";
 import AlertTrayButton from "./alerts/AlertTrayButton";
 import AlertHistoryPanel from "./alerts/AlertHistoryPanel";
 import AlertToastManager from "./alerts/AlertToastManager";
-import { alpha, Slide } from "@mui/material";
+import { Slide } from "@mui/material";
 
 // Redux action imports
 import {
@@ -49,12 +50,14 @@ import {
   removeAirportPanel,
   setHoveredRunwayId,
 } from "../../store/slices/uiSlice";
+import { clearPlaybackPlanes } from "../../store/slices/planesSlice";
 
 // Utility imports
 import { getAltDisplay } from "../../utils/mapUtils";
 import { buildDeckLayers } from "../../utils/deckLayersConfig";
 import { buildDeckTooltip } from "../../utils/deckTooltip";
 import { filterElectricTransmissionLines } from "../../utils/electricTransmissionLines";
+import { resolveFlightPositions } from "./helpers/flightPlayback";
 
 const DeckGLOverlay = (props) => {
   const overlay = useControl(() => new MapboxOverlay(props));
@@ -103,10 +106,70 @@ const PlaneTracker = () => {
     flightIconSize,
     showIconLegend,
   } = useSelector((state) => state.ui);
-  const { liveStreamMode } = useSelector((state) => state.playback);
+  const { liveStreamMode, currentPlaybackTime } = useSelector(
+    (state) => state.playback,
+  );
+  const playbackFlightData = useSelector(
+    (state) => state.playbackFlightPaths.flightData,
+  );
 
   const currentZoom = viewState?.zoom ?? 10;
   const zoomTimeoutRef = useRef(null);
+
+  // Resolve visible playback flights at the current playback time
+  const visiblePlaybackFlights = useMemo(() => {
+    if (liveStreamMode || !currentPlaybackTime) return [];
+    return resolveFlightPositions(playbackFlightData, currentPlaybackTime);
+  }, [liveStreamMode, currentPlaybackTime, playbackFlightData]);
+
+  // Build trail paths for currently-visible playback flights, up to current time.
+  // A path appears with the plane and disappears once it lands or stops being tracked.
+  // Keyed off the parallel `requested_time` array so trails extend in lockstep with
+  // the (minute-aligned) playback frames rather than the seconds-offset `time_pos`.
+  const visiblePlaybackFlightPaths = useMemo(() => {
+    if (
+      liveStreamMode ||
+      !currentPlaybackTime ||
+      visiblePlaybackFlights.length === 0
+    ) {
+      return [];
+    }
+    const targetMs = new Date(currentPlaybackTime).getTime();
+    if (!Number.isFinite(targetMs)) return [];
+    const visibleIcaos = new Set(visiblePlaybackFlights.map((f) => f.icao24));
+    const byIcao = {};
+    Object.values(playbackFlightData || {}).forEach((data) => {
+      if (
+        !data ||
+        !Array.isArray(data.points) ||
+        !Array.isArray(data.requested_time)
+      ) {
+        return;
+      }
+      const requested = data.requested_time;
+      const points = data.points;
+      const len = Math.min(requested.length, points.length);
+      for (let i = 0; i < len; i++) {
+        const p = points[i];
+        if (!p || p.lat == null || p.lon == null) continue;
+        if (p.on_ground === true || p.on_ground === "true") continue;
+        const t = new Date(requested[i]).getTime();
+        if (!Number.isFinite(t) || t > targetMs) continue;
+        const key = p.icao24;
+        if (!key || !visibleIcaos.has(key)) continue;
+        (byIcao[key] = byIcao[key] || []).push({
+          t,
+          coord: [parseFloat(p.lon), parseFloat(p.lat)],
+        });
+      }
+    });
+    return Object.entries(byIcao)
+      .map(([icao24, pts]) => ({
+        icao24,
+        coords: pts.sort((a, b) => a.t - b.t).map((entry) => entry.coord),
+      }))
+      .filter((entry) => entry.coords.length > 1);
+  }, [liveStreamMode, currentPlaybackTime, playbackFlightData, visiblePlaybackFlights]);
 
   useEffect(() => {
     dispatch(fetchLocations());
@@ -117,6 +180,7 @@ const PlaneTracker = () => {
 
   useEffect(() => {
     if(!liveStreamMode)return;
+    dispatch(clearPlaybackPlanes());
     dispatch(fetchPlanes());
     dispatch(fetchDRAP());
     dispatch(fetchAurora());
@@ -230,6 +294,8 @@ const PlaneTracker = () => {
       airportIconSize,
       flightIconSize,
       globeView,
+      playbackFlights: visiblePlaybackFlights,
+      playbackFlightPaths: visiblePlaybackFlightPaths,
     });
   }, [
     dispatch,
@@ -253,6 +319,8 @@ const PlaneTracker = () => {
     airportIconSize,
     flightIconSize,
     globeView,
+    visiblePlaybackFlights,
+    visiblePlaybackFlightPaths,
   ]);
 
   const handleViewStateChange = (evt) => {
@@ -443,6 +511,8 @@ const PlaneTracker = () => {
       >
         <PlaybackPanel />
       </Slide>
+
+      <PlaybackPlaneTracker />
 
       <Slide
         direction="up"

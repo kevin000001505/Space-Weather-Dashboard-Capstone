@@ -5,7 +5,7 @@ const planesSlice = createSlice({
   name: 'planes',
   initialState: {
     data: [],
-    playback: {},
+    playback: [],
     timestamp: null,
     count: 0,
     loading: false,
@@ -14,7 +14,13 @@ const planesSlice = createSlice({
   reducers: {
     injectLivePlanes: (state, action) => {
       state.data = action.payload.flights; 
-    }
+    },
+    setPlaybackPlanes: (state, action) => {
+      state.playback = action.payload;
+    },
+    clearPlaybackPlanes: (state) => {
+      state.playback = [];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -35,5 +41,5 @@ const planesSlice = createSlice({
   }
 });
 
-export const { injectLivePlanes } = planesSlice.actions;
+export const { injectLivePlanes, setPlaybackPlanes, clearPlaybackPlanes } = planesSlice.actions;
 export default planesSlice.reducer;

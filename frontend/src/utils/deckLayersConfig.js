@@ -117,6 +117,8 @@ export const buildDeckLayers = ({
   airportIconSize,
   flightIconSize,
   globeView,
+  playbackFlights = [],
+  playbackFlightPaths = [],
 }) => {
   // Handlers for plane interactions
   const handlePlaneClick = ({ object }) => {
@@ -226,13 +228,21 @@ export const buildDeckLayers = ({
 
   // Highlighted planes: hovered union clicked panels, deduped by icao24,
   // filtered to only planes still present in the live feed
-  const activePlaneIds = new Set(filteredPlanes.map((p) => p.icao24));
+  // Also include playback flights in active plane IDs
+  const activePlaneIds = new Set([
+    ...filteredPlanes.map((p) => p.icao24),
+    ...playbackFlights.map((p) => p.icao24),
+  ]);
   const highlightedPlanes = selectedPlane
     ? [
         ...(activePlaneIds.has(selectedPlane.icao24) ? [selectedPlane] : []),
         ...selectedFlightsPanels.filter(
           (p) =>
             p.icao24 !== selectedPlane.icao24 && activePlaneIds.has(p.icao24),
+        ),
+        ...playbackFlights.filter(
+          (p) =>
+            selectedPlane && p.icao24 !== selectedPlane.icao24 && activePlaneIds.has(p.icao24),
         ),
       ]
     : selectedFlightsPanels.filter((p) => activePlaneIds.has(p.icao24));
@@ -455,7 +465,7 @@ export const buildDeckLayers = ({
       })
       .filter(Boolean),
 
-    // Planes Icon Layer
+    // Planes Icon Layer (live + playback)
     new IconLayer({
       id: "planes-base",
       data: filteredPlanes,
@@ -488,6 +498,63 @@ export const buildDeckLayers = ({
         getColor: [useImperial, isZooming],
       },
     }),
+
+    // Playback Flight Paths (trail behind each visible playback plane)
+    ...(playbackFlightPaths.length > 0
+      ? [
+          new PathLayer({
+            id: "playback-flight-paths",
+            data: playbackFlightPaths,
+            getPath: (d) => d.coords,
+            getColor: isZooming ? [120, 220, 160, 25] : [120, 220, 160, 200],
+            getWidth: 4,
+            widthMinPixels: 2,
+            widthMaxPixels: 8,
+            capRounded: true,
+            jointRounded: true,
+            pickable: false,
+            wrapLongitude: true,
+            updateTriggers: {
+              getColor: [isZooming],
+            },
+          }),
+        ]
+      : []),
+
+    // Playback Planes Icon Layer
+    ...playbackFlights.length > 0
+      ? [
+          new IconLayer({
+            id: "playback-planes-base",
+            data: playbackFlights,
+            pickable: true,
+            wrapLongitude: true,
+            iconAtlas: PLANE_ATLAS,
+            iconMapping: {
+              plane: { x: 0, y: 0, width: 128, height: 128, mask: true },
+            },
+            visible: showPlanes,
+            getIcon: (d) => "plane",
+            getPosition: (d) => [d.lon, d.lat],
+            getSize: (d) =>
+              highlightedPlanes.some((p) => p.icao24 === d.icao24)
+                ? 2 * scaledFlightIconSize
+                : scaledFlightIconSize,
+            getAngle: (d) => -(d.heading || 0),
+            getColor: (d) => {
+              const color = getAltitudeColor(d.geo_altitude, false, useImperial);
+              return isZooming ? [color[0], color[1], color[2], 25] : color;
+            },
+            parameters: {
+              cullMode: "none",
+            },
+            updateTriggers: {
+              getSize: [scaledFlightIconSize, highlightedPlaneIdents],
+              getColor: [useImperial, isZooming],
+            },
+          }),
+        ]
+      : [],
 
     // Plane Highlight Outline (hovered + clicked panels)
     new IconLayer({

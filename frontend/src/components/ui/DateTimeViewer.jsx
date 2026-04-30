@@ -15,9 +15,23 @@ import {
   MIN_DURATION_HOURS,
   MAX_DURATION_DAYS,
 } from "../../store/slices/playbackSlice";
-import { Button, Menu, MenuItem, Popover, TextField } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  IconButton,
+  List,
+  ListItem,
+  Menu,
+  MenuItem,
+  Popover,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { DateTimePicker } from "@mui/x-date-pickers";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import AddIcon from "@mui/icons-material/Add";
+import CloseIcon from "@mui/icons-material/Close";
 import { useAllTimezones } from "../../hooks/useAllTimezones";
 import {
   formatDate,
@@ -35,6 +49,20 @@ import {
 } from "../../store/slices/geoElectricSlice";
 import { injectLiveAurora, setAuroraPlayback } from "../../store/slices/auroraSlice";
 import { injectLivePlanes } from "../../store/slices/planesSlice";
+import { setTrackedPlanes } from "../../store/slices/playbackFlightPathsSlice";
+
+const ICAO24_REGEX = /^[0-9A-F]{6}$/;
+const MAX_TRACKED_PLANES = 30;
+const PLANE_INPUT_MAX_LENGTH = 8;
+
+const sanitizePlaneInput = (value) =>
+  (value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, PLANE_INPUT_MAX_LENGTH);
+
+const detectPlaneType = (identifier) =>
+  ICAO24_REGEX.test(identifier) ? "icao24" : "callsign";
 
 const getPlaybackTime = (item) =>
   item?.playbackTime ||
@@ -148,7 +176,7 @@ const formatRangeLabel = (isoString, timezone) => {
   return `${get("year")}/${get("month")}/${get("day")} ${get("hour")}:${get("minute")}`;
 };
 
-// Popover with Start/End DateTimePickers and OK/Cancel
+// Popover with Start/End DateTimePickers, plane tracker section, and OK/Cancel
 const RangePopover = React.memo(function RangePopover({
   open,
   anchorEl,
@@ -158,6 +186,8 @@ const RangePopover = React.memo(function RangePopover({
   endDateTime,
   maxDurationMs,
   darkMode,
+  showPlaneTracker = false,
+  initialTrackedPlanes = [],
 }) {
   const [draftStart, setDraftStart] = useState(() =>
     startDateTime ? new Date(startDateTime) : new Date(),
@@ -165,6 +195,37 @@ const RangePopover = React.memo(function RangePopover({
   const [draftEnd, setDraftEnd] = useState(() =>
     endDateTime ? new Date(endDateTime) : new Date(),
   );
+  const [draftPlanes, setDraftPlanes] = useState(() => initialTrackedPlanes);
+  const [planeInput, setPlaneInput] = useState("");
+
+  const trimmedInput = planeInput.trim();
+  const inputAlreadyTracked = draftPlanes.some(
+    (p) => p.identifier === trimmedInput,
+  );
+  const canAddPlane =
+    !!trimmedInput &&
+    !inputAlreadyTracked &&
+    draftPlanes.length < MAX_TRACKED_PLANES;
+
+  const handleAddPlane = () => {
+    if (!canAddPlane) return;
+    setDraftPlanes((prev) => [
+      ...prev,
+      { identifier: trimmedInput, type: detectPlaneType(trimmedInput) },
+    ]);
+    setPlaneInput("");
+  };
+
+  const handleRemovePlane = (identifier) => {
+    setDraftPlanes((prev) => prev.filter((p) => p.identifier !== identifier));
+  };
+
+  const handlePlaneInputKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddPlane();
+    }
+  };
 
   const handleConfirm = () => {
     let finalStart = new Date(draftStart);
@@ -177,7 +238,7 @@ const RangePopover = React.memo(function RangePopover({
     if (maxDurationMs && finalEnd - finalStart > maxDurationMs) {
       finalStart = new Date(finalEnd.getTime() - maxDurationMs);
     }
-    onConfirm(finalStart, finalEnd);
+    onConfirm(finalStart, finalEnd, draftPlanes);
   };
 
   const borderColor = darkMode ? "rgba(127,92,255,0.3)" : "#ddd";
@@ -203,6 +264,9 @@ const RangePopover = React.memo(function RangePopover({
               ? "0 8px 32px rgba(0,0,0,0.4), 0 0 16px #7f5cff33"
               : "0 4px 24px rgba(0,0,0,0.12)",
             overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            maxHeight: "92vh",
           },
         },
       }}
@@ -256,6 +320,222 @@ const RangePopover = React.memo(function RangePopover({
           }}
         />
       </div>
+
+      {showPlaneTracker && (
+        <Box
+          sx={{
+            borderTop: `1px solid ${borderColor}`,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            flex: "1 1 auto",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              padding: "10px 16px 6px",
+            }}
+          >
+            <Typography
+              sx={{
+                fontWeight: 600,
+                fontSize: "0.95rem",
+                color: darkMode ? "#e0e0e0" : "#333",
+              }}
+            >
+              Tracked Planes
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: "0.75rem",
+                color: darkMode ? "#999" : "#777",
+              }}
+            >
+              ICAO24 (6 hex) or callsign
+            </Typography>
+            <Chip
+              label={`${draftPlanes.length}/${MAX_TRACKED_PLANES}`}
+              size="small"
+              sx={{
+                ml: "auto",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                height: 20,
+                background: darkMode ? "#7f5cff33" : "#7f5cff22",
+                color: darkMode ? "#a78bfa" : "#7c3aed",
+              }}
+            />
+          </Box>
+
+          <Box sx={{ display: "flex", gap: 1, padding: "0 16px 8px" }}>
+            <TextField
+              size="small"
+              fullWidth
+              placeholder="e.g. ABC123 or A1B2C3"
+              value={planeInput}
+              onChange={(e) => setPlaneInput(sanitizePlaneInput(e.target.value))}
+              onKeyDown={handlePlaneInputKeyDown}
+              inputProps={{
+                maxLength: PLANE_INPUT_MAX_LENGTH,
+                style: { textTransform: "uppercase", fontFamily: "monospace" },
+              }}
+              sx={{
+                "& .MuiInputBase-root": {
+                  background: darkMode ? "rgba(60,60,80,0.6)" : "#f7f7fa",
+                  borderRadius: 1,
+                  fontSize: "0.85rem",
+                },
+                "& .MuiInputBase-input": {
+                  color: darkMode ? "#fff" : "#222",
+                },
+                "& .MuiOutlinedInput-notchedOutline": {
+                  borderColor: darkMode
+                    ? "rgba(127,92,255,0.3)"
+                    : "rgba(0,0,0,0.15)",
+                },
+                "& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline":
+                  {
+                    borderColor: darkMode ? "#7f5cff" : "#1976d2",
+                  },
+              }}
+            />
+            <IconButton
+              onClick={handleAddPlane}
+              disabled={!canAddPlane}
+              size="small"
+              aria-label="Add plane"
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: 1,
+                background: darkMode ? "rgba(127,92,255,0.18)" : "rgba(127,92,255,0.12)",
+                color: darkMode ? "#a78bfa" : "#7c3aed",
+                "&:hover": {
+                  background: darkMode
+                    ? "rgba(127,92,255,0.32)"
+                    : "rgba(127,92,255,0.22)",
+                },
+                "&.Mui-disabled": {
+                  color: darkMode ? "rgba(167,139,250,0.4)" : "rgba(124,58,237,0.4)",
+                },
+              }}
+            >
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </Box>
+
+          <List
+            dense
+            sx={{
+              mx: 2,
+              mb: 1,
+              p: 0,
+              maxHeight: "80vh",
+              overflowY: "auto",
+              borderRadius: 1,
+              border: draftPlanes.length
+                ? `1px solid ${borderColor}`
+                : "1px dashed transparent",
+            }}
+          >
+            {draftPlanes.length === 0 ? (
+              <Box
+                sx={{
+                  px: 2,
+                  py: 1.5,
+                  textAlign: "center",
+                  fontSize: "0.78rem",
+                  color: darkMode ? "#777" : "#999",
+                  fontStyle: "italic",
+                }}
+              >
+                No planes added — playback will show no flights.
+              </Box>
+            ) : (
+              draftPlanes.map((plane) => (
+                <ListItem
+                  key={plane.identifier}
+                  disableGutters
+                  sx={{
+                    px: 1.25,
+                    py: 0.25,
+                    borderBottom: `1px solid ${borderColor}`,
+                    "&:last-of-type": { borderBottom: "none" },
+                  }}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={() => handleRemovePlane(plane.identifier)}
+                      aria-label={`Remove ${plane.identifier}`}
+                      sx={{
+                        color: darkMode ? "#f87171" : "#ef4444",
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  }
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography
+                      sx={{
+                        fontFamily: "monospace",
+                        fontWeight: 600,
+                        fontSize: "0.85rem",
+                        color: darkMode ? "#e0e0e0" : "#222",
+                      }}
+                    >
+                      {plane.identifier}
+                    </Typography>
+                    <Chip
+                      label={plane.type === "icao24" ? "ICAO24" : "CALLSIGN"}
+                      size="small"
+                      sx={{
+                        height: 18,
+                        fontSize: "0.62rem",
+                        fontWeight: 600,
+                        background:
+                          plane.type === "icao24"
+                            ? darkMode
+                              ? "#1976d244"
+                              : "#1976d222"
+                            : darkMode
+                              ? "#7f5cff44"
+                              : "#7f5cff22",
+                        color:
+                          plane.type === "icao24"
+                            ? darkMode
+                              ? "#90caf9"
+                              : "#1565c0"
+                            : darkMode
+                              ? "#a78bfa"
+                              : "#7c3aed",
+                      }}
+                    />
+                  </Box>
+                </ListItem>
+              ))
+            )}
+          </List>
+          {draftPlanes.length >= MAX_TRACKED_PLANES && (
+            <Box
+              sx={{
+                px: 2,
+                pb: 1,
+                textAlign: "center",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                color: darkMode ? "#f87171" : "#ef4444",
+              }}
+            >
+              Maximum of {MAX_TRACKED_PLANES} planes reached
+            </Box>
+          )}
+        </Box>
+      )}
 
       {/* OK / Cancel */}
       <div
@@ -313,6 +593,9 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(
   const endDateTime = useSelector((state) => state.playback.endDateTime);
   const date = useSelector((state) => state.playback.date);
   const time = useSelector((state) => state.playback.time);
+  const trackedPlanes = useSelector(
+    (state) => state.playbackFlightPaths.trackedPlanes,
+  );
 
   // Playback mode enforces 14-day cap; chart mode has no cap unless overridden
   const maxDurationMs = maxDurationMsProp !== undefined
@@ -495,12 +778,15 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(
     setRangePopoverOpen(false);
   }, []);
 
-  const handleRangeConfirm = useCallback((start, end) => {
+  const handleRangeConfirm = useCallback((start, end, planes) => {
     dispatch(setDateTimeRange({
       startDateTime: start.toISOString(),
       endDateTime: end.toISOString(),
     }));
-    if (playbackMode) dispatch(setLiveStreamMode(false));
+    if (playbackMode) {
+      dispatch(setTrackedPlanes(planes || []));
+      dispatch(setLiveStreamMode(false));
+    }
     setRangeConfirmed(true);
     setRangePopoverOpen(false);
   }, [dispatch, playbackMode]);
@@ -561,6 +847,8 @@ const DateTimeViewer = React.forwardRef(function DateTimeViewer(
         endDateTime={endDateTime}
         maxDurationMs={maxDurationMs}
         darkMode={darkMode}
+        showPlaneTracker={playbackMode}
+        initialTrackedPlanes={trackedPlanes}
       />
 
       <Button

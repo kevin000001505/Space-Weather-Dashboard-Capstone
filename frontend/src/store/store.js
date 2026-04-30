@@ -13,6 +13,7 @@ import playbackReducer from './slices/playbackSlice';
 import electricTransmissionLinesReducer from './slices/electricTransmissionLinesSlice';
 import locationsReducer from './slices/locationSlice';
 import alertsReducer from './slices/alertsSlice';
+import playbackFlightPathsReducer from './slices/playbackFlightPathsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -30,5 +31,6 @@ export const store = configureStore({
     electricTransmissionLines : electricTransmissionLinesReducer,
     locations: locationsReducer,
     alerts: alertsReducer,
+    playbackFlightPaths: playbackFlightPathsReducer,
   },
 });
