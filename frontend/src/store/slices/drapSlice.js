@@ -15,7 +15,7 @@ const drapSlice = createSlice({
   },
   reducers: {
     injectLiveDRAP: (state, action) => {
-      state.points = action.payload.drap || [];
+      state.points = action.payload.points || [];
     },
     setDRAPPoints: (state, action) => {
       state.points = action.payload;
