@@ -343,7 +343,55 @@ SELECT
     locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
     locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
 FROM flight_states
+WHERE icao24 = $4::text AND callsign = $5::text
+  AND time >= $1::timestamptz
+  AND time <= $2::timestamptz
+GROUP BY 1
+ORDER BY 1;
+"""
+
+FLIGHTS_RANGE_ICAO_QUERY = """
+SELECT
+    time_bucket_gapfill(
+        make_interval(mins => $3::int),
+        time,
+        start => $1::timestamptz,
+        finish => $2::timestamptz
+    ) AS requested_time,
+    locf(last(time,          time), treat_null_as_missing => true)  AS time,
+    locf(last(time_pos,      time), treat_null_as_missing => true)  AS time_pos,
+    locf(last(icao24,        time), treat_null_as_missing => true)  AS icao24,
+    locf(last(callsign,      time), treat_null_as_missing => true)  AS callsign,
+    locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
+    locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
+    locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
+FROM flight_states
 WHERE icao24 = $4::text
+  AND time >= $1::timestamptz
+  AND time <= $2::timestamptz
+GROUP BY 1
+ORDER BY 1;
+"""
+
+FLIGHTS_RANGE_CALLSIGN_QUERY = """
+SELECT
+    time_bucket_gapfill(
+        make_interval(mins => $3::int),
+        time,
+        start => $1::timestamptz,
+        finish => $2::timestamptz
+    ) AS requested_time,
+    locf(last(time,          time), treat_null_as_missing => true)  AS time,
+    locf(last(time_pos,      time), treat_null_as_missing => true)  AS time_pos,
+    locf(last(icao24,        time), treat_null_as_missing => true)  AS icao24,
+    locf(last(callsign,      time), treat_null_as_missing => true)  AS callsign,
+    locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
+    locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
+    locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
+FROM flight_states
+WHERE callsign = $4::text
   AND time >= $1::timestamptz
   AND time <= $2::timestamptz
 GROUP BY 1

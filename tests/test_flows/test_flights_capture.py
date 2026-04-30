@@ -73,7 +73,9 @@ class TestStageFlightRecords:
     async def test_rerun_resets_staging(self, conn):
         """Re-staging on the same connection should not duplicate rows."""
         await stage_flight_records.fn([_make_record("abc123")], conn)
-        await stage_flight_records.fn([_make_record("def456", lat=40.0, lon=-75.0)], conn)
+        await stage_flight_records.fn(
+            [_make_record("def456", lat=40.0, lon=-75.0)], conn
+        )
 
         rows = await conn.fetch("SELECT icao24 FROM flight_staging")
         icao_set = {r["icao24"].strip() for r in rows}

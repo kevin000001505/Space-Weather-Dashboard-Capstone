@@ -17,6 +17,8 @@ from database.queries import (
     AIRPORT_QUERY,
     FLIGHT_PATH_QUERY,
     FLIGHTS_RANGE_QUERY,
+    FLIGHTS_RANGE_ICAO_QUERY,
+    FLIGHTS_RANGE_CALLSIGN_QUERY,
     KP_INDEX_RANGE_QUERY,
     XRAY_FLUX_RANGE_QUERY,
     PROTON_FLUX_RANGE_QUERY,
@@ -925,11 +927,24 @@ async def retrieve_flight_paths(
                 detail="At least one of 'icao24' or 'callsign' is required",
             )
 
-        t_query_start = time.perf_counter()
-        rows = await conn.fetch(
-            FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24
-        )
-        t_query_end = time.perf_counter()
+        if icao24 and callsign:
+            t_query_start = time.perf_counter()
+            rows = await conn.fetch(
+                FLIGHTS_RANGE_QUERY, start_utc, end_utc, interval, icao24, callsign
+            )
+            t_query_end = time.perf_counter()
+        elif icao24:
+            t_query_start = time.perf_counter()
+            rows = await conn.fetch(
+                FLIGHTS_RANGE_ICAO_QUERY, start_utc, end_utc, interval, icao24
+            )
+            t_query_end = time.perf_counter()
+        else:
+            t_query_start = time.perf_counter()
+            rows = await conn.fetch(
+                FLIGHTS_RANGE_CALLSIGN_QUERY, start_utc, end_utc, interval, callsign
+            )
+            t_query_end = time.perf_counter()
 
         if not rows:
             identifier = icao24 or callsign
