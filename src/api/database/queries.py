@@ -341,6 +341,7 @@ SELECT
     locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
     locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
     locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(heading,       time), treat_null_as_missing => true)  AS heading,
     locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
 FROM flight_states
 WHERE icao24 = $4::text AND callsign = $5::text
@@ -365,6 +366,7 @@ SELECT
     locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
     locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
     locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(heading,       time), treat_null_as_missing => true)  AS heading,
     locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
 FROM flight_states
 WHERE icao24 = $4::text
@@ -389,6 +391,7 @@ SELECT
     locf(last(lat,           time), treat_null_as_missing => true)  AS lat,
     locf(last(lon,           time), treat_null_as_missing => true)  AS lon,
     locf(last(geo_altitude,  time), treat_null_as_missing => true)  AS geo_altitude,
+    locf(last(heading,       time), treat_null_as_missing => true)  AS heading,
     locf(last(on_ground,     time), treat_null_as_missing => true)  AS on_ground
 FROM flight_states
 WHERE callsign = $4::text
