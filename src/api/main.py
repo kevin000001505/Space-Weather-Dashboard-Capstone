@@ -966,6 +966,7 @@ async def retrieve_flight_paths(
                     "lat": row_dict.get("lat"),
                     "lon": row_dict.get("lon"),
                     "geo_altitude": row_dict.get("geo_altitude"),
+                    "heading": row_dict.get("heading"),
                     "on_ground": row_dict.get("on_ground"),
                 }
             )
