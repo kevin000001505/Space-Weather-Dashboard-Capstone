@@ -24,13 +24,13 @@ A real-time space weather and flight-tracking dashboard that overlays NOAA space
    └──────────┬──────────────────┬──────────────────┘
               │                  │
    ┌──────────▼──────┐  ┌────────▼──────────────────┐
-   │  TimescaleDB    │  │  Redis (pub/sub + cache)   │
+   │  TimescaleDB    │  │  Redis (pub/sub + cache)  │
    │  (PostGIS/pg18) │  └────────▲──────────────────┘
    │  2 databases:   │           │ broadcast
    │  prefect + app  │  ┌────────┴──────────────────┐
-   └─────────────────┘  │  Prefect Workers           │
-                        │  NOAA-pool + flight-pool   │
-                        │  → NOAA APIs + OpenSky     │
+   └─────────────────┘  │  Prefect Workers          │
+                        │  NOAA-pool + flight-pool  │
+                        │  → NOAA APIs + OpenSky    │
                         └───────────────────────────┘
 ```
 
